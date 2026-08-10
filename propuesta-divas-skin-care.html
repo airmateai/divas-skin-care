@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Airmate × Divas Skin Care — Propuesta</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Inter:wght@400;500;600;700&family=Cormorant+Garamond:ital,wght@0,400;1,500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --forest:#22301f; --forest2:#3a4f36; --forest-dk:#161f14;
+  --sand:#f1e6cf; --sand-lt:#faf8f2;
+  --gold:#c9a558; --ink:#20241f; --txt2:#5c6358; --txt3:#8d9488; --border:#e7e2d5;
+  --display:'Bricolage Grotesque',sans-serif; --serif:'Cormorant Garamond',serif; --body:'Inter',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:var(--body);background:#eeece3;color:var(--ink);-webkit-font-smoothing:antialiased;}
+.toolbar{position:sticky;top:0;z-index:10;background:var(--forest-dk);display:flex;justify-content:center;gap:10px;padding:12px;}
+.toolbar button{background:var(--gold);color:#241a06;border:none;padding:9px 18px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--body);}
+@media print{.toolbar{display:none;}body{background:#fff;}}
+
+.sheet{max-width:860px;margin:32px auto;background:#fff;box-shadow:0 20px 60px rgba(34,48,31,.16);border-radius:6px;overflow:hidden;}
+@media print{.sheet{margin:0;box-shadow:none;border-radius:0;max-width:none;}.pg{page-break-before:always;}.pg:first-child{page-break-before:auto;}}
+
+/* PORTADA */
+.cover{background:radial-gradient(ellipse at 20% 0%,rgba(201,165,88,.18),transparent 55%),linear-gradient(160deg,var(--forest) 0%,var(--forest-dk) 100%);color:var(--sand-lt);padding:70px 56px 60px;position:relative;overflow:hidden;}
+.cover::after{content:'';position:absolute;left:0;right:0;bottom:0;height:6px;background:linear-gradient(90deg,var(--gold),#e3cd94,var(--gold));}
+.cover-brands{display:flex;align-items:center;gap:14px;margin-bottom:60px;font-family:var(--display);font-weight:800;font-size:15px;letter-spacing:.02em;}
+.cover-brands .x{color:var(--gold);font-family:var(--serif);font-style:italic;font-weight:400;}
+.cover-label{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);margin-bottom:18px;font-weight:700;}
+.cover h1{font-family:var(--display);font-size:40px;font-weight:800;line-height:1.12;letter-spacing:-.01em;max-width:520px;}
+.cover h1 em{font-style:italic;font-family:var(--serif);color:var(--gold);font-weight:400;}
+.cover p.sub{font-family:var(--serif);font-style:italic;font-size:17px;color:rgba(250,248,242,.75);margin-top:20px;max-width:460px;line-height:1.6;}
+.cover-meta{display:flex;gap:40px;margin-top:56px;padding-top:24px;border-top:1px solid rgba(250,248,242,.15);flex-wrap:wrap;}
+.cover-meta div span{display:block;font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:rgba(250,248,242,.45);margin-bottom:4px;}
+.cover-meta div strong{font-size:13.5px;color:var(--sand-lt);font-weight:600;}
+
+/* BODY */
+.body-doc{padding:44px 56px 20px;}
+h2.sec{font-family:var(--display);font-size:14.5px;font-weight:800;color:var(--forest);text-transform:uppercase;letter-spacing:.06em;margin:34px 0 16px;padding-bottom:9px;border-bottom:2px solid var(--sand);}
+h2.sec:first-child{margin-top:0;}
+p, li{font-size:13.8px;line-height:1.75;color:var(--txt2);}
+li{margin-bottom:8px;}
+ul{padding-left:20px;margin:8px 0;}
+strong{color:var(--ink);}
+
+.feat-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:16px 0 6px;}
+.feat{background:var(--sand-lt);border:1px solid var(--border);border-radius:10px;padding:16px 18px;}
+.feat .ico{font-size:18px;margin-bottom:8px;}
+.feat h4{font-family:var(--display);font-size:13.5px;font-weight:700;color:var(--ink);margin-bottom:5px;}
+.feat p{font-size:12.5px;margin:0;color:var(--txt2);}
+
+.quote{background:var(--forest);color:var(--sand-lt);border-radius:12px;padding:22px 26px;margin:22px 0;}
+.quote p{font-family:var(--serif);font-style:italic;font-size:15.5px;color:var(--sand-lt);line-height:1.7;margin:0;}
+.quote span{display:block;margin-top:10px;font-size:11.5px;color:rgba(250,248,242,.6);font-family:var(--body);font-style:normal;text-transform:uppercase;letter-spacing:.06em;}
+
+table.steps{width:100%;border-collapse:collapse;margin:14px 0 6px;}
+table.steps td{padding:12px 0;border-bottom:1px solid var(--border);vertical-align:top;}
+table.steps td:first-child{width:36px;font-family:var(--display);font-weight:800;color:var(--gold);font-size:15px;}
+table.steps td:last-child strong{display:block;font-size:13.5px;margin-bottom:2px;}
+
+/* PRICING */
+.price-wrap{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:18px 0 8px;}
+.price-card{border-radius:14px;padding:26px 24px;position:relative;}
+.price-card.setup{background:var(--sand-lt);border:1.5px solid var(--border);}
+.price-card.mensual{background:linear-gradient(150deg,var(--forest),var(--forest-dk));color:var(--sand-lt);}
+.price-label{font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;margin-bottom:10px;color:var(--gold);}
+.price-amount{font-family:var(--display);font-size:38px;font-weight:800;line-height:1;}
+.price-period{font-size:12px;margin-top:6px;margin-bottom:16px;opacity:.75;}
+.price-card ul{padding-left:18px;margin:0;}
+.price-card.setup li{font-size:12.5px;color:var(--txt2);margin-bottom:7px;}
+.price-card.mensual li{font-size:12.5px;color:rgba(250,248,242,.85);margin-bottom:7px;}
+.price-total{background:var(--gold);color:#241a06;border-radius:12px;padding:18px 24px;margin-top:6px;display:flex;justify-content:space-between;align-items:center;font-family:var(--display);font-weight:800;flex-wrap:wrap;gap:6px;}
+.price-total .l{font-size:13px;text-transform:uppercase;letter-spacing:.06em;}
+.price-total .v{font-size:20px;}
+.price-note{font-size:12px;color:var(--txt3);font-style:italic;margin-top:10px;}
+
+.demo-links{display:flex;gap:12px;margin:14px 0 6px;flex-wrap:wrap;}
+.demo-links a{background:var(--forest);color:#fff;font-size:12.5px;font-weight:700;padding:11px 20px;border-radius:24px;text-decoration:none;font-family:var(--body);}
+.demo-links a.outline{background:transparent;color:var(--forest);border:1.5px solid var(--forest);}
+
+.sign-area{display:grid;grid-template-columns:1fr 1fr;gap:40px;margin:44px 0 26px;}
+.sign-block{text-align:center;}
+.sign-line{border-top:1.5px solid var(--ink);margin-top:56px;padding-top:8px;}
+.sign-name{font-family:var(--display);font-weight:700;font-size:13.5px;}
+.sign-role{font-size:11px;color:var(--txt3);text-transform:uppercase;letter-spacing:.06em;margin-top:2px;}
+
+.ft{padding:20px 56px 34px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--txt3);flex-wrap:wrap;gap:6px;}
+</style>
+</head>
+<body>
+
+<div class="toolbar">
+  <button onclick="window.print()">🖨 Imprimir / Guardar PDF</button>
+</div>
+
+<div class="sheet">
+
+  <div class="cover">
+    <div class="cover-brands">Airmate <span class="x">×</span> Divas Skin Care</div>
+    <div class="cover-label">Propuesta comercial · 2026</div>
+    <h1>Tu centro de estética,<br>gestionado por <em>una sola plataforma</em></h1>
+    <p class="sub">Web propia + reservas online + tienda + panel de gestión — sustituyendo Treatwell por un sistema hecho a la medida de Divas Skin Care.</p>
+    <div class="cover-meta">
+      <div><span>Preparado para</span><strong>Divas Skin Care by Louie</strong></div>
+      <div><span>Preparado por</span><strong>Fabio Bueno · Airmate</strong></div>
+      <div><span>Contacto</span><strong>airmateai@gmail.com</strong></div>
+    </div>
+  </div>
+
+  <div class="body-doc">
+
+    <h2 class="sec">El problema que resolvemos</h2>
+    <p>Hoy dependéis de Treatwell para las reservas, sin web propia ni tienda online — y con casi 400 clientas y unos 75 tratamientos, cada hueco que se pierde o cada venta de producto que no se puede hacer online es dinero que se queda fuera. Airmate os da vuestra propia web, reservas 24/7 y tienda online, todo conectado a un panel donde gestionáis clientas, citas, stock y facturación sin depender de terceros.</p>
+
+    <h2 class="sec">Qué incluye la plataforma</h2>
+    <div class="feat-grid">
+      <div class="feat"><div class="ico">💅</div><h4>Web propia de Divas Skin Care</h4><p>Presentación del centro, servicios por categoría (Faciales, Corporales, Láser IPL) y tienda — con vuestra marca y colores.</p></div>
+      <div class="feat"><div class="ico">📅</div><h4>Reservas online 24/7</h4><p>Vuestras clientas reservan solas, sin llamadas ni mensajes fuera de horario — sustituye a Treatwell por completo.</p></div>
+      <div class="feat"><div class="ico">🛍️</div><h4>Tienda online</h4><p>Vuestros ~200 productos a la venta directamente desde la web, con gestión de stock integrada.</p></div>
+      <div class="feat"><div class="ico">🗂️</div><h4>CRM completo</h4><p>Ficha de cada clienta, historial de tratamientos, gasto acumulado y clientas inactivas para hacer seguimiento.</p></div>
+      <div class="feat"><div class="ico">📦</div><h4>Stock y catálogo</h4><p>Control de los ~75 tratamientos y productos de tienda, con alertas cuando algo se agota.</p></div>
+      <div class="feat"><div class="ico">🧾</div><h4>Facturación</h4><p>Facturas generadas automáticamente por cada cita o venta, listas para vuestra gestoría.</p></div>
+      <div class="feat"><div class="ico">📲</div><h4>Migración desde Treatwell</h4><p>Migramos vuestro catálogo de servicios y las casi 400 clientas — no empezáis de cero.</p></div>
+      <div class="feat"><div class="ico">📊</div><h4>Informes del negocio</h4><p>Facturación semanal, clientas nuevas, productos más vendidos — todo en un dashboard.</p></div>
+    </div>
+
+    <div class="quote">
+      <p>"Queremos dar el paso a tener nuestra propia página web, con reservas y tienda online, sin depender ya de Treatwell."</p>
+      <span>Natalia · Divas Skin Care by Louie</span>
+    </div>
+
+    <h2 class="sec">Cómo lo ponemos en marcha</h2>
+    <table class="steps">
+      <tr><td>01</td><td><strong>Configuración a medida</strong>Adaptamos el panel a vuestras categorías reales (Faciales, Corporales, Láser IPL) y vuestra marca (logo y colores).</td></tr>
+      <tr><td>02</td><td><strong>Migración desde Treatwell</strong>Subimos el catálogo de servicios y la base de casi 400 clientas exportada en CSV.</td></tr>
+      <tr><td>03</td><td><strong>Tienda y stock</strong>Cargamos el catálogo de productos y activamos el cobro online.</td></tr>
+      <tr><td>04</td><td><strong>Formación y soporte continuo</strong>Sesión práctica para el equipo, y cualquier ajuste queda cubierto por el mantenimiento mensual.</td></tr>
+    </table>
+
+    <h2 class="sec">Demo ya disponible</h2>
+    <p>Antes de empezar, os hemos preparado una demo real con vuestra marca, servicios y precios para que veáis exactamente cómo quedaría.</p>
+    <div class="demo-links">
+      <a href="https://airmateai.github.io/divas-skin-care/" target="_blank">Ver web de demo →</a>
+      <a class="outline" href="https://airmateai.github.io/divas-skin-care/panel-divas-skin-care.html" target="_blank">Ver panel de gestión →</a>
+    </div>
+
+    <h2 class="sec">Inversión</h2>
+    <div class="price-wrap">
+      <div class="price-card setup">
+        <div class="price-label">Producción total</div>
+        <div class="price-amount">997€</div>
+        <div class="price-period">pago único</div>
+        <ul>
+          <li>Web propia + tienda online (200 productos)</li>
+          <li>Sistema de reservas (75 tratamientos)</li>
+          <li>Panel CRM completo a medida</li>
+          <li>Migración de servicios y ~400 clientas desde Treatwell</li>
+          <li>Diseño con vuestra marca (logo y colores)</li>
+        </ul>
+      </div>
+      <div class="price-card mensual">
+        <div class="price-label">Mantenimiento</div>
+        <div class="price-amount">99€</div>
+        <div class="price-period">al mes · todo incluido</div>
+        <ul>
+          <li>Hosting y funcionamiento 24/7</li>
+          <li>Ajustes y mejoras continuas</li>
+          <li>Soporte directo con Fabio</li>
+          <li>Sin permanencia — cancelable cuando queráis</li>
+        </ul>
+      </div>
+    </div>
+    <div class="price-total"><span class="l">Hoy pagas</span><span class="v">997€ producción + 99€/mes</span></div>
+    <p class="price-note">Sin costes ocultos. El mantenimiento cubre absolutamente todo — no hay coste extra por soporte, cambios o nuevas funciones razonables. La integración de TAP to pay / Alma Pay se confirma tras revisión técnica.</p>
+
+    <div class="sign-area">
+      <div class="sign-block">
+        <div class="sign-line"><div class="sign-name">Fabio Bueno Galarza</div><div class="sign-role">Airmate</div></div>
+      </div>
+      <div class="sign-block">
+        <div class="sign-line"><div class="sign-name">Divas Skin Care by Louie</div><div class="sign-role">Cliente</div></div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="ft">
+    <div>Airmate © 2026 — Propuesta confidencial para Divas Skin Care</div>
+    <div>airmateai@gmail.com</div>
+  </div>
+</div>
+
+</body>
+</html>
