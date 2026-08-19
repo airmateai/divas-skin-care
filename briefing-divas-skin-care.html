@@ -14,7 +14,7 @@
   --font:'Inter',-apple-system,sans-serif;
 }
 *{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:var(--font);background:#eeece3;color:var(--ink);-webkit-font-smoothing:antialiased;}
+body{font-family:var(--font);background:#eeece3;color:var(--ink);-webkit-font-smoothing:antialiased;padding-bottom:90px;}
 
 .sheet{max-width:820px;margin:32px auto;background:#fff;box-shadow:0 12px 40px rgba(0,0,0,.1);border-radius:4px;overflow:hidden;}
 
@@ -33,29 +33,43 @@ p.sec-hint{font-size:12.5px;color:var(--txt3);margin:6px 0 14px;line-height:1.6;
 .field{margin-bottom:14px;}
 .field label{display:block;font-size:12.5px;font-weight:700;color:var(--ink);margin-bottom:5px;}
 .field label small{font-weight:400;color:var(--txt3);text-transform:none;letter-spacing:0;}
-.line{border-bottom:1.3px solid var(--border);height:26px;}
 .field-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+
+input[type=text], textarea{
+  width:100%;border:none;border-bottom:1.3px solid var(--border);background:transparent;
+  font-family:var(--font);font-size:13.5px;color:var(--ink);padding:6px 2px;outline:none;
+  transition:border-color .15s;
+}
+input[type=text]:focus, textarea:focus{border-color:var(--forest);}
+textarea{resize:vertical;min-height:44px;line-height:1.5;}
 
 table.fill{width:100%;border-collapse:collapse;margin:8px 0 4px;}
 table.fill th{font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--txt3);text-align:left;padding:6px 8px;border-bottom:1.5px solid var(--border);}
-table.fill td{padding:12px 8px;border-bottom:1px solid var(--border);}
+table.fill td{padding:8px 6px;border-bottom:1px solid var(--border);}
 table.fill tr td:first-child{color:var(--txt3);font-size:12px;width:22px;}
+table.fill input{border:none;font-size:13px;padding:5px 2px;}
 
 .checklist{list-style:none;margin:6px 0 4px;}
-.checklist li{display:flex;gap:10px;align-items:flex-start;padding:7px 0;font-size:13.5px;color:var(--txt2);line-height:1.5;}
-.checklist li .box{flex:0 0 16px;height:16px;border:1.5px solid var(--txt3);border-radius:4px;margin-top:2px;}
+.checklist li{display:flex;gap:10px;align-items:center;padding:7px 0;font-size:13.5px;color:var(--txt2);line-height:1.5;cursor:pointer;}
+.checklist li input[type=checkbox]{flex:0 0 17px;width:17px;height:17px;accent-color:var(--forest);cursor:pointer;}
 
 .quote{background:var(--sand-lt);border-left:3px solid var(--forest);border-radius:4px;padding:14px 18px;margin:18px 0;}
 .quote p{font-size:13px;color:var(--ink);line-height:1.6;margin:0;}
 
 .ft{padding:20px 52px 30px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--txt3);flex-wrap:wrap;gap:6px;}
 
-@media print{ body{background:#fff;} .sheet{box-shadow:none;margin:0;} }
+.bar{position:fixed;left:0;right:0;bottom:0;background:var(--forest-dk);padding:14px 20px;display:flex;gap:10px;justify-content:center;align-items:center;flex-wrap:wrap;z-index:10;box-shadow:0 -6px 20px rgba(0,0,0,.2);}
+.bar button{font-family:var(--font);font-size:13px;font-weight:700;border:none;border-radius:7px;padding:11px 20px;cursor:pointer;}
+.bar .primary{background:var(--sand-lt);color:var(--forest-dk);}
+.bar .ghost{background:transparent;color:var(--sand-lt);border:1.3px solid rgba(250,248,242,.35);}
+.bar .status{color:#b8c0b3;font-size:11.5px;}
+
 @media (max-width:600px){
   .cover{padding:40px 24px 32px;}
   .body-doc{padding:28px 24px 16px;}
   .field-row{grid-template-columns:1fr;}
   .ft{padding:20px 24px 26px;}
+  .bar{padding:12px;}
 }
 </style>
 </head>
@@ -67,95 +81,96 @@ table.fill tr td:first-child{color:var(--txt3);font-size:12px;width:22px;}
     <div class="cover-brands">Airmate × Divas Skin Care</div>
     <div class="cover-label">Puesta en marcha</div>
     <h1>Lo que necesitamos para construir vuestra web y panel de gestión</h1>
-    <p class="sub">Rellenad esto con calma — cuanto más completo, antes tenemos la demo final lista y podemos cerrarlo todo. Podéis mandarlo por WhatsApp o email, no hace falta que sea en este documento.</p>
+    <p class="sub">Rellenad esto con calma — se va guardando solo en este dispositivo mientras escribís. Cuando esté listo, dadle a "Enviar" abajo.</p>
   </div>
 
   <div class="body-doc">
 
     <h2 class="sec"><span class="num">01</span> Marca</h2>
-    <p class="sec-hint">Para que la web y el panel se vean con vuestra identidad desde el primer día.</p>
+    <p class="sec-hint">Para que la web y el panel se vean con vuestra identidad desde el primer día. Las fotos/logo mandadlos aparte por WhatsApp o email — este formulario es solo para texto.</p>
     <ul class="checklist">
-      <li><div class="box"></div>Logo en buena calidad (PNG con fondo transparente si lo tenéis)</li>
-      <li><div class="box"></div>Colores oficiales de la marca (código hex si lo sabéis, o fotos donde se vean)</li>
-      <li><div class="box"></div>Tipografía de marca, si tenéis una definida (si no, elegimos nosotros)</li>
+      <li><label style="display:flex;gap:10px;align-items:center;width:100%"><input type="checkbox" data-f="logo_ok"> Logo en buena calidad — lo mando aparte</label></li>
+      <li><label style="display:flex;gap:10px;align-items:center;width:100%"><input type="checkbox" data-f="colores_ok"> Colores de marca — los mando aparte / los indico abajo</label></li>
     </ul>
+    <div class="field"><label>Colores oficiales (hex si los sabéis, o descripción)</label><input type="text" data-f="colores"></div>
+    <div class="field"><label>Tipografía de marca <small>(si no tenéis, dejad en blanco — elegimos nosotros)</small></label><input type="text" data-f="tipografia"></div>
 
     <h2 class="sec"><span class="num">02</span> Datos del negocio</h2>
     <div class="field-row">
-      <div class="field"><label>Nombre a mostrar en la web</label><div class="line"></div></div>
-      <div class="field"><label>Teléfono de contacto</label><div class="line"></div></div>
+      <div class="field"><label>Nombre a mostrar en la web</label><input type="text" data-f="nombre_web"></div>
+      <div class="field"><label>Teléfono de contacto</label><input type="text" data-f="telefono"></div>
     </div>
     <div class="field-row">
-      <div class="field"><label>Email de contacto</label><div class="line"></div></div>
-      <div class="field"><label>Instagram / redes</label><div class="line"></div></div>
+      <div class="field"><label>Email de contacto</label><input type="text" data-f="email"></div>
+      <div class="field"><label>Instagram / redes</label><input type="text" data-f="redes"></div>
     </div>
-    <div class="field"><label>Dirección del centro</label><div class="line"></div></div>
-    <div class="field"><label>Descripción corta (2-3 frases, cómo os presentaríais)</label><div class="line"></div><div class="line" style="margin-top:8px"></div></div>
+    <div class="field"><label>Dirección del centro</label><input type="text" data-f="direccion"></div>
+    <div class="field"><label>Descripción corta (2-3 frases, cómo os presentaríais)</label><textarea data-f="descripcion" rows="2"></textarea></div>
 
     <h2 class="sec"><span class="num">03</span> Servicios</h2>
-    <p class="sec-hint">Todos los tratamientos que queréis que aparezcan en la web y en las reservas.</p>
+    <p class="sec-hint">Todos los tratamientos que queréis que aparezcan en la web y en las reservas. Si son muchos, escribid "ver Excel adjunto" y nos lo mandáis aparte.</p>
     <table class="fill">
       <tr><th></th><th>Servicio</th><th>Categoría</th><th>Duración</th><th>Precio</th></tr>
-      <tr><td>1</td><td></td><td></td><td></td><td></td></tr>
-      <tr><td>2</td><td></td><td></td><td></td><td></td></tr>
-      <tr><td>3</td><td></td><td></td><td></td><td></td></tr>
-      <tr><td>4</td><td></td><td></td><td></td><td></td></tr>
-      <tr><td>5</td><td></td><td></td><td></td><td></td></tr>
+      <tr><td>1</td><td><input type="text" data-f="serv1_nombre"></td><td><input type="text" data-f="serv1_cat"></td><td><input type="text" data-f="serv1_dur"></td><td><input type="text" data-f="serv1_precio"></td></tr>
+      <tr><td>2</td><td><input type="text" data-f="serv2_nombre"></td><td><input type="text" data-f="serv2_cat"></td><td><input type="text" data-f="serv2_dur"></td><td><input type="text" data-f="serv2_precio"></td></tr>
+      <tr><td>3</td><td><input type="text" data-f="serv3_nombre"></td><td><input type="text" data-f="serv3_cat"></td><td><input type="text" data-f="serv3_dur"></td><td><input type="text" data-f="serv3_precio"></td></tr>
+      <tr><td>4</td><td><input type="text" data-f="serv4_nombre"></td><td><input type="text" data-f="serv4_cat"></td><td><input type="text" data-f="serv4_dur"></td><td><input type="text" data-f="serv4_precio"></td></tr>
+      <tr><td>5</td><td><input type="text" data-f="serv5_nombre"></td><td><input type="text" data-f="serv5_cat"></td><td><input type="text" data-f="serv5_dur"></td><td><input type="text" data-f="serv5_precio"></td></tr>
     </table>
-    <p class="sec-hint">(Si son muchos, nos vale una tabla/Excel aparte con todos — esto es solo para que no se os olvide ningún dato por servicio.)</p>
 
     <h2 class="sec"><span class="num">04</span> Productos (tienda / TPV)</h2>
     <p class="sec-hint">Los productos físicos que vendéis en el centro, para tenerlos ya cargados en el TPV.</p>
     <table class="fill">
       <tr><th></th><th>Producto</th><th>Marca</th><th>Precio</th><th>Stock inicial</th></tr>
-      <tr><td>1</td><td></td><td></td><td></td><td></td></tr>
-      <tr><td>2</td><td></td><td></td><td></td><td></td></tr>
-      <tr><td>3</td><td></td><td></td><td></td><td></td></tr>
+      <tr><td>1</td><td><input type="text" data-f="prod1_nombre"></td><td><input type="text" data-f="prod1_marca"></td><td><input type="text" data-f="prod1_precio"></td><td><input type="text" data-f="prod1_stock"></td></tr>
+      <tr><td>2</td><td><input type="text" data-f="prod2_nombre"></td><td><input type="text" data-f="prod2_marca"></td><td><input type="text" data-f="prod2_precio"></td><td><input type="text" data-f="prod2_stock"></td></tr>
+      <tr><td>3</td><td><input type="text" data-f="prod3_nombre"></td><td><input type="text" data-f="prod3_marca"></td><td><input type="text" data-f="prod3_precio"></td><td><input type="text" data-f="prod3_stock"></td></tr>
     </table>
-    <p class="sec-hint">Igual que arriba — si tenéis un listado grande, nos lo mandáis aparte (Excel, foto del inventario, lo que tengáis).</p>
+    <p class="sec-hint">Si tenéis un listado grande, escribid "ver Excel/foto adjunto" y nos lo mandáis aparte.</p>
 
     <h2 class="sec"><span class="num">05</span> Salas / cabinas</h2>
     <p class="sec-hint">Para el mapa visual del CRM que muestra qué salas están ocupadas en cada momento.</p>
     <table class="fill">
       <tr><th></th><th>Nombre de la sala</th><th>Para qué tipo de servicio</th></tr>
-      <tr><td>1</td><td></td><td></td></tr>
-      <tr><td>2</td><td></td><td></td></tr>
-      <tr><td>3</td><td></td><td></td></tr>
-      <tr><td>4</td><td></td><td></td></tr>
+      <tr><td>1</td><td><input type="text" data-f="sala1_nombre"></td><td><input type="text" data-f="sala1_uso"></td></tr>
+      <tr><td>2</td><td><input type="text" data-f="sala2_nombre"></td><td><input type="text" data-f="sala2_uso"></td></tr>
+      <tr><td>3</td><td><input type="text" data-f="sala3_nombre"></td><td><input type="text" data-f="sala3_uso"></td></tr>
+      <tr><td>4</td><td><input type="text" data-f="sala4_nombre"></td><td><input type="text" data-f="sala4_uso"></td></tr>
     </table>
 
     <h2 class="sec"><span class="num">06</span> Fotos</h2>
+    <p class="sec-hint">Marcad lo que vayáis a mandar aparte por WhatsApp/email.</p>
     <ul class="checklist">
-      <li><div class="box"></div>Fotos del centro (recepción, sala de tratamientos, exterior)</li>
-      <li><div class="box"></div>Fotos de los servicios / tratamientos en acción</li>
-      <li><div class="box"></div>Fotos de los productos de tienda</li>
+      <li><label style="display:flex;gap:10px;align-items:center;width:100%"><input type="checkbox" data-f="foto_centro"> Fotos del centro (recepción, sala de tratamientos, exterior)</label></li>
+      <li><label style="display:flex;gap:10px;align-items:center;width:100%"><input type="checkbox" data-f="foto_servicios"> Fotos de los servicios / tratamientos en acción</label></li>
+      <li><label style="display:flex;gap:10px;align-items:center;width:100%"><input type="checkbox" data-f="foto_productos"> Fotos de los productos de tienda</label></li>
     </ul>
 
     <h2 class="sec"><span class="num">07</span> Pagos y facturación</h2>
     <div class="field-row">
-      <div class="field"><label>¿Tenéis ya cuenta de Stripe? <small>(si no, la creamos)</small></label><div class="line"></div></div>
-      <div class="field"><label>IGIC / IVA aplicable</label><div class="line"></div></div>
+      <div class="field"><label>¿Tenéis ya cuenta de Stripe? <small>(si no, la creamos)</small></label><input type="text" data-f="stripe"></div>
+      <div class="field"><label>IGIC / IVA aplicable</label><input type="text" data-f="iva"></div>
     </div>
     <div class="field-row">
-      <div class="field"><label>Razón social / NIF-CIF</label><div class="line"></div></div>
-      <div class="field"><label>Dirección fiscal</label><div class="line"></div></div>
+      <div class="field"><label>Razón social / NIF-CIF</label><input type="text" data-f="nif"></div>
+      <div class="field"><label>Dirección fiscal</label><input type="text" data-f="dir_fiscal"></div>
     </div>
 
     <h2 class="sec"><span class="num">08</span> Equipo — usuarios del panel</h2>
     <p class="sec-hint">Quién necesita entrar al CRM y con qué rol (por ejemplo: dueña con acceso total, recepción solo a reservas).</p>
     <table class="fill">
       <tr><th></th><th>Nombre</th><th>Rol / acceso</th><th>Email</th></tr>
-      <tr><td>1</td><td></td><td></td><td></td></tr>
-      <tr><td>2</td><td></td><td></td><td></td></tr>
-      <tr><td>3</td><td></td><td></td><td></td></tr>
+      <tr><td>1</td><td><input type="text" data-f="user1_nombre"></td><td><input type="text" data-f="user1_rol"></td><td><input type="text" data-f="user1_email"></td></tr>
+      <tr><td>2</td><td><input type="text" data-f="user2_nombre"></td><td><input type="text" data-f="user2_rol"></td><td><input type="text" data-f="user2_email"></td></tr>
+      <tr><td>3</td><td><input type="text" data-f="user3_nombre"></td><td><input type="text" data-f="user3_rol"></td><td><input type="text" data-f="user3_email"></td></tr>
     </table>
 
     <h2 class="sec"><span class="num">09</span> Objetivos</h2>
     <div class="field-row">
-      <div class="field"><label>Meta de facturación mensual</label><div class="line"></div></div>
-      <div class="field"><label>Día del mes para el briefing / informe</label><div class="line"></div></div>
+      <div class="field"><label>Meta de facturación mensual</label><input type="text" data-f="meta_facturacion"></div>
+      <div class="field"><label>Día del mes para el briefing / informe</label><input type="text" data-f="dia_informe"></div>
     </div>
-    <div class="field"><label>¿Algo específico que queráis mejorar los próximos meses? (ej. subir ticket medio, más clientas nuevas, reducir huecos vacíos)</label><div class="line"></div><div class="line" style="margin-top:8px"></div></div>
+    <div class="field"><label>¿Algo específico que queráis mejorar los próximos meses?</label><textarea data-f="objetivos_notas" rows="2"></textarea></div>
 
     <div class="quote">
       <p>Con esto ya podemos dejar la demo funcionando de verdad con vuestros datos y cerrar todo lo antes posible. Cualquier duda mientras lo rellenáis, escribidnos.</p>
@@ -168,6 +183,66 @@ table.fill tr td:first-child{color:var(--txt3);font-size:12px;width:22px;}
     <div>airmateai@gmail.com</div>
   </div>
 </div>
+
+<div class="bar">
+  <span class="status" id="status">Se guarda solo en este dispositivo mientras escribís</span>
+  <button class="ghost" id="btnCopy">Copiar respuestas</button>
+  <button class="primary" id="btnSend">Enviar a Airmate por email</button>
+</div>
+
+<script>
+const KEY='divas_briefing_v1';
+const inputs=[...document.querySelectorAll('[data-f]')];
+
+function load(){
+  let saved={};
+  try{saved=JSON.parse(localStorage.getItem(KEY)||'{}');}catch(e){}
+  inputs.forEach(el=>{
+    const v=saved[el.dataset.f];
+    if(v===undefined)return;
+    if(el.type==='checkbox')el.checked=!!v; else el.value=v;
+  });
+}
+function save(){
+  const data={};
+  inputs.forEach(el=>{data[el.dataset.f]=el.type==='checkbox'?el.checked:el.value;});
+  localStorage.setItem(KEY,JSON.stringify(data));
+  document.getElementById('status').textContent='Guardado ✓ '+new Date().toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'});
+}
+inputs.forEach(el=>el.addEventListener('input',save));
+inputs.forEach(el=>el.addEventListener('change',save));
+load();
+
+function buildText(){
+  const g=f=>document.querySelector(`[data-f="${f}"]`);
+  const val=f=>{const el=g(f);if(!el)return'';return el.type==='checkbox'?(el.checked?'Sí':'No'):(el.value||'—');};
+  let t='FORMULARIO DIVAS SKIN CARE — PUESTA EN MARCHA\n\n';
+  t+='1) MARCA\nColores: '+val('colores')+'\nTipografía: '+val('tipografia')+'\n\n';
+  t+='2) NEGOCIO\nNombre web: '+val('nombre_web')+'\nTeléfono: '+val('telefono')+'\nEmail: '+val('email')+'\nRedes: '+val('redes')+'\nDirección: '+val('direccion')+'\nDescripción: '+val('descripcion')+'\n\n';
+  t+='3) SERVICIOS\n';
+  for(let i=1;i<=5;i++){const n=val('serv'+i+'_nombre');if(n&&n!=='—')t+=`- ${n} · ${val('serv'+i+'_cat')} · ${val('serv'+i+'_dur')} · ${val('serv'+i+'_precio')}\n`;}
+  t+='\n4) PRODUCTOS\n';
+  for(let i=1;i<=3;i++){const n=val('prod'+i+'_nombre');if(n&&n!=='—')t+=`- ${n} · ${val('prod'+i+'_marca')} · ${val('prod'+i+'_precio')} · stock ${val('prod'+i+'_stock')}\n`;}
+  t+='\n5) SALAS\n';
+  for(let i=1;i<=4;i++){const n=val('sala'+i+'_nombre');if(n&&n!=='—')t+=`- ${n} · ${val('sala'+i+'_uso')}\n`;}
+  t+='\n6) FOTOS\nCentro: '+val('foto_centro')+' · Servicios: '+val('foto_servicios')+' · Productos: '+val('foto_productos')+'\n\n';
+  t+='7) PAGOS\nStripe: '+val('stripe')+'\nIVA/IGIC: '+val('iva')+'\nNIF/Razón social: '+val('nif')+'\nDirección fiscal: '+val('dir_fiscal')+'\n\n';
+  t+='8) EQUIPO\n';
+  for(let i=1;i<=3;i++){const n=val('user'+i+'_nombre');if(n&&n!=='—')t+=`- ${n} · ${val('user'+i+'_rol')} · ${val('user'+i+'_email')}\n`;}
+  t+='\n9) OBJETIVOS\nMeta facturación: '+val('meta_facturacion')+'\nDía informe: '+val('dia_informe')+'\nNotas: '+val('objetivos_notas')+'\n';
+  return t;
+}
+
+document.getElementById('btnCopy').onclick=()=>{
+  navigator.clipboard.writeText(buildText()).then(()=>{
+    document.getElementById('status').textContent='Copiado al portapapeles ✓';
+  });
+};
+document.getElementById('btnSend').onclick=()=>{
+  const body=encodeURIComponent(buildText());
+  window.location.href=`mailto:airmateai@gmail.com?subject=${encodeURIComponent('Formulario Divas Skin Care')}&body=${body}`;
+};
+</script>
 
 </body>
 </html>
