@@ -41,7 +41,7 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:22px 0
 /* HERO — full-bleed editorial, un solo foco */
 .hero{position:relative;min-height:92vh;display:flex;align-items:flex-end;overflow:hidden;background:var(--primary-dk);}
 .hero-bg{position:absolute;inset:0;}
-.hero-bg img{width:100%;height:100%;object-fit:cover;opacity:.72;}
+.hero-bg img,.hero-bg video{width:100%;height:100%;object-fit:cover;opacity:.72;}
 .hero-bg::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(27,33,24,.35) 0%,rgba(27,33,24,.15) 40%,rgba(27,33,24,.92) 100%);}
 .hero-inner{position:relative;z-index:2;width:100%;padding:0 0 76px;}
 .eyebrow{font-size:11px;letter-spacing:.32em;text-transform:uppercase;color:var(--accent-lt);font-weight:600;margin-bottom:22px;}
@@ -151,7 +151,11 @@ footer{background:var(--primary-dk);color:var(--cream);padding:0 0 34px;}
 </header>
 
 <section class="hero">
-  <div class="hero-bg"><img src="img/resultado-glass-skin.jpeg" alt="Resultado real Divas Glass Skin" style="object-position:78% 25%;"></div>
+  <div class="hero-bg">
+    <video autoplay muted loop playsinline poster="img/hero-hydrafacial-poster.jpg">
+      <source src="img/hero-hydrafacial.mp4" type="video/mp4">
+    </video>
+  </div>
   <div class="wrap hero-inner">
     <div class="eyebrow">Centro de estética · La Laguna, Tenerife</div>
     <h1>El cuidado que tu piel<br><em>ya se merecía.</em></h1>
@@ -188,7 +192,7 @@ footer{background:var(--primary-dk);color:var(--cream);padding:0 0 34px;}
     </div>
     <div class="svc-grid">
       <div class="svc-card">
-        <div class="svc-img placeholder"><span>Divas Skin Care</span></div>
+        <div class="svc-img"><img src="img/real-limpieza-peeling.jpeg" alt="Peeling químico en cabina" style="object-position:60% 40%;"></div>
         <div class="svc-body">
           <div class="svc-cat">Faciales</div>
           <h3>Limpieza profunda (peeling químico, hydrafacial y extracción / tratamiento facial)</h3>
@@ -197,7 +201,7 @@ footer{background:var(--primary-dk);color:var(--cream);padding:0 0 34px;}
         </div>
       </div>
       <div class="svc-card">
-        <div class="svc-img contain"><img src="img/maquina-kelaya.jpeg" alt="Limpieza + Radiofrecuencia"></div>
+        <div class="svc-img"><img src="img/real-extraccion.jpeg" alt="Limpieza + Extracción en cabina" style="object-position:55% 35%;"></div>
         <div class="svc-body">
           <div class="svc-cat">Faciales</div>
           <h3>Limpieza + Extracción + Radiofrecuencia</h3>
@@ -224,7 +228,7 @@ footer{background:var(--primary-dk);color:var(--cream);padding:0 0 34px;}
         </div>
       </div>
       <div class="svc-card">
-        <div class="svc-img contain"><img src="img/maquina-kelaya.jpeg" alt="Radiofrecuencia + Presoterapia"></div>
+        <div class="svc-img"><img src="img/real-radiofrecuencia.jpeg" alt="Radiofrecuencia + Presoterapia en cabina" style="object-position:60% 40%;"></div>
         <div class="svc-body">
           <div class="svc-cat">Corporales</div>
           <h3>Radiofrecuencia + Presoterapia</h3>
@@ -242,7 +246,7 @@ footer{background:var(--primary-dk);color:var(--cream);padding:0 0 34px;}
         </div>
       </div>
       <div class="svc-card">
-        <div class="svc-img contain"><img src="img/maquina-corefit.jpeg" alt="Maderoterapia"></div>
+        <div class="svc-img"><img src="img/real-maderoterapia.jpeg" alt="Maderoterapia en cabina" style="object-position:30% 40%;"></div>
         <div class="svc-body">
           <div class="svc-cat">Corporales</div>
           <h3>Maderoterapia corporal + Presoterapia</h3>
@@ -287,7 +291,7 @@ footer{background:var(--primary-dk);color:var(--cream);padding:0 0 34px;}
         </div>
       </div>
       <div class="svc-card" style="opacity:.75;">
-        <div class="svc-img placeholder"><span>Divas Skin Club</span></div>
+        <div class="svc-img"><img src="img/real-skinclub-vitaminas.jpeg" alt="Tratamiento facial en cabina Divas Skin Care"></div>
         <div class="svc-body">
           <div class="svc-cat">Skin Club</div>
           <h3>Divas Skin Club</h3>
