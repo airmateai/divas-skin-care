@@ -431,7 +431,20 @@ document.querySelectorAll('.cat-tab').forEach(tab=>{
       <div style="margin-bottom:14px;"><label style="display:block;font-size:12.5px;font-weight:600;color:#3d4a3a;margin-bottom:5px;">Nombre *</label><input required name="nombre" style="width:100%;padding:11px 14px;border:1.5px solid #dce5d1;border-radius:8px;font-size:14px;"></div>
       <div style="margin-bottom:14px;"><label style="display:block;font-size:12.5px;font-weight:600;color:#3d4a3a;margin-bottom:5px;">Teléfono *</label><input required name="telefono" type="tel" style="width:100%;padding:11px 14px;border:1.5px solid #dce5d1;border-radius:8px;font-size:14px;"></div>
       <div style="margin-bottom:14px;"><label style="display:block;font-size:12.5px;font-weight:600;color:#3d4a3a;margin-bottom:5px;">Email</label><input name="email" type="email" style="width:100%;padding:11px 14px;border:1.5px solid #dce5d1;border-radius:8px;font-size:14px;"></div>
-      <div style="margin-bottom:14px;"><label style="display:block;font-size:12.5px;font-weight:600;color:#3d4a3a;margin-bottom:5px;">Fecha y hora preferida *</label><input required name="fecha" type="datetime-local" style="width:100%;padding:11px 14px;border:1.5px solid #dce5d1;border-radius:8px;font-size:14px;"></div>
+      <div style="margin-bottom:14px;">
+        <label style="display:block;font-size:12.5px;font-weight:600;color:#3d4a3a;margin-bottom:8px;">Elige día *</label>
+        <div id="day-picker" style="display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;"></div>
+      </div>
+      <div style="margin-bottom:14px;">
+        <label style="display:block;font-size:12.5px;font-weight:600;color:#3d4a3a;margin-bottom:8px;">Elige hora *</label>
+        <div id="slot-picker" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;"></div>
+        <div id="slot-legend" style="display:flex;gap:16px;margin-top:10px;font-size:11.5px;color:#5c6358;">
+          <span><span style="display:inline-block;width:9px;height:9px;border-radius:3px;background:#fff;border:1.5px solid #dce5d1;margin-right:5px;vertical-align:middle;"></span>Libre</span>
+          <span><span style="display:inline-block;width:9px;height:9px;border-radius:3px;background:#e7e2d6;margin-right:5px;vertical-align:middle;"></span>Ocupado</span>
+          <span><span style="display:inline-block;width:9px;height:9px;border-radius:3px;background:#3d4a3a;margin-right:5px;vertical-align:middle;"></span>Elegido</span>
+        </div>
+        <input type="hidden" name="fecha" id="fecha-elegida" required>
+      </div>
       <div style="margin-bottom:18px;"><label style="display:block;font-size:12.5px;font-weight:600;color:#3d4a3a;margin-bottom:5px;">Notas</label><textarea name="notas" rows="2" style="width:100%;padding:11px 14px;border:1.5px solid #dce5d1;border-radius:8px;font-size:14px;font-family:inherit;"></textarea></div>
       <button type="submit" id="booking-submit" style="width:100%;padding:14px;border:none;border-radius:30px;background:#3d4a3a;color:#fff;font-weight:600;font-size:14px;cursor:pointer;">Enviar solicitud de reserva</button>
       <div id="booking-msg" style="margin-top:12px;font-size:13px;text-align:center;"></div>
@@ -450,16 +463,125 @@ const form = document.getElementById('booking-form');
 const msg = document.getElementById('booking-msg');
 let currentService = '';
 
+// ═══ Calendario de disponibilidad (día + hora) ═══
+const HORARIO = {
+  // 0=domingo ... 6=sábado. Cada franja en minutos desde medianoche.
+  1: [[9*60,15*60],[16*60,19*60]], // lunes
+  2: [[9*60,15*60],[16*60,19*60]],
+  3: [[9*60,15*60],[16*60,19*60]],
+  4: [[9*60,15*60],[16*60,19*60]],
+  5: [[9*60,15*60],[16*60,19*60]],
+  6: [[10*60,13*60]], // sábado
+  0: [] // domingo cerrado
+};
+const DURACION_SLOT = 30; // minutos
+let diaSeleccionado = null;
+let busySlotsCache = {}; // 'YYYY-MM-DD' -> Set de 'HH:MM' ocupados
+
+function fmtDia(d){ return d.toISOString().slice(0,10); }
+function proximosDias(n){
+  const dias = [];
+  const hoy = new Date();
+  hoy.setHours(0,0,0,0);
+  let cursor = new Date(hoy);
+  while (dias.length < n) {
+    if (HORARIO[cursor.getDay()].length) dias.push(new Date(cursor));
+    cursor.setDate(cursor.getDate()+1);
+  }
+  return dias;
+}
+
+async function cargarOcupadosRango(dias){
+  const desde = fmtDia(dias[0]);
+  const hasta = fmtDia(dias[dias.length-1]);
+  const { data, error } = await sb.rpc('get_busy_slots', { desde, hasta });
+  busySlotsCache = {};
+  if (error || !data) return;
+  data.forEach(row=>{
+    const d = new Date(row.fecha);
+    const key = fmtDia(d);
+    const hhmm = String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+    if (!busySlotsCache[key]) busySlotsCache[key] = new Set();
+    busySlotsCache[key].add(hhmm);
+  });
+}
+
+function renderDayPicker(){
+  const dias = proximosDias(14);
+  const cont = document.getElementById('day-picker');
+  cont.innerHTML = '';
+  dias.forEach((d,i)=>{
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    const nombreDia = d.toLocaleDateString('es-ES',{weekday:'short'}).replace('.','');
+    btn.innerHTML = `<div style="font-size:10px;text-transform:uppercase;opacity:.7;">${nombreDia}</div><div style="font-size:15px;font-weight:600;">${d.getDate()}</div>`;
+    btn.style.cssText = 'flex:0 0 auto;width:52px;padding:8px 4px;border-radius:10px;border:1.5px solid #dce5d1;background:#fff;color:#3d4a3a;cursor:pointer;text-align:center;';
+    btn.addEventListener('click', ()=> seleccionarDia(d, btn));
+    cont.appendChild(btn);
+    if (i===0) seleccionarDia(d, btn);
+  });
+}
+
+function seleccionarDia(d, btn){
+  diaSeleccionado = d;
+  document.querySelectorAll('#day-picker button').forEach(b=>{ b.style.background='#fff'; b.style.color='#3d4a3a'; b.style.borderColor='#dce5d1'; });
+  btn.style.background = '#3d4a3a'; btn.style.color = '#fff'; btn.style.borderColor = '#3d4a3a';
+  renderSlotPicker();
+}
+
+function renderSlotPicker(){
+  const cont = document.getElementById('slot-picker');
+  cont.innerHTML = '';
+  document.getElementById('fecha-elegida').value = '';
+  if (!diaSeleccionado) return;
+  const franjas = HORARIO[diaSeleccionado.getDay()];
+  const key = fmtDia(diaSeleccionado);
+  const ocupados = busySlotsCache[key] || new Set();
+  const esHoy = fmtDia(new Date()) === key;
+  const ahoraMin = new Date().getHours()*60 + new Date().getMinutes();
+
+  franjas.forEach(([ini,fin])=>{
+    for (let m = ini; m < fin; m += DURACION_SLOT) {
+      const hh = String(Math.floor(m/60)).padStart(2,'0');
+      const mm = String(m%60).padStart(2,'0');
+      const hhmm = `${hh}:${mm}`;
+      const pasado = esHoy && m <= ahoraMin;
+      const ocupado = ocupados.has(hhmm);
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.textContent = hhmm;
+      const disabled = ocupado || pasado;
+      btn.disabled = disabled;
+      btn.style.cssText = `padding:9px 4px;border-radius:8px;border:1.5px solid ${disabled ? 'transparent' : '#dce5d1'};background:${disabled ? '#e7e2d6' : '#fff'};color:${disabled ? '#a7a89a' : '#3d4a3a'};font-size:12.5px;cursor:${disabled ? 'not-allowed' : 'pointer'};`;
+      if (!disabled) {
+        btn.addEventListener('click', ()=>{
+          document.querySelectorAll('#slot-picker button').forEach(b=>{ if(!b.disabled){ b.style.background='#fff'; b.style.color='#3d4a3a'; } });
+          btn.style.background = '#3d4a3a'; btn.style.color = '#fff';
+          const [y,mo,da] = key.split('-');
+          document.getElementById('fecha-elegida').value = `${y}-${mo}-${da}T${hhmm}`;
+        });
+      }
+      cont.appendChild(btn);
+    }
+  });
+  if (!cont.children.length) {
+    cont.innerHTML = '<div style="grid-column:1/-1;font-size:13px;color:#5c6358;">Sin horario disponible este día.</div>';
+  }
+}
+
 document.querySelectorAll('.svc-card').forEach(card=>{
   const bookBtn = card.querySelector('.svc-book');
   if(!bookBtn) return; // servicios no reservables no tienen este botón
   bookBtn.style.cursor = 'pointer';
-  bookBtn.addEventListener('click', ()=>{
+  bookBtn.addEventListener('click', async ()=>{
     currentService = card.querySelector('h3').textContent.trim();
     document.getElementById('booking-service-name').textContent = currentService;
     msg.textContent = '';
     form.reset();
     modal.style.display = 'flex';
+    const dias = proximosDias(14);
+    await cargarOcupadosRango(dias);
+    renderDayPicker();
   });
 });
 
@@ -468,6 +590,11 @@ modal.addEventListener('click', e=>{ if(e.target===modal) modal.style.display='n
 
 form.addEventListener('submit', async (e)=>{
   e.preventDefault();
+  if (!document.getElementById('fecha-elegida').value) {
+    msg.style.color = '#b3441e';
+    msg.textContent = 'Elige un día y una hora antes de enviar la solicitud.';
+    return;
+  }
   const fd = new FormData(form);
   const submitBtn = document.getElementById('booking-submit');
   submitBtn.disabled = true;
