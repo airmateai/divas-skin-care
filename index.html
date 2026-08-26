@@ -422,32 +422,32 @@ document.querySelectorAll('.cat-tab').forEach(tab=>{
 </script>
 
 <!-- Modal de reserva -->
-<div id="booking-modal" style="display:none;position:fixed;inset:0;background:rgba(20,24,19,.55);z-index:100;align-items:center;justify-content:center;padding:20px;">
-  <div style="background:#fff;border-radius:18px;max-width:440px;width:100%;padding:32px;position:relative;">
-    <button id="booking-close" style="position:absolute;top:16px;right:16px;background:none;border:none;font-size:20px;cursor:pointer;color:#5c6358;">✕</button>
-    <div style="font-family:'Cormorant Garamond',serif;font-size:24px;font-weight:600;color:#3d4a3a;margin-bottom:4px;">Reservar cita</div>
-    <div id="booking-service-name" style="font-size:13.5px;color:#5c6358;margin-bottom:20px;"></div>
+<div id="booking-modal" style="display:none;position:fixed;inset:0;background:rgba(20,24,19,.55);z-index:100;align-items:center;justify-content:center;padding:16px;">
+  <div style="background:#fff;border-radius:16px;max-width:400px;width:100%;max-height:88vh;overflow-y:auto;padding:22px 24px;position:relative;">
+    <button id="booking-close" style="position:absolute;top:12px;right:12px;background:none;border:none;font-size:18px;cursor:pointer;color:#5c6358;">✕</button>
+    <div style="font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:600;color:#3d4a3a;margin-bottom:2px;">Reservar cita</div>
+    <div id="booking-service-name" style="font-size:12.5px;color:#5c6358;margin-bottom:14px;"></div>
     <form id="booking-form">
-      <div style="margin-bottom:14px;"><label style="display:block;font-size:12.5px;font-weight:600;color:#3d4a3a;margin-bottom:5px;">Nombre *</label><input required name="nombre" style="width:100%;padding:11px 14px;border:1.5px solid #dce5d1;border-radius:8px;font-size:14px;"></div>
-      <div style="margin-bottom:14px;"><label style="display:block;font-size:12.5px;font-weight:600;color:#3d4a3a;margin-bottom:5px;">Teléfono *</label><input required name="telefono" type="tel" style="width:100%;padding:11px 14px;border:1.5px solid #dce5d1;border-radius:8px;font-size:14px;"></div>
-      <div style="margin-bottom:14px;"><label style="display:block;font-size:12.5px;font-weight:600;color:#3d4a3a;margin-bottom:5px;">Email</label><input name="email" type="email" style="width:100%;padding:11px 14px;border:1.5px solid #dce5d1;border-radius:8px;font-size:14px;"></div>
-      <div style="margin-bottom:14px;">
-        <label style="display:block;font-size:12.5px;font-weight:600;color:#3d4a3a;margin-bottom:8px;">Elige día *</label>
-        <div id="day-picker" style="display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;"></div>
+      <div style="margin-bottom:10px;"><label style="display:block;font-size:11.5px;font-weight:600;color:#3d4a3a;margin-bottom:4px;">Nombre *</label><input required name="nombre" style="width:100%;padding:8px 12px;border:1.5px solid #dce5d1;border-radius:7px;font-size:13.5px;"></div>
+      <div style="margin-bottom:10px;"><label style="display:block;font-size:11.5px;font-weight:600;color:#3d4a3a;margin-bottom:4px;">Teléfono *</label><input required name="telefono" type="tel" style="width:100%;padding:8px 12px;border:1.5px solid #dce5d1;border-radius:7px;font-size:13.5px;"></div>
+      <div style="margin-bottom:10px;"><label style="display:block;font-size:11.5px;font-weight:600;color:#3d4a3a;margin-bottom:4px;">Email</label><input name="email" type="email" style="width:100%;padding:8px 12px;border:1.5px solid #dce5d1;border-radius:7px;font-size:13.5px;"></div>
+      <div style="margin-bottom:10px;">
+        <label style="display:block;font-size:11.5px;font-weight:600;color:#3d4a3a;margin-bottom:6px;">Elige día *</label>
+        <div id="day-picker" style="display:flex;gap:6px;overflow-x:auto;padding-bottom:6px;"></div>
       </div>
-      <div style="margin-bottom:14px;">
-        <label style="display:block;font-size:12.5px;font-weight:600;color:#3d4a3a;margin-bottom:8px;">Elige hora *</label>
-        <div id="slot-picker" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;"></div>
-        <div id="slot-legend" style="display:flex;gap:16px;margin-top:10px;font-size:11.5px;color:#5c6358;">
-          <span><span style="display:inline-block;width:9px;height:9px;border-radius:3px;background:#fff;border:1.5px solid #dce5d1;margin-right:5px;vertical-align:middle;"></span>Libre</span>
-          <span><span style="display:inline-block;width:9px;height:9px;border-radius:3px;background:#e7e2d6;margin-right:5px;vertical-align:middle;"></span>Ocupado</span>
-          <span><span style="display:inline-block;width:9px;height:9px;border-radius:3px;background:#3d4a3a;margin-right:5px;vertical-align:middle;"></span>Elegido</span>
+      <div style="margin-bottom:10px;">
+        <label style="display:block;font-size:11.5px;font-weight:600;color:#3d4a3a;margin-bottom:6px;">Elige hora *</label>
+        <div id="slot-picker" style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;"></div>
+        <div id="slot-legend" style="display:flex;gap:12px;margin-top:8px;font-size:10.5px;color:#5c6358;">
+          <span><span style="display:inline-block;width:8px;height:8px;border-radius:3px;background:#fff;border:1.5px solid #dce5d1;margin-right:4px;vertical-align:middle;"></span>Libre</span>
+          <span><span style="display:inline-block;width:8px;height:8px;border-radius:3px;background:#e7e2d6;margin-right:4px;vertical-align:middle;"></span>Ocupado</span>
+          <span><span style="display:inline-block;width:8px;height:8px;border-radius:3px;background:#3d4a3a;margin-right:4px;vertical-align:middle;"></span>Elegido</span>
         </div>
         <input type="hidden" name="fecha" id="fecha-elegida" required>
       </div>
-      <div style="margin-bottom:18px;"><label style="display:block;font-size:12.5px;font-weight:600;color:#3d4a3a;margin-bottom:5px;">Notas</label><textarea name="notas" rows="2" style="width:100%;padding:11px 14px;border:1.5px solid #dce5d1;border-radius:8px;font-size:14px;font-family:inherit;"></textarea></div>
-      <button type="submit" id="booking-submit" style="width:100%;padding:14px;border:none;border-radius:30px;background:#3d4a3a;color:#fff;font-weight:600;font-size:14px;cursor:pointer;">Enviar solicitud de reserva</button>
-      <div id="booking-msg" style="margin-top:12px;font-size:13px;text-align:center;"></div>
+      <div style="margin-bottom:14px;"><label style="display:block;font-size:11.5px;font-weight:600;color:#3d4a3a;margin-bottom:4px;">Notas</label><textarea name="notas" rows="2" style="width:100%;padding:8px 12px;border:1.5px solid #dce5d1;border-radius:7px;font-size:13.5px;font-family:inherit;"></textarea></div>
+      <button type="submit" id="booking-submit" style="width:100%;padding:12px;border:none;border-radius:30px;background:#3d4a3a;color:#fff;font-weight:600;font-size:13.5px;cursor:pointer;">Enviar solicitud de reserva</button>
+      <div id="booking-msg" style="margin-top:10px;font-size:12.5px;text-align:center;"></div>
     </form>
   </div>
 </div>
@@ -520,8 +520,8 @@ function renderDayPicker(){
     const btn = document.createElement('button');
     btn.type = 'button';
     const nombreDia = d.toLocaleDateString('es-ES',{weekday:'short'}).replace('.','');
-    btn.innerHTML = `<div style="font-size:10px;text-transform:uppercase;opacity:.7;">${nombreDia}</div><div style="font-size:15px;font-weight:600;">${d.getDate()}</div>`;
-    btn.style.cssText = 'flex:0 0 auto;width:52px;padding:8px 4px;border-radius:10px;border:1.5px solid #dce5d1;background:#fff;color:#3d4a3a;cursor:pointer;text-align:center;';
+    btn.innerHTML = `<div style="font-size:9px;text-transform:uppercase;opacity:.7;">${nombreDia}</div><div style="font-size:13px;font-weight:600;">${d.getDate()}</div>`;
+    btn.style.cssText = 'flex:0 0 auto;width:44px;padding:6px 4px;border-radius:9px;border:1.5px solid #dce5d1;background:#fff;color:#3d4a3a;cursor:pointer;text-align:center;';
     btn.addEventListener('click', ()=> seleccionarDia(d, btn));
     cont.appendChild(btn);
     if (i===0) seleccionarDia(d, btn);
@@ -558,7 +558,7 @@ function renderSlotPicker(){
       btn.textContent = hhmm;
       const disabled = ocupado || pasado;
       btn.disabled = disabled;
-      btn.style.cssText = `padding:9px 4px;border-radius:8px;border:1.5px solid ${disabled ? 'transparent' : '#dce5d1'};background:${disabled ? '#e7e2d6' : '#fff'};color:${disabled ? '#a7a89a' : '#3d4a3a'};font-size:12.5px;cursor:${disabled ? 'not-allowed' : 'pointer'};`;
+      btn.style.cssText = `padding:6px 4px;border-radius:7px;border:1.5px solid ${disabled ? 'transparent' : '#dce5d1'};background:${disabled ? '#e7e2d6' : '#fff'};color:${disabled ? '#a7a89a' : '#3d4a3a'};font-size:11.5px;cursor:${disabled ? 'not-allowed' : 'pointer'};`;
       if (!disabled) {
         btn.addEventListener('click', ()=>{
           document.querySelectorAll('#slot-picker button').forEach(b=>{ if(!b.disabled){ b.style.background='#fff'; b.style.color='#3d4a3a'; } });
