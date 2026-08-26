@@ -76,8 +76,8 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:22px 0
 @media(max-width:620px){.svc-grid{grid-template-columns:1fr;}}
 .svc-card{background:var(--bg);overflow:hidden;}
 .svc-img{aspect-ratio:4/3;overflow:hidden;background:#eef1e6;}
-.svc-img img{width:100%;height:100%;object-fit:cover;transition:transform .5s ease;}
-.svc-card:hover .svc-img img{transform:scale(1.035);}
+.svc-img img,.svc-img video{width:100%;height:100%;object-fit:cover;transition:transform .5s ease;}
+.svc-card:hover .svc-img img,.svc-card:hover .svc-img video{transform:scale(1.035);}
 .svc-img.contain img{object-fit:contain;padding:18px;box-sizing:border-box;}
 .svc-img.placeholder,.shop-img.placeholder{display:flex;align-items:center;justify-content:center;background:var(--cream);}
 .svc-img.placeholder span,.shop-img.placeholder span{font-family:var(--font-serif);font-style:italic;font-size:15px;color:var(--accent);letter-spacing:.04em;text-align:center;padding:0 20px;}
@@ -192,7 +192,7 @@ footer{background:var(--primary-dk);color:var(--cream);padding:0 0 34px;}
     </div>
     <div class="svc-grid">
       <div class="svc-card">
-        <div class="svc-img"><img src="img/real-limpieza-peeling.jpeg" alt="Peeling químico en cabina" style="object-position:60% 40%;"></div>
+        <div class="svc-img"><video autoplay muted loop playsinline poster="img/svc-peeling-poster.jpg"><source src="img/svc-peeling.mp4" type="video/mp4"></video></div>
         <div class="svc-body">
           <div class="svc-cat">Faciales</div>
           <h3>Limpieza profunda (peeling químico, hydrafacial y extracción / tratamiento facial)</h3>
@@ -201,7 +201,7 @@ footer{background:var(--primary-dk);color:var(--cream);padding:0 0 34px;}
         </div>
       </div>
       <div class="svc-card">
-        <div class="svc-img"><img src="img/real-extraccion.jpeg" alt="Limpieza + Extracción en cabina" style="object-position:55% 35%;"></div>
+        <div class="svc-img"><video autoplay muted loop playsinline poster="img/svc-extraccion-poster.jpg"><source src="img/svc-extraccion.mp4" type="video/mp4"></video></div>
         <div class="svc-body">
           <div class="svc-cat">Faciales</div>
           <h3>Limpieza + Extracción + Radiofrecuencia</h3>
@@ -210,7 +210,7 @@ footer{background:var(--primary-dk);color:var(--cream);padding:0 0 34px;}
         </div>
       </div>
       <div class="svc-card">
-        <div class="svc-img"><img src="img/resultado-glass-skin.jpeg" alt="Divas Glass Skin - resultado real" style="object-position:78% 25%;"></div>
+        <div class="svc-img"><video autoplay muted loop playsinline poster="img/svc-glassskin-poster.jpg"><source src="img/svc-glassskin.mp4" type="video/mp4"></video></div>
         <div class="svc-body">
           <div class="svc-cat">Faciales</div>
           <h3>Divas Glass Skin ★ (técnica coreana)</h3>
@@ -228,7 +228,7 @@ footer{background:var(--primary-dk);color:var(--cream);padding:0 0 34px;}
         </div>
       </div>
       <div class="svc-card">
-        <div class="svc-img"><img src="img/real-radiofrecuencia.jpeg" alt="Radiofrecuencia + Presoterapia en cabina" style="object-position:60% 40%;"></div>
+        <div class="svc-img"><video autoplay muted loop playsinline poster="img/svc-radiofrecuencia-poster.jpg"><source src="img/svc-radiofrecuencia.mp4" type="video/mp4"></video></div>
         <div class="svc-body">
           <div class="svc-cat">Corporales</div>
           <h3>Radiofrecuencia + Presoterapia</h3>
@@ -246,7 +246,7 @@ footer{background:var(--primary-dk);color:var(--cream);padding:0 0 34px;}
         </div>
       </div>
       <div class="svc-card">
-        <div class="svc-img"><img src="img/real-maderoterapia.jpeg" alt="Maderoterapia en cabina" style="object-position:30% 40%;"></div>
+        <div class="svc-img"><video autoplay muted loop playsinline poster="img/svc-maderoterapia-poster.jpg"><source src="img/svc-maderoterapia.mp4" type="video/mp4"></video></div>
         <div class="svc-body">
           <div class="svc-cat">Corporales</div>
           <h3>Maderoterapia corporal + Presoterapia</h3>
@@ -273,7 +273,7 @@ footer{background:var(--primary-dk);color:var(--cream);padding:0 0 34px;}
         </div>
       </div>
       <div class="svc-card">
-        <div class="svc-img contain"><img src="img/maquina-laser-ipl.jpeg" alt="Láser IPL piernas, axilas, ingles"></div>
+        <div class="svc-img placeholder"><span>Láser IPL</span></div>
         <div class="svc-body">
           <div class="svc-cat">Láser IPL</div>
           <h3>IPL Piernas, axilas, inglés, pubis y perianal</h3>
@@ -282,7 +282,7 @@ footer{background:var(--primary-dk);color:var(--cream);padding:0 0 34px;}
         </div>
       </div>
       <div class="svc-card" style="opacity:.75;">
-        <div class="svc-img contain"><img src="img/maquina-laser-ipl.jpeg" alt="Láser Antiacné / Antimanchas"></div>
+        <div class="svc-img placeholder"><span>Consultar en cabina</span></div>
         <div class="svc-body">
           <div class="svc-cat">Faciales</div>
           <h3>Láser Antiacné / Antimanchas / Rejuvenecimiento</h3>
@@ -291,7 +291,7 @@ footer{background:var(--primary-dk);color:var(--cream);padding:0 0 34px;}
         </div>
       </div>
       <div class="svc-card" style="opacity:.75;">
-        <div class="svc-img"><img src="img/real-skinclub-vitaminas.jpeg" alt="Tratamiento facial en cabina Divas Skin Care"></div>
+        <div class="svc-img"><video autoplay muted loop playsinline poster="img/svc-vitaminas-poster.jpg"><source src="img/svc-vitaminas.mp4" type="video/mp4"></video></div>
         <div class="svc-body">
           <div class="svc-cat">Skin Club</div>
           <h3>Divas Skin Club</h3>
@@ -313,19 +313,19 @@ footer{background:var(--primary-dk);color:var(--cream);padding:0 0 34px;}
     <div class="section-head center" style="margin-bottom:22px;"><p style="color:var(--cream);opacity:.8;">Marcas Utsukusy, Kelaya y Herbalife — catálogo completo en cabina.</p></div>
     <div class="shop-grid">
       <div class="shop-card">
-        <div class="shop-img placeholder"><span>Utsukusy</span></div>
+        <div class="shop-img"><img src="https://images.unsplash.com/photo-1556228720-195a672e8a03?w=500&q=80" alt="Utsukusy Reset Skin CICA PDRN Serum (foto genérica)"></div>
         <div class="shop-body"><h4>Utsukusy Reset Skin CICA PDRN Serum 30ml</h4><div class="price">52€</div></div>
       </div>
       <div class="shop-card">
-        <div class="shop-img placeholder"><span>Utsukusy</span></div>
+        <div class="shop-img"><img src="https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=500&q=80" alt="Utsukusy Diamond Lift Pro Serum (foto genérica)"></div>
         <div class="shop-body"><h4>Utsukusy Diamond Lift Pro Serum 50ml</h4><div class="price">59,50€</div></div>
       </div>
       <div class="shop-card">
-        <div class="shop-img placeholder"><span>Kelaya</span></div>
+        <div class="shop-img"><img src="https://images.unsplash.com/photo-1570194065650-d99fb4bedf0a?w=500&q=80" alt="Kelaya Perpetual K Crema Facial (foto genérica)"></div>
         <div class="shop-body"><h4>Kelaya Perpetual K Crema Facial Hidronutri 50ml</h4><div class="price">90€</div></div>
       </div>
       <div class="shop-card">
-        <div class="shop-img placeholder"><span>Herbalife</span></div>
+        <div class="shop-img"><img src="https://images.unsplash.com/photo-1622483767028-3f66f32aef97?w=500&q=80" alt="Herbalife F1 (foto genérica)"></div>
         <div class="shop-body"><h4>Herbalife F1 (Vainilla / Chocolate / Plátano / Galleta / Café)</h4><div class="price">56,75€</div></div>
       </div>
     </div>
