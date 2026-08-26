@@ -403,6 +403,7 @@ tbody tr:hover{background:rgba(0,0,0,.02);}
 </style>
 <style></style>
 </head>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <body>
 
 <!-- LANG SWITCHER -->
@@ -427,14 +428,14 @@ tbody tr:hover{background:rgba(0,0,0,.02);}
       <p>Inicia sesión para seguir gestionando tu centro.</p>
       <div class="field-group">
         <label class="field-label">Email</label>
-        <input type="email" class="field-input" id="li-email" value="demo@divasskincare.es">
+        <input type="email" class="field-input" id="li-email" placeholder="tu@email.com">
       </div>
       <div class="field-group">
         <label class="field-label">Contraseña</label>
-        <input type="password" class="field-input" id="li-pass" value="demo2026">
+        <input type="password" class="field-input" id="li-pass" placeholder="Contraseña">
       </div>
       <button class="btn-login" onclick="login()">Entrar al panel</button>
-      <div class="login-hint">Demo · email y contraseña ya rellenados</div>
+      <div class="login-hint" id="login-hint">Acceso solo para el equipo de Divas Skin Care</div>
     </div>
   </div>
 </div>
@@ -1027,15 +1028,89 @@ CONFIG.salas=[
 let CURRENT_PAGE='dashboard';
 let LANG='en';
 
+// ═══════════════ SUPABASE ═══════════════
+const SUPABASE_URL = 'https://tmbnufvchgwfnwmpbamq.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRtYm51ZnZjaGd3Zm53bXBiYW1xIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc3NDEwMzAsImV4cCI6MjEwMzMxNzAzMH0.lYEIDtBEonDCcyWi3eluP5e6m7lgefxFstheWpA7KHg';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
 // ═══════════════ AUTH ═══════════════
-function login(){
+async function login(){
+  const email = document.getElementById('li-email').value.trim();
+  const pass = document.getElementById('li-pass').value;
+  const hint = document.getElementById('login-hint');
+  hint.textContent = 'Comprobando...';
+  hint.style.color = '';
+  const { data, error } = await sb.auth.signInWithPassword({ email, password: pass });
+  if (error) {
+    hint.textContent = 'Email o contraseña incorrectos.';
+    hint.style.color = '#b3441e';
+    return;
+  }
+  hint.textContent = 'Acceso solo para el equipo de Divas Skin Care';
   document.getElementById('login').classList.add('hidden');
   document.getElementById('app').classList.add('visible');
+  await loadRealData();
   initApp();
 }
-function logout(){
+async function logout(){
+  await sb.auth.signOut();
   document.getElementById('app').classList.remove('visible');
   document.getElementById('login').classList.remove('hidden');
+}
+
+// Reemplaza el catálogo/stock/citas demo por los datos reales de Supabase.
+// Los datos de clientas/facturación/citas ficticias que quedan sin tocar son
+// solo demo visual del panel, no vienen de Supabase.
+async function loadRealData(){
+  const [{ data: servicios }, { data: stock }, { data: citas }] = await Promise.all([
+    sb.from('servicios').select('*').order('orden', { ascending: true }),
+    sb.from('stock').select('*').order('nombre', { ascending: true }),
+    sb.from('citas').select('*').order('creado_en', { ascending: false }).limit(50)
+  ]);
+
+  if (servicios && servicios.length) {
+    CONFIG.catalog = servicios.map(s => ({
+      name: s.nombre,
+      cat: `${s.categoria || ''} · ${s.duracion || ''}`,
+      price: s.precio,
+      label: s.categoria || 'Servicio',
+      bookable: s.reservable
+    }));
+  }
+
+  if (stock && stock.length) {
+    CONFIG.stock = stock.map(p => ({
+      name: p.nombre,
+      sku: p.sku,
+      image: null,
+      qty: p.cantidad,
+      min: p.minimo,
+      cost: p.coste,
+      price: p.precio
+    }));
+  }
+
+  if (citas) {
+    CONFIG.citasWeb = citas.map(c => ({
+      cliente: c.cliente_nombre,
+      telefono: c.cliente_telefono,
+      email: c.cliente_email,
+      fecha: c.fecha,
+      estado: c.estado,
+      origen: c.origen,
+      notas: c.notas
+    }));
+    // Antepone las citas reales de la web a la agenda demo para que se vean en "Citas".
+    CONFIG.schedule = CONFIG.citasWeb.map(c => ({
+      time: c.fecha ? new Date(c.fecha).toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'}) : '-',
+      client: c.cliente,
+      service: (c.notas||'').replace('Servicio solicitado: ','').split(' · ')[0] || 'Sin especificar',
+      duration: '-',
+      status: c.estado === 'pendiente' ? 'Pendiente' : c.estado,
+      statusClass: c.estado === 'pendiente' ? 'pending' : 'info',
+      value: 0
+    })).concat(CONFIG.schedule);
+  }
 }
 
 // ═══════════════ NAV ═══════════════

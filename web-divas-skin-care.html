@@ -421,5 +421,78 @@ document.querySelectorAll('.cat-tab').forEach(tab=>{
 });
 </script>
 
+<!-- Modal de reserva -->
+<div id="booking-modal" style="display:none;position:fixed;inset:0;background:rgba(20,24,19,.55);z-index:100;align-items:center;justify-content:center;padding:20px;">
+  <div style="background:#fff;border-radius:18px;max-width:440px;width:100%;padding:32px;position:relative;">
+    <button id="booking-close" style="position:absolute;top:16px;right:16px;background:none;border:none;font-size:20px;cursor:pointer;color:#5c6358;">✕</button>
+    <div style="font-family:'Cormorant Garamond',serif;font-size:24px;font-weight:600;color:#3d4a3a;margin-bottom:4px;">Reservar cita</div>
+    <div id="booking-service-name" style="font-size:13.5px;color:#5c6358;margin-bottom:20px;"></div>
+    <form id="booking-form">
+      <div style="margin-bottom:14px;"><label style="display:block;font-size:12.5px;font-weight:600;color:#3d4a3a;margin-bottom:5px;">Nombre *</label><input required name="nombre" style="width:100%;padding:11px 14px;border:1.5px solid #dce5d1;border-radius:8px;font-size:14px;"></div>
+      <div style="margin-bottom:14px;"><label style="display:block;font-size:12.5px;font-weight:600;color:#3d4a3a;margin-bottom:5px;">Teléfono *</label><input required name="telefono" type="tel" style="width:100%;padding:11px 14px;border:1.5px solid #dce5d1;border-radius:8px;font-size:14px;"></div>
+      <div style="margin-bottom:14px;"><label style="display:block;font-size:12.5px;font-weight:600;color:#3d4a3a;margin-bottom:5px;">Email</label><input name="email" type="email" style="width:100%;padding:11px 14px;border:1.5px solid #dce5d1;border-radius:8px;font-size:14px;"></div>
+      <div style="margin-bottom:14px;"><label style="display:block;font-size:12.5px;font-weight:600;color:#3d4a3a;margin-bottom:5px;">Fecha y hora preferida *</label><input required name="fecha" type="datetime-local" style="width:100%;padding:11px 14px;border:1.5px solid #dce5d1;border-radius:8px;font-size:14px;"></div>
+      <div style="margin-bottom:18px;"><label style="display:block;font-size:12.5px;font-weight:600;color:#3d4a3a;margin-bottom:5px;">Notas</label><textarea name="notas" rows="2" style="width:100%;padding:11px 14px;border:1.5px solid #dce5d1;border-radius:8px;font-size:14px;font-family:inherit;"></textarea></div>
+      <button type="submit" id="booking-submit" style="width:100%;padding:14px;border:none;border-radius:30px;background:#3d4a3a;color:#fff;font-weight:600;font-size:14px;cursor:pointer;">Enviar solicitud de reserva</button>
+      <div id="booking-msg" style="margin-top:12px;font-size:13px;text-align:center;"></div>
+    </form>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SUPABASE_URL = 'https://tmbnufvchgwfnwmpbamq.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRtYm51ZnZjaGd3Zm53bXBiYW1xIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc3NDEwMzAsImV4cCI6MjEwMzMxNzAzMH0.lYEIDtBEonDCcyWi3eluP5e6m7lgefxFstheWpA7KHg';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+const modal = document.getElementById('booking-modal');
+const form = document.getElementById('booking-form');
+const msg = document.getElementById('booking-msg');
+let currentService = '';
+
+document.querySelectorAll('.svc-card').forEach(card=>{
+  const bookBtn = card.querySelector('.svc-book');
+  if(!bookBtn) return; // servicios no reservables no tienen este botón
+  bookBtn.style.cursor = 'pointer';
+  bookBtn.addEventListener('click', ()=>{
+    currentService = card.querySelector('h3').textContent.trim();
+    document.getElementById('booking-service-name').textContent = currentService;
+    msg.textContent = '';
+    form.reset();
+    modal.style.display = 'flex';
+  });
+});
+
+document.getElementById('booking-close').addEventListener('click', ()=> modal.style.display='none');
+modal.addEventListener('click', e=>{ if(e.target===modal) modal.style.display='none'; });
+
+form.addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  const fd = new FormData(form);
+  const submitBtn = document.getElementById('booking-submit');
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Enviando...';
+  const { error } = await sb.from('citas').insert({
+    cliente_nombre: fd.get('nombre'),
+    cliente_telefono: fd.get('telefono'),
+    cliente_email: fd.get('email') || null,
+    fecha: fd.get('fecha'),
+    notas: `Servicio solicitado: ${currentService}${fd.get('notas') ? ' · ' + fd.get('notas') : ''}`,
+    origen: 'web'
+  });
+  submitBtn.disabled = false;
+  submitBtn.textContent = 'Enviar solicitud de reserva';
+  if (error) {
+    msg.style.color = '#b3441e';
+    msg.textContent = 'No se pudo enviar la solicitud. Inténtalo de nuevo o escríbenos por WhatsApp.';
+  } else {
+    msg.style.color = '#3d4a3a';
+    msg.textContent = '¡Solicitud enviada! Te confirmaremos por teléfono o email.';
+    form.reset();
+    setTimeout(()=>{ modal.style.display='none'; }, 2500);
+  }
+});
+</script>
+
 </body>
 </html>
