@@ -79,6 +79,8 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:22px 0
 .svc-img img{width:100%;height:100%;object-fit:cover;transition:transform .5s ease;}
 .svc-card:hover .svc-img img{transform:scale(1.035);}
 .svc-img.contain img{object-fit:contain;padding:18px;box-sizing:border-box;}
+.svc-img.placeholder,.shop-img.placeholder{display:flex;align-items:center;justify-content:center;background:var(--cream);}
+.svc-img.placeholder span,.shop-img.placeholder span{font-family:var(--font-serif);font-style:italic;font-size:15px;color:var(--accent);letter-spacing:.04em;text-align:center;padding:0 20px;}
 .svc-body{padding:26px 26px 28px;}
 .svc-cat{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);font-weight:700;margin-bottom:10px;}
 .svc-body h3{font-family:var(--font-serif);font-size:19.5px;font-weight:500;color:var(--primary-dk);margin-bottom:8px;line-height:1.3;}
@@ -149,7 +151,7 @@ footer{background:var(--primary-dk);color:var(--cream);padding:0 0 34px;}
 </header>
 
 <section class="hero">
-  <div class="hero-bg"><img src="https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?w=1800&q=85" alt="Tratamiento facial en Divas Skin Care"></div>
+  <div class="hero-bg"><img src="img/resultado-glass-skin.jpeg" alt="Resultado real Divas Glass Skin" style="object-position:78% 25%;"></div>
   <div class="wrap hero-inner">
     <div class="eyebrow">Centro de estética · La Laguna, Tenerife</div>
     <h1>El cuidado que tu piel<br><em>ya se merecía.</em></h1>
@@ -186,7 +188,7 @@ footer{background:var(--primary-dk);color:var(--cream);padding:0 0 34px;}
     </div>
     <div class="svc-grid">
       <div class="svc-card">
-        <div class="svc-img"><img src="https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?w=500&q=80" alt="Limpieza profunda"></div>
+        <div class="svc-img placeholder"><span>Divas Skin Care</span></div>
         <div class="svc-body">
           <div class="svc-cat">Faciales</div>
           <h3>Limpieza profunda (peeling químico, hydrafacial y extracción / tratamiento facial)</h3>
@@ -204,7 +206,7 @@ footer{background:var(--primary-dk);color:var(--cream);padding:0 0 34px;}
         </div>
       </div>
       <div class="svc-card">
-        <div class="svc-img"><img src="https://images.unsplash.com/photo-1512290923902-8a9f81dc236c?w=500&q=80" alt="Divas Glass Skin"></div>
+        <div class="svc-img"><img src="img/resultado-glass-skin.jpeg" alt="Divas Glass Skin - resultado real" style="object-position:78% 25%;"></div>
         <div class="svc-body">
           <div class="svc-cat">Faciales</div>
           <h3>Divas Glass Skin ★ (técnica coreana)</h3>
@@ -276,7 +278,7 @@ footer{background:var(--primary-dk);color:var(--cream);padding:0 0 34px;}
         </div>
       </div>
       <div class="svc-card" style="opacity:.75;">
-        <div class="svc-img"><img src="https://images.unsplash.com/photo-1596178065887-1198b6148b2b?w=500&q=80" alt="Láser Antiacné / Antimanchas"></div>
+        <div class="svc-img contain"><img src="img/maquina-laser-ipl.jpeg" alt="Láser Antiacné / Antimanchas"></div>
         <div class="svc-body">
           <div class="svc-cat">Faciales</div>
           <h3>Láser Antiacné / Antimanchas / Rejuvenecimiento</h3>
@@ -285,7 +287,7 @@ footer{background:var(--primary-dk);color:var(--cream);padding:0 0 34px;}
         </div>
       </div>
       <div class="svc-card" style="opacity:.75;">
-        <div class="svc-img"><img src="https://images.unsplash.com/photo-1512290923902-8a9f81dc236c?w=500&q=80" alt="Divas Skin Club"></div>
+        <div class="svc-img placeholder"><span>Divas Skin Club</span></div>
         <div class="svc-body">
           <div class="svc-cat">Skin Club</div>
           <h3>Divas Skin Club</h3>
@@ -307,19 +309,19 @@ footer{background:var(--primary-dk);color:var(--cream);padding:0 0 34px;}
     <div class="section-head center" style="margin-bottom:22px;"><p style="color:var(--cream);opacity:.8;">Marcas Utsukusy, Kelaya y Herbalife — catálogo completo en cabina.</p></div>
     <div class="shop-grid">
       <div class="shop-card">
-        <div class="shop-img"><img src="https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?w=400&q=80" alt="Utsukusy Reset Skin CICA PDRN Serum"></div>
+        <div class="shop-img placeholder"><span>Utsukusy</span></div>
         <div class="shop-body"><h4>Utsukusy Reset Skin CICA PDRN Serum 30ml</h4><div class="price">52€</div></div>
       </div>
       <div class="shop-card">
-        <div class="shop-img"><img src="https://images.unsplash.com/photo-1512290923902-8a9f81dc236c?w=400&q=80" alt="Utsukusy Diamond Lift Pro Serum"></div>
+        <div class="shop-img placeholder"><span>Utsukusy</span></div>
         <div class="shop-body"><h4>Utsukusy Diamond Lift Pro Serum 50ml</h4><div class="price">59,50€</div></div>
       </div>
       <div class="shop-card">
-        <div class="shop-img"><img src="https://images.unsplash.com/photo-1552693673-1bf958298935?w=400&q=80" alt="Kelaya Perpetual K Crema Facial"></div>
+        <div class="shop-img placeholder"><span>Kelaya</span></div>
         <div class="shop-body"><h4>Kelaya Perpetual K Crema Facial Hidronutri 50ml</h4><div class="price">90€</div></div>
       </div>
       <div class="shop-card">
-        <div class="shop-img"><img src="https://images.unsplash.com/photo-1596178065887-1198b6148b2b?w=400&q=80" alt="Herbalife F1 Batido"></div>
+        <div class="shop-img placeholder"><span>Herbalife</span></div>
         <div class="shop-body"><h4>Herbalife F1 (Vainilla / Chocolate / Plátano / Galleta / Café)</h4><div class="price">56,75€</div></div>
       </div>
     </div>
