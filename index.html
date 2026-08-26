@@ -478,7 +478,13 @@ const DURACION_SLOT = 30; // minutos
 let diaSeleccionado = null;
 let busySlotsCache = {}; // 'YYYY-MM-DD' -> Set de 'HH:MM' ocupados
 
-function fmtDia(d){ return d.toISOString().slice(0,10); }
+function fmtDia(d){
+  // Fecha LOCAL (no UTC) — toISOString desplazaría el día en husos horarios adelantados a UTC.
+  const y = d.getFullYear();
+  const m = String(d.getMonth()+1).padStart(2,'0');
+  const da = String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${da}`;
+}
 function proximosDias(n){
   const dias = [];
   const hoy = new Date();
@@ -603,7 +609,7 @@ form.addEventListener('submit', async (e)=>{
     cliente_nombre: fd.get('nombre'),
     cliente_telefono: fd.get('telefono'),
     cliente_email: fd.get('email') || null,
-    fecha: fd.get('fecha'),
+    fecha: new Date(fd.get('fecha')).toISOString(),
     notas: `Servicio solicitado: ${currentService}${fd.get('notas') ? ' · ' + fd.get('notas') : ''}`,
     origen: 'web'
   });
