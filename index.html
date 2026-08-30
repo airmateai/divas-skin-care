@@ -213,8 +213,7 @@ footer{background:var(--primary-dk);color:var(--cream);padding:0 0 34px;}
       <p>Una selección de nuestros tratamientos más solicitados — reserva el que más te apetezca en menos de un minuto.</p>
     </div>
     <div class="cat-tabs">
-      <div class="cat-tab active">Todos</div>
-      <div class="cat-tab">Faciales</div>
+      <div class="cat-tab active">Faciales</div>
       <div class="cat-tab">Plasma Pen</div>
       <div class="cat-tab">Corporales</div>
       <div class="cat-tab">Láser IPL</div>
@@ -699,15 +698,21 @@ footer{background:var(--primary-dk);color:var(--cream);padding:0 0 34px;}
 </footer>
 
 <script>
+function filterSvcByCat(cat){
+  document.querySelectorAll('.svc-card').forEach(card=>{
+    const cardCat=card.querySelector('.svc-cat').textContent.trim();
+    card.style.display=(cardCat===cat)?'':'none';
+  });
+}
+const _initialTab=document.querySelector('.cat-tab.active');
+if(_initialTab)filterSvcByCat(_initialTab.textContent.trim());
+
 document.querySelectorAll('.cat-tab').forEach(tab=>{
   tab.addEventListener('click',()=>{
     document.querySelectorAll('.cat-tab').forEach(t=>t.classList.remove('active'));
     tab.classList.add('active');
     const cat=tab.textContent.trim();
-    document.querySelectorAll('.svc-card').forEach(card=>{
-      const cardCat=card.querySelector('.svc-cat').textContent.trim();
-      card.style.display=(cat==='Todos'||cardCat===cat)?'':'none';
-    });
+    filterSvcByCat(cat);
   });
 });
 </script>
