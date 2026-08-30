@@ -28,6 +28,20 @@ img{max-width:100%;display:block;}
 .wrap{max-width:1180px;margin:0 auto;padding:0 40px;}
 @media(max-width:640px){.wrap{padding:0 22px;}}
 
+/* ═══ WOW EFFECTS: hero text reveal ═══ */
+.hero-line{display:inline-block;overflow:hidden;padding-bottom:.08em;vertical-align:top;}
+.hero-anim{display:inline-block;opacity:0;transform:translateY(110%);animation:hero-word-in .85s cubic-bezier(.16,1,.3,1) forwards;animation-delay:calc(var(--d,0) * 65ms + .1s);}
+.hero p.hero-anim,.hero-ctas.hero-anim,.eyebrow.hero-anim{transform:translateY(18px);}
+@keyframes hero-word-in{to{opacity:1;transform:translateY(0);}}
+
+/* ═══ WOW EFFECTS: marquee infinito ═══ */
+.marquee{overflow:hidden;width:100%;-webkit-mask-image:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent);mask-image:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent);}
+.marquee-track{display:flex;width:max-content;gap:20px;animation:marquee-scroll 26s linear infinite;}
+.marquee-track span{font-size:11px;letter-spacing:.16em;text-transform:uppercase;font-weight:600;color:var(--ink2);white-space:nowrap;}
+.marquee-track span:nth-child(even){color:var(--accent);font-size:10px;}
+@keyframes marquee-scroll{from{transform:translateX(0);}to{transform:translateX(-50%);}}
+.marquee:hover .marquee-track{animation-play-state:paused;}
+
 /* ═══ WOW EFFECTS: reveal on scroll ═══ */
 .reveal{opacity:0;transform:translateY(28px);transition:opacity .8s cubic-bezier(.16,1,.3,1),transform .8s cubic-bezier(.16,1,.3,1);}
 .reveal.in-view{opacity:1;transform:translateY(0);}
@@ -213,10 +227,10 @@ footer{background:var(--primary-dk);color:var(--cream);padding:0 0 34px;}
     </video>
   </div>
   <div class="wrap hero-inner">
-    <div class="eyebrow">Centro de estética · La Laguna, Tenerife</div>
-    <h1>El cuidado que tu piel<br><em>ya se merecía.</em></h1>
-    <p>Estética avanzada y aparatología profesional, pensadas a partir de lo que realmente necesita tu piel — sin prisa, sin fórmulas genéricas. Cada cita empieza escuchando, no vendiendo.</p>
-    <div class="hero-ctas">
+    <div class="eyebrow hero-anim" style="--d:0">Centro de estética · La Laguna, Tenerife</div>
+    <h1><span class="hero-line"><span class="hero-anim" style="--d:1">El</span> <span class="hero-anim" style="--d:2">cuidado</span> <span class="hero-anim" style="--d:3">que</span> <span class="hero-anim" style="--d:4">tu</span> <span class="hero-anim" style="--d:5">piel</span></span><br><span class="hero-line"><em><span class="hero-anim" style="--d:6">ya</span> <span class="hero-anim" style="--d:7">se</span> <span class="hero-anim" style="--d:8">merecía.</span></em></span></h1>
+    <p class="hero-anim" style="--d:9">Estética avanzada y aparatología profesional, pensadas a partir de lo que realmente necesita tu piel — sin prisa, sin fórmulas genéricas. Cada cita empieza escuchando, no vendiendo.</p>
+    <div class="hero-ctas hero-anim" style="--d:10">
       <a href="#servicios" class="btn btn-primary">Reservar valoración</a>
       <a href="#nosotros" class="hero-link">Conoce a Louie</a>
     </div>
@@ -224,11 +238,11 @@ footer{background:var(--primary-dk);color:var(--cream);padding:0 0 34px;}
 </section>
 
 <div class="strip">
-  <div class="wrap strip-inner">
-    <div>Faciales</div>
-    <div>Corporales</div>
-    <div>Láser IPL</div>
-    <div>Divas Skin Club</div>
+  <div class="marquee">
+    <div class="marquee-track">
+      <span>Faciales</span><span>✦</span><span>Corporales</span><span>✦</span><span>Plasma Pen</span><span>✦</span><span>Láser IPL</span><span>✦</span><span>Medicina Estética</span><span>✦</span><span>Cejas y depilación</span><span>✦</span><span>Divas Skin Club</span><span>✦</span>
+      <span>Faciales</span><span>✦</span><span>Corporales</span><span>✦</span><span>Plasma Pen</span><span>✦</span><span>Láser IPL</span><span>✦</span><span>Medicina Estética</span><span>✦</span><span>Cejas y depilación</span><span>✦</span><span>Divas Skin Club</span><span>✦</span>
+    </div>
   </div>
 </div>
 
