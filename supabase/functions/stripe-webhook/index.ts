@@ -39,10 +39,35 @@ Deno.serve(async (req) => {
     const product = lineItems.data[0]?.price?.product as Stripe.Product | undefined;
     const servicioId = product?.metadata?.servicio_id;
     const productoId = product?.metadata?.producto_id;
+    const esDeposito = product?.metadata?.tipo === "deposito";
 
     const nombre = session.customer_details?.name || "Cliente Stripe";
     const email = session.customer_details?.email || null;
     const telefono = session.customer_details?.phone || null;
+
+    if (esDeposito) {
+      const citaId = session.client_reference_id;
+      if (!citaId) {
+        console.log("Pago de depósito sin client_reference_id, no se puede vincular a ninguna cita.");
+        return new Response(JSON.stringify({ received: true }), { status: 200 });
+      }
+
+      const { error: updateError } = await supabase
+        .from("citas")
+        .update({
+          estado: "confirmada",
+          notas: "Depósito de 20€ pagado por Stripe. Reserva confirmada.",
+        })
+        .eq("id", citaId);
+
+      if (updateError) {
+        console.error("Error confirmando cita tras depósito:", updateError.message);
+      } else {
+        console.log(`Cita ${citaId} confirmada tras pago de depósito.`);
+      }
+
+      return new Response(JSON.stringify({ received: true }), { status: 200 });
+    }
 
     if (!servicioId && !productoId) {
       console.log("Sin servicio_id ni producto_id en metadata del producto, se ignora.");
