@@ -222,8 +222,8 @@ footer{background:var(--primary-dk);color:var(--cream);padding:0 0 34px;}
 
 <section class="hero">
   <div class="hero-bg">
-    <video autoplay muted loop playsinline poster="img/hero-video-limpieza-poster.jpg">
-      <source src="img/hero-video-limpieza.mp4" type="video/mp4">
+    <video autoplay muted loop playsinline poster="img/hero-video-tratamiento-poster.jpg">
+      <source src="img/hero-video-tratamiento.mp4" type="video/mp4">
     </video>
   </div>
   <div class="wrap hero-inner">
@@ -274,7 +274,7 @@ footer{background:var(--primary-dk);color:var(--cream);padding:0 0 34px;}
         </div>
       </div>
       <div class="svc-card">
-        <div class="svc-img"><video autoplay muted loop playsinline poster="img/svc-puntosnegros-poster.jpg"><source src="img/svc-puntosnegros.mp4" type="video/mp4"></video></div>
+        <div class="svc-img"><img src="img/svc-puntosnegros-frame2.jpg" alt="Limpieza Facial Profunda + Extracción de Puntos Negros"></div>
         <div class="svc-body">
           <div class="svc-cat">Limpieza facial Profunda</div>
           <h3>Limpieza Facial Profunda + Extracción de Puntos Negros</h3>
@@ -283,7 +283,7 @@ footer{background:var(--primary-dk);color:var(--cream);padding:0 0 34px;}
         </div>
       </div>
       <div class="svc-card">
-        <div class="svc-img"><video autoplay muted loop playsinline poster="img/svc-puntosnegros-poster.jpg"><source src="img/svc-puntosnegros.mp4" type="video/mp4"></video></div>
+        <div class="svc-img"><img src="img/svc-puntosnegros-frame3.jpg" alt="Extra Extracción de Puntos Negros"></div>
         <div class="svc-body">
           <div class="svc-cat">Limpieza facial Profunda</div>
           <h3>Extra Extracción de Puntos Negros</h3>
@@ -1285,7 +1285,7 @@ document.querySelectorAll('.cat-tab').forEach(tab=>{
 
 // ═══ WOW: reveal on scroll ═══
 (function(){
-  const targets=document.querySelectorAll('.section-head, .svc-card, .foot-col, .shop-section .wrap > *, #nosotros .wrap > *');
+  const targets=document.querySelectorAll('.section-head, .svc-card, .foot-col, #nosotros .wrap > *');
   targets.forEach((el,i)=>{
     el.classList.add('reveal','reveal-stagger');
     el.style.setProperty('--i', i % 12);
