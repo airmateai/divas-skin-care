@@ -1,7 +1,8 @@
 // Webhook de Stripe para Divas Skin Care.
 // Al completarse un pago (checkout.session.completed), crea/actualiza la clienta
-// y registra la cita como "pendiente de confirmar" en la tabla `citas`, usando
-// el servicio_id guardado en la metadata del producto de Stripe.
+// y registra:
+//  - una cita "pendiente de confirmar" en `citas`, si el producto de Stripe trae servicio_id
+//  - un pedido "pendiente de preparar" en `pedidos`, si el producto de Stripe trae producto_id
 
 import Stripe from "npm:stripe@17";
 import { createClient } from "npm:@supabase/supabase-js@2";
@@ -37,18 +38,18 @@ Deno.serve(async (req) => {
     });
     const product = lineItems.data[0]?.price?.product as Stripe.Product | undefined;
     const servicioId = product?.metadata?.servicio_id;
+    const productoId = product?.metadata?.producto_id;
 
     const nombre = session.customer_details?.name || "Cliente Stripe";
     const email = session.customer_details?.email || null;
     const telefono = session.customer_details?.phone || null;
 
-    if (!servicioId) {
-      console.log("Sin servicio_id en metadata del producto, se ignora.");
+    if (!servicioId && !productoId) {
+      console.log("Sin servicio_id ni producto_id en metadata del producto, se ignora.");
       return new Response(JSON.stringify({ received: true }), { status: 200 });
     }
 
-    // 1. Buscar o crear clienta por email
-    let clientaId: string | null = null;
+    // Buscar o crear clienta por email (compartido entre citas y pedidos)
     if (email) {
       const { data: existing } = await supabase
         .from("clientas")
@@ -56,38 +57,51 @@ Deno.serve(async (req) => {
         .eq("email", email)
         .maybeSingle();
 
-      if (existing) {
-        clientaId = existing.id;
-      } else {
-        const { data: created, error } = await supabase
+      if (!existing) {
+        const { error } = await supabase
           .from("clientas")
-          .insert({ nombre, email, telefono })
-          .select("id")
-          .single();
+          .insert({ nombre, email, telefono });
         if (error) console.error("Error creando clienta:", error.message);
-        else clientaId = created.id;
       }
     }
 
-    // 2. Crear la cita como pendiente de confirmar (sin fecha asignada aún)
-    const { error: citaError } = await supabase.from("citas").insert({
-      cliente_nombre: nombre,
-      cliente_telefono: telefono,
-      cliente_email: email,
-      servicio_id: servicioId,
-      estado: "pendiente_confirmar",
-      origen: "stripe",
-      notas: `Pago recibido por Stripe (sesión ${session.id}). Falta asignar fecha/hora.`,
-    });
-
-    if (citaError) {
-      console.error("Error creando cita:", citaError.message);
-      return new Response(JSON.stringify({ received: true, error: citaError.message }), {
-        status: 200,
+    if (servicioId) {
+      // Crear la cita como pendiente de confirmar (sin fecha asignada aún)
+      const { error: citaError } = await supabase.from("citas").insert({
+        cliente_nombre: nombre,
+        cliente_telefono: telefono,
+        cliente_email: email,
+        servicio_id: servicioId,
+        estado: "pendiente_confirmar",
+        origen: "stripe",
+        notas: `Pago recibido por Stripe (sesión ${session.id}). Falta asignar fecha/hora.`,
       });
+
+      if (citaError) {
+        console.error("Error creando cita:", citaError.message);
+      } else {
+        console.log(`Cita creada para ${nombre} (${email}) — servicio ${servicioId}`);
+      }
     }
 
-    console.log(`Cita creada para ${nombre} (${email}) — servicio ${servicioId}`);
+    if (productoId) {
+      // Crear el pedido como pendiente de preparar
+      const { error: pedidoError } = await supabase.from("pedidos").insert({
+        cliente_nombre: nombre,
+        cliente_telefono: telefono,
+        cliente_email: email,
+        producto_id: productoId,
+        estado: "pendiente_preparar",
+        origen: "stripe",
+        notas: `Pago recibido por Stripe (sesión ${session.id}).`,
+      });
+
+      if (pedidoError) {
+        console.error("Error creando pedido:", pedidoError.message);
+      } else {
+        console.log(`Pedido creado para ${nombre} (${email}) — producto ${productoId}`);
+      }
+    }
   }
 
   return new Response(JSON.stringify({ received: true }), { status: 200 });
