@@ -497,6 +497,10 @@ tbody tr:hover{background:rgba(0,0,0,.02);}
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 7l-8-4-8 4v10l8 4 8-4V7z"/><path d="M12 11 4 7"/><path d="M12 11l8-4"/><path d="M12 11v10"/></svg>
         Stock
       </div>
+      <div class="nav-item" onclick="goPage('pedidos',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+        Pedidos
+      </div>
       <div class="nav-section">Finanzas</div>
       <div class="nav-item" onclick="goPage('invoices',this)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
@@ -835,6 +839,20 @@ tbody tr:hover{background:rgba(0,0,0,.02);}
       </div>
     </div>
 
+    <!-- ─── PEDIDOS (compras de la tienda online) ─── -->
+    <div id="page-pedidos" class="page">
+      <div class="page-hd">
+        <div>
+          <h1 class="page-title">Pedidos</h1>
+          <div class="page-sub">Productos comprados online — pendientes de preparar para recoger</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-hd"><div class="card-hd-title">Pedidos nuevos</div></div>
+        <div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Clienta</th><th>Contacto</th><th>Producto</th><th>Estado</th></tr></thead><tbody id="pedidos-tbody"><tr><td colspan="5" style="text-align:center;color:var(--muted);padding:24px;">Sin pedidos todavía</td></tr></tbody></table></div>
+      </div>
+    </div>
+
     <!-- ─── ACCOUNTING ─── -->
     <div id="page-accounting" class="page">
       <div class="page-hd">
@@ -1022,10 +1040,11 @@ async function logout(){
 // Los datos de clientas/facturación/citas ficticias que quedan sin tocar son
 // solo demo visual del panel, no vienen de Supabase.
 async function loadRealData(){
-  const [{ data: servicios }, { data: stock }, { data: citas }] = await Promise.all([
+  const [{ data: servicios }, { data: stock }, { data: citas }, { data: pedidos }] = await Promise.all([
     sb.from('servicios').select('*').order('orden', { ascending: true }),
     sb.from('stock').select('*').order('nombre', { ascending: true }),
-    sb.from('citas').select('*').order('creado_en', { ascending: false }).limit(50)
+    sb.from('citas').select('*').order('creado_en', { ascending: false }).limit(50),
+    sb.from('pedidos').select('*').order('created_at', { ascending: false }).limit(50)
   ]);
 
   if (servicios && servicios.length) {
@@ -1071,6 +1090,38 @@ async function loadRealData(){
       value: 0
     })).concat(CONFIG.schedule);
   }
+
+  if (pedidos) {
+    const stockById = {};
+    (stock || []).forEach(p => { stockById[p.id] = p.nombre; });
+    CONFIG.pedidosWeb = pedidos.map(p => ({
+      cliente: p.cliente_nombre,
+      telefono: p.cliente_telefono,
+      email: p.cliente_email,
+      producto: stockById[p.producto_id] || 'Producto',
+      estado: p.estado,
+      fecha: p.created_at
+    }));
+  }
+}
+
+function renderPedidos(){
+  const tbody = document.getElementById('pedidos-tbody');
+  if (!tbody) return;
+  const pedidos = CONFIG.pedidosWeb || [];
+  if (!pedidos.length) {
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:24px;">Sin pedidos todavía</td></tr>';
+    return;
+  }
+  tbody.innerHTML = pedidos.map(p => `
+    <tr>
+      <td>${p.fecha ? new Date(p.fecha).toLocaleString('es-ES',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : '-'}</td>
+      <td>${p.cliente || '-'}</td>
+      <td>${p.email || p.telefono || '-'}</td>
+      <td>${p.producto}</td>
+      <td><span class="tag tag-info">${p.estado === 'pendiente_preparar' ? 'Pendiente de preparar' : p.estado}</span></td>
+    </tr>
+  `).join('');
 }
 
 // ═══════════════ NAV ═══════════════
@@ -1150,6 +1201,7 @@ function initApp(){
   renderPOS();
   renderFollowups();
   renderStock();
+  renderPedidos();
   renderAccounting();
   renderTeam();
   renderInbox();
