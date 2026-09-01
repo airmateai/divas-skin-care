@@ -1504,7 +1504,9 @@ form.addEventListener('submit', async (e)=>{
   submitBtn.disabled = true;
   submitBtn.textContent = 'Reservando...';
   const necesitaDeposito = currentPrecio !== null && currentPrecio > DEPOSITO_MINIMO_PRECIO;
-  const { data, error } = await sb.from('citas').insert({
+  const citaId = crypto.randomUUID(); // generado aquí: la RLS de "citas" no deja leer de vuelta la fila insertada
+  const { error } = await sb.from('citas').insert({
+    id: citaId,
     cliente_nombre: fd.get('nombre'),
     cliente_telefono: fd.get('telefono'),
     cliente_email: fd.get('email') || null,
@@ -1513,10 +1515,10 @@ form.addEventListener('submit', async (e)=>{
     estado: necesitaDeposito ? 'pendiente_deposito' : 'pendiente_confirmar',
     notas: `Servicio: ${currentService}${fd.get('notas') ? ' · ' + fd.get('notas') : ''}${necesitaDeposito ? ' · En espera de depósito de 20€.' : ' · Sin depósito, se paga en cabina.'}`,
     origen: 'web'
-  }).select('id').single();
+  });
   submitBtn.disabled = false;
   submitBtn.textContent = 'Enviar solicitud de reserva';
-  if (error || !data) {
+  if (error) {
     msg.style.color = '#b3441e';
     msg.textContent = 'No se pudo enviar la solicitud. Inténtalo de nuevo o escríbenos por WhatsApp.';
     return;
@@ -1525,7 +1527,7 @@ form.addEventListener('submit', async (e)=>{
     msg.style.color = '#3d4a3a';
     msg.textContent = 'Hora reservada. Te llevamos a pagar el depósito de 20€ para confirmarla...';
     setTimeout(()=>{
-      window.location.href = `${DEPOSITO_LINK}?client_reference_id=${data.id}`;
+      window.location.href = `${DEPOSITO_LINK}?client_reference_id=${citaId}`;
     }, 1200);
   } else {
     msg.style.color = '#3d4a3a';
