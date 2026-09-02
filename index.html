@@ -161,6 +161,9 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:22px 0
 
 /* TIENDA */
 .shop-section{background:var(--primary-dk);}
+#shop-tabs.cat-tabs{justify-content:center;}
+#shop-tabs .cat-tab{color:rgba(255,255,255,.55);}
+#shop-tabs .cat-tab.active{color:var(--accent-lt);border-bottom-color:var(--accent-lt);}
 .shop-section .section-head h2{color:#fff;}
 .shop-section .section-head p{color:rgba(255,255,255,.6);}
 .shop-section .eyebrow{color:var(--accent-lt);}
@@ -253,7 +256,7 @@ footer{background:var(--primary-dk);color:var(--cream);padding:0 0 34px;}
       <h2>Cuidado pensado para cada parte de ti</h2>
       <p>Una selección de nuestros tratamientos más solicitados — reserva el que más te apetezca en menos de un minuto.</p>
     </div>
-    <div class="cat-tabs">
+    <div class="cat-tabs" id="svc-tabs">
       <div class="cat-tab active">Limpieza facial Profunda</div>
       <div class="cat-tab">Tratamiento Personalizado</div>
       <div class="cat-tab">Plasma Pen</div>
@@ -274,7 +277,13 @@ footer{background:var(--primary-dk);color:var(--cream);padding:0 0 34px;}
         </div>
       </div>
       <div class="svc-card">
-        <div class="svc-img"><img src="img/svc-puntosnegros-frame2.jpg" alt="Limpieza Facial Profunda + Extracción de Puntos Negros"></div>
+        <div class="svc-img" style="display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--primary-dk),#2e3a28);">
+          <div style="text-align:center;padding:24px;">
+            <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="var(--accent-lt)" stroke-width="1.5" style="margin:0 auto 10px;"><circle cx="12" cy="12" r="9"/><path d="M9 12l2 2 4-4"/></svg>
+            <div style="color:var(--accent-lt);font-size:11px;letter-spacing:.08em;text-transform:uppercase;font-weight:600;">Limpieza + Extracción</div>
+            <div style="color:#fff;font-size:12px;margin-top:4px;opacity:.75;">Sin presoterapia</div>
+          </div>
+        </div>
         <div class="svc-body">
           <div class="svc-cat">Limpieza facial Profunda</div>
           <h3>Limpieza Facial Profunda + Extracción de Puntos Negros</h3>
@@ -283,7 +292,13 @@ footer{background:var(--primary-dk);color:var(--cream);padding:0 0 34px;}
         </div>
       </div>
       <div class="svc-card">
-        <div class="svc-img"><img src="img/svc-puntosnegros-frame3.jpg" alt="Extra Extracción de Puntos Negros"></div>
+        <div class="svc-img" style="display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--primary-dk),#2e3a28);">
+          <div style="text-align:center;padding:24px;">
+            <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="var(--accent-lt)" stroke-width="1.5" style="margin:0 auto 10px;"><path d="M12 2v20M2 12h20"/></svg>
+            <div style="color:var(--accent-lt);font-size:11px;letter-spacing:.08em;text-transform:uppercase;font-weight:600;">Sesión extra</div>
+            <div style="color:#fff;font-size:12px;margin-top:4px;opacity:.75;">Extracción de puntos negros</div>
+          </div>
+        </div>
         <div class="svc-body">
           <div class="svc-cat">Limpieza facial Profunda</div>
           <h3>Extra Extracción de Puntos Negros</h3>
@@ -735,6 +750,7 @@ footer{background:var(--primary-dk);color:var(--cream);padding:0 0 34px;}
       <p>Productos profesionales seleccionados por nosotras, con envío a toda la isla.</p>
     </div>
     <div class="section-head center" style="margin-bottom:22px;"><p style="color:var(--cream);opacity:.8;">Marcas Utsukusy, Kelaya (Ceutical K, Equilibrium K, Perpetual K, Preliminar K, K Body, K Peptido), Herbalife, Kefus e Infusión 7C — catálogo completo en cabina.</p></div>
+    <div class="cat-tabs" id="shop-tabs" style="border-bottom-color:rgba(255,255,255,.15);"></div>
     <div class="shop-grid" style="grid-template-columns:repeat(3,1fr);">
       <div class="shop-marca-title" style="grid-column:1/-1;padding:18px 20px 4px;"><h3 style="font-family:var(--font-serif);color:var(--accent-lt);font-size:20px;">UTSUKUSY</h3></div>
       <div class="shop-card">
@@ -1262,13 +1278,13 @@ function filterSvcByCat(cat){
     card.style.display=(cardCat===cat)?'':'none';
   });
 }
-const _initialTab=document.querySelector('.cat-tab.active');
+const _initialTab=document.querySelector('#svc-tabs .cat-tab.active');
 if(_initialTab)filterSvcByCat(_initialTab.textContent.trim());
 
 const svcGrid=document.querySelector('.svc-grid');
-document.querySelectorAll('.cat-tab').forEach(tab=>{
+document.querySelectorAll('#svc-tabs .cat-tab').forEach(tab=>{
   tab.addEventListener('click',()=>{
-    document.querySelectorAll('.cat-tab').forEach(t=>t.classList.remove('active'));
+    document.querySelectorAll('#svc-tabs .cat-tab').forEach(t=>t.classList.remove('active'));
     tab.classList.add('active');
     const cat=tab.textContent.trim();
     if(svcGrid){
@@ -1282,6 +1298,47 @@ document.querySelectorAll('.cat-tab').forEach(tab=>{
     }
   });
 });
+
+// ═══ Tienda: filtro por marca ═══
+(function(){
+  const shopGrid=document.querySelector('.shop-grid');
+  const tabsCont=document.getElementById('shop-tabs');
+  if(!shopGrid||!tabsCont)return;
+
+  // Etiqueta cada shop-card con la marca del título que le precede
+  let currentMarca=null;
+  const marcas=[];
+  Array.from(shopGrid.children).forEach(el=>{
+    if(el.classList.contains('shop-marca-title')){
+      currentMarca=el.textContent.trim();
+      if(!marcas.includes(currentMarca))marcas.push(currentMarca);
+    } else if(el.classList.contains('shop-card') && currentMarca){
+      el.dataset.marca=currentMarca;
+    }
+  });
+
+  tabsCont.innerHTML=marcas.map((m,i)=>`<div class="cat-tab${i===0?' active':''}" data-marca="${m}">${m}</div>`).join('');
+
+  function filterShopByMarca(marca){
+    Array.from(shopGrid.children).forEach(el=>{
+      if(el.classList.contains('shop-marca-title')){
+        el.style.display=(el.textContent.trim()===marca)?'':'none';
+      } else if(el.classList.contains('shop-card')){
+        el.style.display=(el.dataset.marca===marca)?'':'none';
+      }
+    });
+  }
+
+  if(marcas.length)filterShopByMarca(marcas[0]);
+
+  tabsCont.querySelectorAll('.cat-tab').forEach(tab=>{
+    tab.addEventListener('click',()=>{
+      tabsCont.querySelectorAll('.cat-tab').forEach(t=>t.classList.remove('active'));
+      tab.classList.add('active');
+      filterShopByMarca(tab.dataset.marca);
+    });
+  });
+})();
 
 // ═══ WOW: reveal on scroll ═══
 (function(){
