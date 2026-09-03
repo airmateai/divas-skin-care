@@ -167,9 +167,12 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:22px 0
 .shop-section .section-head h2{color:#fff;}
 .shop-section .section-head p{color:rgba(255,255,255,.6);}
 .shop-section .eyebrow{color:var(--accent-lt);}
-.shop-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:rgba(255,255,255,.1);}
-@media(max-width:900px){.shop-grid{grid-template-columns:repeat(2,1fr);}}
-.shop-card{background:var(--primary-dk);overflow:hidden;}
+.shop-grid{display:flex;overflow-x:auto;gap:12px;padding:4px 4px 16px;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch;}
+.shop-grid::-webkit-scrollbar{height:6px;}
+.shop-grid::-webkit-scrollbar-thumb{background:rgba(255,255,255,.2);border-radius:3px;}
+.shop-card{background:var(--primary-dk);overflow:hidden;flex:0 0 200px;scroll-snap-align:start;border-radius:6px;}
+.shop-marca-title{display:none;}
+@media(max-width:620px){.shop-card{flex-basis:150px;}}
 .shop-img{aspect-ratio:1;overflow:hidden;}
 .shop-img img{width:100%;height:100%;object-fit:cover;}
 .shop-body{padding:18px 20px 22px;}
@@ -225,8 +228,8 @@ footer{background:var(--primary-dk);color:var(--cream);padding:0 0 34px;}
 
 <section class="hero">
   <div class="hero-bg">
-    <video autoplay muted loop playsinline poster="img/hero-video-tratamiento-poster.jpg">
-      <source src="img/hero-video-tratamiento.mp4" type="video/mp4">
+    <video autoplay muted loop playsinline poster="img/hero-video-fuente-poster.jpg">
+      <source src="img/hero-video-fuente.mp4" type="video/mp4">
     </video>
   </div>
   <div class="wrap hero-inner">
@@ -268,7 +271,7 @@ footer{background:var(--primary-dk);color:var(--cream);padding:0 0 34px;}
     </div>
     <div class="svc-grid">
       <div class="svc-card">
-        <div class="svc-img"><video autoplay muted loop playsinline poster="img/svc-puntosnegros-poster.jpg"><source src="img/svc-puntosnegros.mp4" type="video/mp4"></video></div>
+        <div class="svc-img"><video autoplay muted loop playsinline poster="img/svc-presoterapia-poster.jpg"><source src="img/svc-presoterapia.mp4" type="video/mp4"></video></div>
         <div class="svc-body">
           <div class="svc-cat">Limpieza facial Profunda</div>
           <h3>Limpieza Facial Profunda + Extracción de Puntos Negros + Presoterapia</h3>
@@ -745,7 +748,8 @@ footer{background:var(--primary-dk);color:var(--cream);padding:0 0 34px;}
     </div>
     <div class="section-head center" style="margin-bottom:22px;"><p style="color:var(--cream);opacity:.8;">Marcas Utsukusy, Kelaya (Ceutical K, Equilibrium K, Perpetual K, Preliminar K, K Body, K Peptido), Herbalife, Kefus e Infusión 7C — catálogo completo en cabina.</p></div>
     <div class="cat-tabs" id="shop-tabs" style="border-bottom-color:rgba(255,255,255,.15);"></div>
-    <div class="shop-grid" style="grid-template-columns:repeat(3,1fr);">
+    <div id="shop-marca-heading" style="padding:18px 4px 4px;"><h3 style="font-family:var(--font-serif);color:var(--accent-lt);font-size:20px;"></h3></div>
+    <div class="shop-grid">
       <div class="shop-marca-title" style="grid-column:1/-1;padding:18px 20px 4px;"><h3 style="font-family:var(--font-serif);color:var(--accent-lt);font-size:20px;">UTSUKUSY</h3></div>
       <div class="shop-card">
         <div class="shop-img placeholder"><span>UTSUKUSY</span></div>
@@ -1267,13 +1271,30 @@ footer{background:var(--primary-dk);color:var(--cream);padding:0 0 34px;}
 
 <script>
 function filterSvcByCat(cat){
+  const visible=[];
   document.querySelectorAll('.svc-card').forEach(card=>{
     const cardCat=card.querySelector('.svc-cat').textContent.trim();
-    card.style.display=(cardCat===cat)?'':'none';
+    const show=cardCat===cat;
+    card.style.display=show?'':'none';
+    card.style.gridColumn='';
+    if(show)visible.push(card);
   });
+  const grid=document.querySelector('.svc-grid');
+  if(grid && visible.length){
+    const cols=getComputedStyle(grid).gridTemplateColumns.split(' ').length;
+    const remainder=visible.length%cols;
+    if(remainder!==0){
+      const fillers=cols-remainder;
+      visible[visible.length-1].style.gridColumn=`span ${fillers+1}`;
+    }
+  }
 }
 const _initialTab=document.querySelector('#svc-tabs .cat-tab.active');
 if(_initialTab)filterSvcByCat(_initialTab.textContent.trim());
+window.addEventListener('resize',()=>{
+  const active=document.querySelector('#svc-tabs .cat-tab.active');
+  if(active)filterSvcByCat(active.textContent.trim());
+});
 
 const svcGrid=document.querySelector('.svc-grid');
 document.querySelectorAll('#svc-tabs .cat-tab').forEach(tab=>{
@@ -1313,14 +1334,15 @@ document.querySelectorAll('#svc-tabs .cat-tab').forEach(tab=>{
 
   tabsCont.innerHTML=marcas.map((m,i)=>`<div class="cat-tab${i===0?' active':''}" data-marca="${m}">${m}</div>`).join('');
 
+  const heading=document.querySelector('#shop-marca-heading h3');
   function filterShopByMarca(marca){
     Array.from(shopGrid.children).forEach(el=>{
-      if(el.classList.contains('shop-marca-title')){
-        el.style.display=(el.textContent.trim()===marca)?'':'none';
-      } else if(el.classList.contains('shop-card')){
+      if(el.classList.contains('shop-card')){
         el.style.display=(el.dataset.marca===marca)?'':'none';
       }
     });
+    if(heading)heading.textContent=marca;
+    shopGrid.scrollLeft=0;
   }
 
   if(marcas.length)filterShopByMarca(marcas[0]);
