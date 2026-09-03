@@ -109,7 +109,7 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:22px 0
 .cat-tabs{display:flex;justify-content:center;gap:0;margin-bottom:60px;flex-wrap:wrap;border-bottom:1px solid var(--border);}
 .cat-tab{padding:12px 22px;font-size:11.5px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink2);background:none;border:none;border-bottom:2px solid transparent;margin-bottom:-1px;cursor:pointer;}
 .cat-tab.active{color:var(--primary-dk);border-bottom-color:var(--accent);}
-.svc-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--border);border:1px solid var(--border);}
+.svc-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--bg);border:1px solid var(--border);}
 @media(max-width:900px){.svc-grid{grid-template-columns:repeat(2,1fr);}}
 @media(max-width:620px){.svc-grid{grid-template-columns:1fr;}}
 .svc-card{
@@ -280,7 +280,7 @@ footer{background:var(--primary-dk);color:var(--cream);padding:0 0 34px;}
         </div>
       </div>
       <div class="svc-card">
-        <div class="svc-img"><video autoplay muted loop playsinline poster="img/svc-puntosnegros-poster.jpg"><source src="img/svc-puntosnegros.mp4" type="video/mp4"></video></div>
+        <div class="svc-img"><video autoplay muted loop playsinline poster="img/svc-puntosnegros2-poster.jpg"><source src="img/svc-puntosnegros2.mp4" type="video/mp4"></video></div>
         <div class="svc-body">
           <div class="svc-cat">Limpieza facial Profunda</div>
           <h3>Limpieza Facial Profunda + Extracción de Puntos Negros</h3>
@@ -289,7 +289,7 @@ footer{background:var(--primary-dk);color:var(--cream);padding:0 0 34px;}
         </div>
       </div>
       <div class="svc-card">
-        <div class="svc-img"><video autoplay muted loop playsinline poster="img/svc-puntosnegros-poster.jpg"><source src="img/svc-puntosnegros.mp4" type="video/mp4"></video></div>
+        <div class="svc-img"><video autoplay muted loop playsinline poster="img/svc-puntosnegros3-poster.jpg"><source src="img/svc-puntosnegros3.mp4" type="video/mp4"></video></div>
         <div class="svc-body">
           <div class="svc-cat">Limpieza facial Profunda</div>
           <h3>Extra Extracción de Puntos Negros</h3>
@@ -744,7 +744,7 @@ footer{background:var(--primary-dk);color:var(--cream);padding:0 0 34px;}
     <div class="section-head center">
       <div class="eyebrow">Tienda online</div>
       <h2>Continúa el cuidado en casa</h2>
-      <p>Productos profesionales seleccionados por nosotras, con envío a toda la isla.</p>
+      <p>Productos profesionales seleccionados por nosotras. Compra online y recoge tu pedido en cabina — sin gastos de envío.</p>
     </div>
     <div class="section-head center" style="margin-bottom:22px;"><p style="color:var(--cream);opacity:.8;">Marcas Utsukusy, Kelaya (Ceutical K, Equilibrium K, Perpetual K, Preliminar K, K Body, K Peptido), Herbalife, Kefus e Infusión 7C — catálogo completo en cabina.</p></div>
     <div class="cat-tabs" id="shop-tabs" style="border-bottom-color:rgba(255,255,255,.15);"></div>
@@ -1271,30 +1271,13 @@ footer{background:var(--primary-dk);color:var(--cream);padding:0 0 34px;}
 
 <script>
 function filterSvcByCat(cat){
-  const visible=[];
   document.querySelectorAll('.svc-card').forEach(card=>{
     const cardCat=card.querySelector('.svc-cat').textContent.trim();
-    const show=cardCat===cat;
-    card.style.display=show?'':'none';
-    card.style.gridColumn='';
-    if(show)visible.push(card);
+    card.style.display=(cardCat===cat)?'':'none';
   });
-  const grid=document.querySelector('.svc-grid');
-  if(grid && visible.length){
-    const cols=getComputedStyle(grid).gridTemplateColumns.split(' ').length;
-    const remainder=visible.length%cols;
-    if(remainder!==0){
-      const fillers=cols-remainder;
-      visible[visible.length-1].style.gridColumn=`span ${fillers+1}`;
-    }
-  }
 }
 const _initialTab=document.querySelector('#svc-tabs .cat-tab.active');
 if(_initialTab)filterSvcByCat(_initialTab.textContent.trim());
-window.addEventListener('resize',()=>{
-  const active=document.querySelector('#svc-tabs .cat-tab.active');
-  if(active)filterSvcByCat(active.textContent.trim());
-});
 
 const svcGrid=document.querySelector('.svc-grid');
 document.querySelectorAll('#svc-tabs .cat-tab').forEach(tab=>{
