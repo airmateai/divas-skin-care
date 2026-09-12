@@ -783,7 +783,13 @@ tbody tr:hover{background:rgba(0,0,0,.02);}
       </div>
       <div style="display:grid;grid-template-columns:1fr 360px;gap:18px;">
         <div class="card" style="margin-bottom:0;">
-          <div class="card-hd"><div class="card-hd-title">Servicios</div><input class="cmdk-input" style="background:var(--surface);color:var(--txt);border:1px solid var(--border);border-radius:6px;padding:6px 10px;width:200px;font-size:12px" placeholder="Filtrar..." oninput="posFilter(this.value)"></div>
+          <div class="card-hd">
+            <div style="display:flex;gap:6px;">
+              <button id="pos-tab-servicios" class="btn btn-ghost" style="padding:6px 12px;font-size:12px;" onclick="posSwitchTab('servicios')">Servicios</button>
+              <button id="pos-tab-productos" class="btn btn-ghost" style="padding:6px 12px;font-size:12px;" onclick="posSwitchTab('productos')">Productos</button>
+            </div>
+            <input class="cmdk-input" style="background:var(--surface);color:var(--txt);border:1px solid var(--border);border-radius:6px;padding:6px 10px;width:200px;font-size:12px" placeholder="Filtrar..." oninput="posFilter(this.value)">
+          </div>
           <div class="card-body"><div id="pos-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;"></div></div>
         </div>
         <div class="card" style="margin-bottom:0;position:sticky;top:14px;">
@@ -1040,15 +1046,21 @@ async function logout(){
 // Los datos de clientas/facturación/citas ficticias que quedan sin tocar son
 // solo demo visual del panel, no vienen de Supabase.
 async function loadRealData(){
-  const [{ data: servicios }, { data: stock }, { data: citas }, { data: pedidos }] = await Promise.all([
+  const [{ data: servicios }, { data: stock }, { data: citas }, { data: pedidos }, { data: clientas }, { data: ventas }, { data: facturas }] = await Promise.all([
     sb.from('servicios').select('*').order('orden', { ascending: true }),
     sb.from('stock').select('*').order('nombre', { ascending: true }),
     sb.from('citas').select('*').order('creado_en', { ascending: false }).limit(50),
-    sb.from('pedidos').select('*').order('created_at', { ascending: false }).limit(50)
+    sb.from('pedidos').select('*').order('created_at', { ascending: false }).limit(50),
+    sb.from('clientas').select('*').order('creado_en', { ascending: false }),
+    sb.from('ventas').select('*'),
+    sb.from('facturas').select('*')
   ]);
+  CONFIG.ventasReales = ventas || [];
+  CONFIG.facturasReales = facturas || [];
 
   if (servicios && servicios.length) {
     CONFIG.catalog = servicios.map(s => ({
+      id: s.id,
       name: s.nombre,
       cat: `${s.categoria || ''} · ${s.duracion || ''}`,
       price: s.precio,
@@ -1059,6 +1071,7 @@ async function loadRealData(){
 
   if (stock && stock.length) {
     CONFIG.stock = stock.map(p => ({
+      id: p.id,
       name: p.nombre,
       sku: p.sku,
       image: null,
@@ -1103,6 +1116,113 @@ async function loadRealData(){
       fecha: p.created_at
     }));
   }
+
+  if (clientas) {
+    const visitasPorEmail = {};
+    const ultimaVisitaPorEmail = {};
+    (citas || []).forEach(c => {
+      if (!c.cliente_email) return;
+      visitasPorEmail[c.cliente_email] = (visitasPorEmail[c.cliente_email] || 0) + 1;
+      const t = new Date(c.fecha || c.creado_en).getTime();
+      if (!ultimaVisitaPorEmail[c.cliente_email] || t > ultimaVisitaPorEmail[c.cliente_email]) {
+        ultimaVisitaPorEmail[c.cliente_email] = t;
+      }
+    });
+    const gastoPorEmail = {};
+    (ventas || []).forEach(v => {
+      if (v.cliente_email) gastoPorEmail[v.cliente_email] = (gastoPorEmail[v.cliente_email] || 0) + Number(v.total);
+    });
+    (facturas || []).forEach(f => {
+      if (f.cliente_email && f.estado === 'pagada') {
+        gastoPorEmail[f.cliente_email] = (gastoPorEmail[f.cliente_email] || 0) + Number(f.total);
+      }
+    });
+    CONFIG.clients = clientas.map(c => ({
+      id: c.id,
+      name: c.nombre,
+      email: c.email || null,
+      phone: c.telefono || '—',
+      field: ultimaVisitaPorEmail[c.email] ? new Date(ultimaVisitaPorEmail[c.email]).toLocaleDateString('es-ES') : 'Sin citas registradas',
+      visits: visitasPorEmail[c.email] || 0,
+      spent: gastoPorEmail[c.email] || 0,
+      tags: []
+    }));
+  }
+
+  CONFIG.invoices = (facturas || []).map(f => ({
+    id: f.id,
+    num: f.numero,
+    client: f.cliente_nombre,
+    clientEmail: f.cliente_email,
+    date: new Date(f.created_at).toLocaleDateString('es-ES'),
+    status: f.estado === 'pagada' ? 'Pagada' : 'Pendiente',
+    statusClass: f.estado === 'pagada' ? 'ok' : 'pending',
+    total: Number(f.total),
+    items: f.items,
+  }));
+
+  calcularFinanzasReales();
+}
+
+async function marcarFacturaPagada(id){
+  const { error } = await sb.from('facturas').update({ estado: 'pagada' }).eq('id', id);
+  if (error) { toast('No se pudo actualizar: ' + error.message); return; }
+  await loadRealData();
+  refreshAllViews();
+  closeModal();
+  toast('✓ Factura marcada como pagada');
+}
+
+// Calcula facturación real (ventas del TPV + facturas pagadas) por mes y por servicio,
+// para Contabilidad e Informes. Nada de aquí es inventado: si no hay ventas, sale 0.
+function calcularFinanzasReales(){
+  const ventas = CONFIG.ventasReales || [];
+  const facturasPagadas = (CONFIG.facturasReales || []).filter(f => f.estado === 'pagada');
+  const ahora = new Date();
+  const mesActual = ahora.getMonth(), anioActual = ahora.getFullYear();
+  const porMes = Array(12).fill(0);
+  const porServicio = {};
+  let facturacionMes = 0, facturacionTotal = 0;
+
+  function registrar(fechaStr, total){
+    const d = new Date(fechaStr);
+    const t = Number(total) || 0;
+    facturacionTotal += t;
+    if (d.getFullYear() === anioActual) porMes[d.getMonth()] += t;
+    if (d.getMonth() === mesActual && d.getFullYear() === anioActual) facturacionMes += t;
+  }
+
+  ventas.forEach(v => {
+    registrar(v.created_at, v.total);
+    (v.items || []).forEach(it => {
+      const key = it.name;
+      porServicio[key] = porServicio[key] || { name: key, count: 0, total: 0 };
+      porServicio[key].count += it.qty;
+      porServicio[key].total += it.price * it.qty;
+    });
+  });
+  facturasPagadas.forEach(f => registrar(f.created_at, f.total));
+
+  const numVentas = ventas.length + facturasPagadas.length;
+  const ticketMedio = numVentas ? facturacionTotal / numVentas : 0;
+
+  CONFIG.monthsRevenue = porMes.map(v => Math.round(v));
+  CONFIG.topServices = Object.values(porServicio).sort((a, b) => b.total - a.total).slice(0, 5);
+  CONFIG.reportStats = [
+    { label: 'Facturación del mes', value: fmt(Math.round(facturacionMes)), trend: '', trendType: 'neutral' },
+    { label: 'IGIC recaudado', value: 'Exento', trend: '', trendType: 'neutral' },
+    { label: 'Ticket medio', value: fmt(Math.round(ticketMedio)), trend: '', trendType: 'neutral' },
+    { label: 'Ventas registradas', value: String(numVentas), trend: '', trendType: 'neutral' },
+  ];
+  CONFIG.accounting = { revenue: Math.round(facturacionMes), expenses: 0, cash: Math.round(facturacionMes) };
+}
+
+async function crearClientaReal(nombre, telefono, email){
+  const { error } = await sb.from('clientas').insert({ nombre, telefono: telefono || null, email: email || null });
+  if (error) return { error: error.message };
+  await loadRealData();
+  refreshAllViews();
+  return { ok: true };
 }
 
 function renderPedidos(){
@@ -1205,6 +1325,22 @@ function initApp(){
   renderAccounting();
   renderTeam();
   renderInbox();
+}
+
+// goPage() solo muestra/oculta páginas, no las vuelve a renderizar — por eso cualquier
+// acción que cambie datos reales (venta, cita, factura, clienta nueva) tiene que llamar
+// a esto para que las demás pantallas (Contabilidad, Informes, etc.) dejen de estar
+// congeladas con los datos de cuando se inició sesión.
+function refreshAllViews(){
+  renderDashboard();
+  renderSchedule();
+  renderClients();
+  renderCatalog();
+  renderInvoices();
+  renderReports();
+  renderStock();
+  renderPedidos();
+  renderAccounting();
 }
 
 function fmt(n,currency='EUR'){return Number(n||0).toLocaleString('es-ES',{maximumFractionDigits:0})+'€';}
@@ -1461,13 +1597,13 @@ function showInvoice(idx){
       </div>
       <div>
         <div style="font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--txt3);font-weight:600;margin-bottom:4px;">Fecha de emisión</div>
-        <div style="font-size:14px;color:var(--txt);">${inv.date}/2026</div>
+        <div style="font-size:14px;color:var(--txt);">${inv.date}</div>
       </div>
     </div>
     <table style="width:100%;margin-bottom:14px;font-size:13px;">
       <thead><tr><th style="text-align:left;padding:8px 0;border-bottom:1px solid var(--border);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--txt3);">Descripción</th><th style="text-align:right;padding:8px 0;border-bottom:1px solid var(--border);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--txt3);">Importe</th></tr></thead>
       <tbody>
-        <tr><td style="padding:10px 0;color:var(--txt);">${CONFIG.labels.catalog||'Servicios'} · tratamiento</td><td style="padding:10px 0;text-align:right;font-weight:600;">${fmt(sub)}</td></tr>
+        <tr><td style="padding:10px 0;color:var(--txt);">${inv.items||'Servicios'}</td><td style="padding:10px 0;text-align:right;font-weight:600;">${fmt(sub)}</td></tr>
       </tbody>
     </table>
     <div style="display:flex;justify-content:space-between;font-size:13px;color:var(--txt2);margin-bottom:6px;"><span>Subtotal</span><span>${fmt(sub)}</span></div>
@@ -1476,7 +1612,7 @@ function showInvoice(idx){
     <div style="display:flex;gap:8px;margin-top:18px;">
       <button class="btn btn-ghost" style="flex:1" onclick="toast('Enviada por WhatsApp');closeModal()">💬 Enviar</button>
       <button class="btn btn-ghost" style="flex:1" onclick="toast('PDF descargado');closeModal()">↓ PDF</button>
-      ${inv.statusClass!=='ok'?"<button class=\"btn btn-accent\" style=\"flex:1\" onclick=\"toast('Marcada como pagada');closeModal()\">✓ Marcar pagada</button>":''}
+      ${inv.statusClass!=='ok'?`<button class="btn btn-accent" style="flex:1" onclick="marcarFacturaPagada('${inv.id}')">✓ Marcar pagada</button>`:''}
     </div>`;
   document.getElementById('modal-host').classList.add('open');
 }
@@ -1491,13 +1627,16 @@ function renderReports(){
     </div>
   `).join('');
   // Bar chart 12 months
-  const mo=CONFIG.monthsRevenue||[42,48,55,51,62,68,72,78,84,91,88,96];
-  const labels=['J','F','M','A','M','J','J','A','S','O','N','D'];
-  const mx=Math.max(...mo);
-  document.getElementById('report-chart-months').innerHTML=mo.map((v,i)=>`<div class="bar" style="height:${(v/mx)*100}%" title="${labels[i]}: ${v}K€"><span class="bar-label">${labels[i]}</span></div>`).join('');
+  const mo=CONFIG.monthsRevenue||Array(12).fill(0);
+  const labels=['E','F','M','A','M','J','J','A','S','O','N','D'];
+  const mx=Math.max(...mo)||1;
+  document.getElementById('report-chart-months').innerHTML=mo.map((v,i)=>`<div class="bar" style="height:${(v/mx)*100}%" title="${labels[i]}: ${fmt(v)}"><span class="bar-label">${labels[i]}</span></div>`).join('');
   // Top services
-  const top=CONFIG.topServices||CONFIG.catalog.slice(0,5).map(c=>({name:c.name,count:Math.floor(Math.random()*40+20),total:c.price*Math.floor(Math.random()*40+20)}));
-  const topMax=Math.max(...top.map(t=>t.count));
+  const top=CONFIG.topServices||[];
+  if(!top.length){
+    document.getElementById('report-top-services').innerHTML='<p style="text-align:center;color:var(--txt3);font-size:13px;padding:20px 0;">Todavía no hay ventas registradas.</p>';
+  } else {
+  const topMax=Math.max(...top.map(t=>t.count))||1;
   document.getElementById('report-top-services').innerHTML=top.map(t=>`
     <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border2);">
       <div style="flex:1;min-width:0;">
@@ -1506,16 +1645,14 @@ function renderReports(){
       </div>
       <div style="text-align:right;margin-left:14px;">
         <div style="font-size:13px;font-weight:700;color:var(--accent);">${fmt(t.total)}</div>
-        <div style="font-size:10px;color:var(--txt3);">${t.count} sold</div>
+        <div style="font-size:10px;color:var(--txt3);">${t.count} vendidos</div>
       </div>
     </div>`).join('');
-  // VAT
-  const collected=CONFIG.invoices.reduce((a,i)=>a+(i.total*0.05/1.05),0);
-  const paid=collected*0.32;
-  const cur=CONFIG.currency||'EUR';
-  document.getElementById('vat-collected').textContent=cur+' '+Math.round(collected).toLocaleString();
-  document.getElementById('vat-paid').textContent=cur+' '+Math.round(paid).toLocaleString();
-  document.getElementById('vat-net').textContent=cur+' '+Math.round(collected-paid).toLocaleString();
+  }
+  // IGIC: régimen exento, no se repercute ni se recauda IGIC en ninguna venta.
+  document.getElementById('vat-collected').textContent='Exento';
+  document.getElementById('vat-paid').textContent='Exento';
+  document.getElementById('vat-net').textContent='0€';
 }
 
 // ═══════════════ AI INBOX ═══════════════
@@ -1573,26 +1710,48 @@ function inboxSend(){
 
 // ═══════════════ POS ═══════════════
 let POS_CART=[];
+let POS_TAB='servicios';
 function renderPOS(){
+  posSwitchTab('servicios');
+}
+function posSwitchTab(tab){
+  POS_TAB=tab;
+  document.getElementById('pos-tab-servicios').style.background=tab==='servicios'?'var(--accent)':'';
+  document.getElementById('pos-tab-servicios').style.color=tab==='servicios'?'#fff':'';
+  document.getElementById('pos-tab-productos').style.background=tab==='productos'?'var(--accent)':'';
+  document.getElementById('pos-tab-productos').style.color=tab==='productos'?'#fff':'';
   posFilter('');
   posRedrawCart();
 }
+let POS_VISIBLE=[];
 function posFilter(q){
   q=(q||'').toLowerCase();
-  const items=CONFIG.catalog.filter(c=>!q||c.name.toLowerCase().includes(q));
-  document.getElementById('pos-grid').innerHTML=items.map((p,i)=>`
-    <div onclick="posAdd(${i})" style="background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;cursor:pointer;transition:all .15s;" onmouseover="this.style.borderColor='var(--accent)';this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='var(--border)';this.style.transform=''">
+  const source=POS_TAB==='productos'?(CONFIG.stock||[]):CONFIG.catalog;
+  const items=source.filter(c=>!q||c.name.toLowerCase().includes(q));
+  POS_VISIBLE=items;
+  document.getElementById('pos-grid').innerHTML=items.map((p,i)=>{
+    const sinStock=POS_TAB==='productos' && (p.qty||0)<=0;
+    return `
+    <div onclick="${sinStock?'':`posAdd(${i})`}" style="background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;cursor:${sinStock?'not-allowed':'pointer'};opacity:${sinStock?.45:1};transition:all .15s;" ${sinStock?'':`onmouseover="this.style.borderColor='var(--accent)';this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='var(--border)';this.style.transform=''"`}>
       ${p.image?`<img src="${p.image}" style="width:100%;aspect-ratio:1/1;object-fit:cover;display:block;background:#f2f2e8" loading="lazy">`:`<div style="aspect-ratio:1/1;background:linear-gradient(135deg,${CONFIG.colors.accent}22,${CONFIG.colors.accent}08);display:grid;place-items:center;color:var(--accent);font-family:var(--font-serif);font-size:13px;">${p.label||'Producto'}</div>`}
       <div style="padding:8px 10px;">
         <div style="font-size:11px;font-weight:600;color:var(--txt);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${p.name}</div>
         <div style="font-size:12px;font-weight:700;color:var(--accent);">${fmt(p.price)}</div>
+        ${POS_TAB==='productos'?`<div style="font-size:10px;color:var(--txt3);">${sinStock?'Sin stock':p.qty+' en stock'}</div>`:''}
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
 function posAdd(i){
-  const p=CONFIG.catalog[i];
-  const existing=POS_CART.find(c=>c.name===p.name);
-  if(existing){existing.qty++;}else{POS_CART.push({name:p.name,price:p.price,qty:1});}
+  const p=POS_VISIBLE[i];
+  const key=POS_TAB+':'+p.name;
+  const existing=POS_CART.find(c=>c.key===key);
+  if(POS_TAB==='productos'){
+    const enCarrito=existing?existing.qty:0;
+    if(enCarrito>=p.qty){ toast('No queda más stock de este producto'); return; }
+  }
+  if(existing){existing.qty++;}
+  else{POS_CART.push({key,type:POS_TAB==='productos'?'producto':'servicio',stockId:p.id||null,name:p.name,price:p.price,qty:1});}
   posRedrawCart();
 }
 function posRemove(i){POS_CART.splice(i,1);posRedrawCart();}
@@ -1618,13 +1777,40 @@ function posRedrawCart(){
   document.getElementById('pos-total').textContent=fmt(sub+vat);
 }
 function posClear(){POS_CART=[];posRedrawCart();toast('Carrito vaciado');}
-function posPay(method){
+async function posPay(method){
   if(!POS_CART.length){toast('El carrito está vacío');return;}
   const sub=POS_CART.reduce((a,c)=>a+c.price*c.qty,0);
   const vat=0;
   const total=sub+vat;
-  const num='RCP-'+Math.floor(Math.random()*9000+1000);
   const items=POS_CART.slice();
+
+  toast('Guardando venta...');
+  const { data: ventaGuardada, error: ventaError } = await sb.from('ventas').insert({
+    items: items.map(c=>({name:c.name,qty:c.qty,price:c.price,type:c.type})),
+    subtotal: sub,
+    total: total,
+    metodo_pago: method
+  }).select('id').single();
+
+  if(ventaError){
+    toast('No se pudo guardar la venta: '+ventaError.message);
+    return;
+  }
+
+  // Descontar stock de los artículos que sean productos.
+  for(const c of items){
+    if(c.type==='producto' && c.stockId){
+      const actual=(CONFIG.stock||[]).find(s=>s.id===c.stockId);
+      const nuevaCantidad=Math.max(0,(actual?actual.qty:0)-c.qty);
+      const { error: stockError } = await sb.from('stock').update({ cantidad: nuevaCantidad }).eq('id', c.stockId);
+      if(stockError) console.error('No se pudo descontar stock de '+c.name+':', stockError.message);
+    }
+  }
+
+  await loadRealData();
+  refreshAllViews();
+
+  const num='RCP-'+(ventaGuardada?.id||'').slice(0,8).toUpperCase();
   document.getElementById('modal-title').textContent='Recibo '+num;
   document.getElementById('modal-body').innerHTML=`
     <div style="text-align:center;margin-bottom:18px;padding-bottom:14px;border-bottom:1px dashed var(--border);">
@@ -1649,6 +1835,8 @@ function posPay(method){
     </div>`;
   document.getElementById('modal-host').classList.add('open');
   POS_CART=[];posRedrawCart();
+  posFilter('');
+  toast('✓ Venta guardada');
 }
 
 // ═══════════════ FOLLOW-UPS ═══════════════
@@ -1716,12 +1904,17 @@ function renderAccounting(){
     return;
   }
 
-  const vat=Math.round(rev*0.05);
   document.getElementById('pl-tbody').innerHTML=`
     <tr style="border-top:1px solid var(--border);"><td style="padding:10px 0;font-weight:700;">Facturación total</td><td style="text-align:right;font-weight:700;color:#16a34a;">${fmt(rev)}</td></tr>
     <tr style="border-top:1px solid var(--border);"><td style="padding:10px 0;font-weight:700;">Gastos totales</td><td style="text-align:right;font-weight:700;color:#ef4444;">- ${fmt(exp)}</td></tr>
-    <tr><td style="padding:8px 0;color:var(--txt2);">IGIC recaudado</td><td style="text-align:right;">${fmt(vat)}</td></tr>
+    <tr><td style="padding:8px 0;color:var(--txt2);">IGIC recaudado</td><td style="text-align:right;">Exento</td></tr>
     <tr style="border-top:2px solid var(--accent);"><td style="padding:12px 0;font-family:var(--font-serif);font-size:18px;font-weight:600;">Beneficio neto</td><td style="text-align:right;font-family:var(--font-serif);font-size:22px;font-weight:600;color:var(--accent);">${fmt(rev-exp)}</td></tr>`;
+
+  const mo=CONFIG.monthsRevenue||Array(12).fill(0);
+  const labels=['E','F','M','A','M','J','J','A','S','O','N','D'];
+  const mx=Math.max(...mo)||1;
+  document.getElementById('cashflow-chart').innerHTML=mo.map((v,i)=>`<div class="bar" style="height:${(v/mx)*100}%" title="${labels[i]}: ${fmt(v)}"><span class="bar-label">${labels[i]}</span></div>`).join('');
+  document.getElementById('expense-cats').innerHTML=`<div style="padding:20px;text-align:center;color:var(--txt3);font-size:13px;">Todavía no se registran gastos en el panel — solo ingresos.</div>`;
 }
 
 // ═══════════════ TEAM ═══════════════
@@ -1797,64 +1990,125 @@ function quickActionType(t){
   if(t==='invoice'){openInvoiceForm();return;}
 }
 function openBookingForm(){
-  const clients=CONFIG.clients.map(c=>`<option>${c.name}</option>`).join('');
-  const services=CONFIG.catalog.map(c=>`<option data-price="${c.price}">${c.name} · ${fmt(c.price)}</option>`).join('');
+  const clients=(CONFIG.clients||[]).map(c=>`<option value="${c.email||''}" data-phone="${c.phone||''}">${c.name}</option>`).join('');
+  const services=(CONFIG.catalog||[]).map(c=>`<option value="${c.id||''}" data-price="${c.price}">${c.name} · ${fmt(c.price)}</option>`).join('');
   const times=['09:00','09:30','10:00','10:30','11:00','11:30','12:00','14:00','14:30','15:00','15:30','16:00','16:30','17:00','17:30','18:00'];
   document.getElementById('modal-title').textContent='Nueva cita';
   document.getElementById('modal-body').innerHTML=`
     <div style="display:flex;flex-direction:column;gap:14px;">
-      <label style="display:flex;flex-direction:column;gap:4px;"><span style="font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--txt3);font-weight:600;">Clienta</span><select id="bf-client" style="padding:10px 12px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--txt);font-size:13px;">${clients}<option>+ Nueva clienta...</option></select></label>
+      <label style="display:flex;flex-direction:column;gap:4px;"><span style="font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--txt3);font-weight:600;">Clienta</span><select id="bf-client" style="padding:10px 12px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--txt);font-size:13px;">${clients||'<option value="">Sin clientas todavía — añádela primero en Clientas</option>'}</select></label>
       <label style="display:flex;flex-direction:column;gap:4px;"><span style="font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--txt3);font-weight:600;">${CONFIG.labels.catalog||'Tratamiento'}</span><select id="bf-svc" style="padding:10px 12px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--txt);font-size:13px;">${services}</select></label>
       <div class="two-col">
         <label style="display:flex;flex-direction:column;gap:4px;"><span style="font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--txt3);font-weight:600;">Fecha</span><input type="date" id="bf-date" value="${new Date().toISOString().slice(0,10)}" style="padding:10px 12px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--txt);font-size:13px;"></label>
         <label style="display:flex;flex-direction:column;gap:4px;"><span style="font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--txt3);font-weight:600;">Hora</span><select id="bf-time" style="padding:10px 12px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--txt);font-size:13px;">${times.map(t=>`<option>${t}</option>`).join('')}</select></label>
       </div>
-      <label style="display:flex;flex-direction:column;gap:4px;"><span style="font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--txt3);font-weight:600;">Notas</span><textarea rows="2" placeholder="VIP · prefiere silla 2 · alergia a cacahuetes..." style="padding:10px 12px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--txt);font-size:13px;resize:vertical;"></textarea></label>
-      <div style="background:rgba(0,0,0,.03);border:1px dashed var(--border);padding:12px 14px;border-radius:8px;font-size:12px;color:var(--txt2);">
-        <strong style="color:var(--accent);">✦ Sugerencia IA:</strong> Enviar confirmación por WhatsApp + recordatorio 24h antes. Cupón 10% en la próxima visita si es clienta habitual.
-      </div>
+      <label style="display:flex;flex-direction:column;gap:4px;"><span style="font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--txt3);font-weight:600;">Notas</span><textarea id="bf-notas" rows="2" placeholder="VIP · prefiere silla 2 · alergia a cacahuetes..." style="padding:10px 12px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--txt);font-size:13px;resize:vertical;"></textarea></label>
     </div>
+    <p id="bf-error" style="color:#b3441e;font-size:12px;margin-top:8px;"></p>
     <div style="display:flex;gap:8px;margin-top:18px;">
       <button class="btn btn-ghost" style="flex:1" onclick="closeModal()">Cancelar</button>
-      <button class="btn btn-accent" style="flex:1" onclick="toast('✓ Cita confirmada · WhatsApp enviado');closeModal()">Confirmar</button>
+      <button class="btn btn-accent" style="flex:1" onclick="submitBookingForm()">Confirmar</button>
     </div>`;
   document.getElementById('modal-host').classList.add('open');
+}
+async function submitBookingForm(){
+  const clientSel=document.getElementById('bf-client');
+  const svcSel=document.getElementById('bf-svc');
+  const clientName=clientSel.options[clientSel.selectedIndex]?.textContent||'';
+  const clientEmail=clientSel.value||null;
+  const clientPhone=clientSel.options[clientSel.selectedIndex]?.dataset.phone||null;
+  const servicioId=svcSel.value||null;
+  const fecha=document.getElementById('bf-date').value;
+  const hora=document.getElementById('bf-time').value;
+  const notas=document.getElementById('bf-notas').value.trim();
+  const err=document.getElementById('bf-error');
+  if(!clientName){ err.textContent='Elige una clienta (dala de alta primero en Clientas si no existe).'; return; }
+  if(!servicioId){ err.textContent='No hay servicios cargados.'; return; }
+  err.textContent='Guardando...';
+  const { error } = await sb.from('citas').insert({
+    cliente_nombre: clientName,
+    cliente_telefono: clientPhone,
+    cliente_email: clientEmail,
+    fecha: new Date(fecha+'T'+hora+':00').toISOString(),
+    servicio_id: servicioId,
+    estado: 'confirmada',
+    notas: notas || null,
+    origen: 'panel',
+  });
+  if(error){ err.textContent='No se pudo guardar: '+error.message; return; }
+  await loadRealData();
+  refreshAllViews();
+  closeModal();
+  toast('✓ Cita guardada');
 }
 function openClientForm(){
   document.getElementById('modal-title').textContent='Nueva clienta';
   document.getElementById('modal-body').innerHTML=`
     <div style="display:flex;flex-direction:column;gap:14px;">
-      <label style="display:flex;flex-direction:column;gap:4px;"><span style="font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--txt3);font-weight:600;">Nombre completo</span><input placeholder="ej. Carla Domínguez" style="padding:10px 12px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--txt);font-size:13px;"></label>
+      <label style="display:flex;flex-direction:column;gap:4px;"><span style="font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--txt3);font-weight:600;">Nombre completo</span><input id="cf-name" placeholder="ej. Carla Domínguez" style="padding:10px 12px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--txt);font-size:13px;"></label>
       <div class="two-col">
-        <label style="display:flex;flex-direction:column;gap:4px;"><span style="font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--txt3);font-weight:600;">Teléfono</span><input placeholder="+34..." style="padding:10px 12px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--txt);font-size:13px;"></label>
-        <label style="display:flex;flex-direction:column;gap:4px;"><span style="font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--txt3);font-weight:600;">Email</span><input placeholder="opcional" style="padding:10px 12px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--txt);font-size:13px;"></label>
+        <label style="display:flex;flex-direction:column;gap:4px;"><span style="font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--txt3);font-weight:600;">Teléfono</span><input id="cf-phone" placeholder="+34..." style="padding:10px 12px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--txt);font-size:13px;"></label>
+        <label style="display:flex;flex-direction:column;gap:4px;"><span style="font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--txt3);font-weight:600;">Email</span><input id="cf-email" placeholder="opcional" style="padding:10px 12px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--txt);font-size:13px;"></label>
       </div>
-      <label style="display:flex;flex-direction:column;gap:4px;"><span style="font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--txt3);font-weight:600;">Origen</span><select style="padding:10px 12px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--txt);font-size:13px;"><option>Sin cita previa</option><option>Instagram</option><option>Agente IA de WhatsApp</option><option>Referido</option><option>Google</option></select></label>
-      <label style="display:flex;flex-direction:column;gap:4px;"><span style="font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--txt3);font-weight:600;">Etiquetas</span><input placeholder="VIP, novia, inactiva..." style="padding:10px 12px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--txt);font-size:13px;"></label>
     </div>
+    <p id="cf-error" style="color:#b3441e;font-size:12px;margin-top:8px;"></p>
     <div style="display:flex;gap:8px;margin-top:18px;">
       <button class="btn btn-ghost" style="flex:1" onclick="closeModal()">Cancelar</button>
-      <button class="btn btn-accent" style="flex:1" onclick="toast('✓ Clienta añadida');closeModal()">Añadir clienta</button>
+      <button class="btn btn-accent" style="flex:1" onclick="submitClientForm()">Añadir clienta</button>
     </div>`;
   document.getElementById('modal-host').classList.add('open');
 }
+async function submitClientForm(){
+  const name=document.getElementById('cf-name').value.trim();
+  const phone=document.getElementById('cf-phone').value.trim();
+  const email=document.getElementById('cf-email').value.trim();
+  const err=document.getElementById('cf-error');
+  if(!name){ err.textContent='Falta el nombre.'; return; }
+  err.textContent='Guardando...';
+  const result=await crearClientaReal(name, phone, email);
+  if(result.error){ err.textContent='No se pudo guardar: '+result.error; return; }
+  toast('✓ Clienta añadida');
+  closeModal();
+}
 function openInvoiceForm(){
-  const clients=CONFIG.clients.map(c=>`<option>${c.name}</option>`).join('');
+  const clients=(CONFIG.clients||[]).map(c=>`<option value="${c.email||''}">${c.name}</option>`).join('');
   document.getElementById('modal-title').textContent='Nueva factura';
   document.getElementById('modal-body').innerHTML=`
     <div style="display:flex;flex-direction:column;gap:14px;">
-      <label style="display:flex;flex-direction:column;gap:4px;"><span style="font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--txt3);font-weight:600;">Facturar a</span><select style="padding:10px 12px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--txt);font-size:13px;">${clients}</select></label>
-      <label style="display:flex;flex-direction:column;gap:4px;"><span style="font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--txt3);font-weight:600;">Artículos</span><textarea rows="3" placeholder="1 × Radiofrecuencia facial · 55€&#10;1 × Sérum reafirmante · 38€" style="padding:10px 12px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--txt);font-size:13px;resize:vertical;"></textarea></label>
+      <label style="display:flex;flex-direction:column;gap:4px;"><span style="font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--txt3);font-weight:600;">Facturar a</span><select id="if-client" style="padding:10px 12px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--txt);font-size:13px;">${clients||'<option value="">Sin clientas todavía</option>'}</select></label>
+      <label style="display:flex;flex-direction:column;gap:4px;"><span style="font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--txt3);font-weight:600;">Artículos</span><textarea id="if-items" rows="3" placeholder="1 × Radiofrecuencia facial · 55€&#10;1 × Sérum reafirmante · 38€" style="padding:10px 12px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--txt);font-size:13px;resize:vertical;"></textarea></label>
       <div class="two-col">
-        <label style="display:flex;flex-direction:column;gap:4px;"><span style="font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--txt3);font-weight:600;">Total (EUR)</span><input value="55" style="padding:10px 12px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--txt);font-size:13px;"></label>
+        <label style="display:flex;flex-direction:column;gap:4px;"><span style="font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--txt3);font-weight:600;">Total (EUR)</span><input id="if-total" value="55" style="padding:10px 12px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--txt);font-size:13px;"></label>
         <label style="display:flex;flex-direction:column;gap:4px;"><span style="font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--txt3);font-weight:600;">IGIC</span><input value="Exento (régimen IGIC)" disabled style="padding:10px 12px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--txt3);font-size:13px;"></label>
       </div>
     </div>
+    <p id="if-error" style="color:#b3441e;font-size:12px;margin-top:8px;"></p>
     <div style="display:flex;gap:8px;margin-top:18px;">
       <button class="btn btn-ghost" style="flex:1" onclick="closeModal()">Cancelar</button>
-      <button class="btn btn-accent" style="flex:1" onclick="toast('✓ Factura creada y enviada');closeModal()">Crear y enviar</button>
+      <button class="btn btn-accent" style="flex:1" onclick="submitInvoiceForm()">Crear factura</button>
     </div>`;
   document.getElementById('modal-host').classList.add('open');
+}
+async function submitInvoiceForm(){
+  const sel=document.getElementById('if-client');
+  const clientName=sel.options[sel.selectedIndex]?.textContent||'';
+  const clientEmail=sel.value||null;
+  const items=document.getElementById('if-items').value.trim();
+  const total=parseFloat(document.getElementById('if-total').value.replace(',','.'));
+  const err=document.getElementById('if-error');
+  if(!clientName){ err.textContent='Elige una clienta (dala de alta primero en Clientas si no existe).'; return; }
+  if(!items){ err.textContent='Añade al menos un artículo.'; return; }
+  if(!total || total<=0){ err.textContent='El total debe ser mayor que 0.'; return; }
+  err.textContent='Guardando...';
+  const numero='F-'+String((CONFIG.invoices||[]).length+1).padStart(4,'0')+'-'+Date.now().toString().slice(-4);
+  const { error } = await sb.from('facturas').insert({
+    numero, cliente_nombre: clientName, cliente_email: clientEmail, items, total, estado: 'pendiente'
+  });
+  if(error){ err.textContent='No se pudo guardar: '+error.message; return; }
+  await loadRealData();
+  refreshAllViews();
+  closeModal();
+  toast('✓ Factura creada');
 }
 
 </script>
