@@ -512,12 +512,12 @@ tbody tr:hover{background:rgba(0,0,0,.02);}
       </div>
       <div class="nav-item" onclick="goPage('reports',this)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
-        Reports
+        Informes
       </div>
       <div class="nav-section">Configuración</div>
       <div class="nav-item" onclick="goPage('team',this)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-        Team
+        Equipo
       </div>
     </nav>
     <div class="sidebar-footer">
@@ -584,7 +584,7 @@ tbody tr:hover{background:rgba(0,0,0,.02);}
       </div>
 
       <div class="card" style="margin-top:18px;">
-        <div class="card-hd"><div class="card-hd-title">Today\'s upcoming</div><a href="#" onclick="goPage('schedule',document.querySelectorAll('.nav-item')[1]);return false;" style="font-size:11px;color:var(--accent);letter-spacing:.06em;font-weight:600">See all →</a></div>
+        <div class="card-hd"><div class="card-hd-title">Próximas citas de hoy</div><a href="#" onclick="goPage('schedule',document.querySelectorAll('.nav-item')[1]);return false;" style="font-size:11px;color:var(--accent);letter-spacing:.06em;font-weight:600">Ver todas →</a></div>
         <div class="card-body">
           <div class="table-wrap"><table><thead><tr><th>Hora</th><th>Clienta</th><th>Tratamiento</th><th>Estado</th></tr></thead><tbody id="dash-today-tbody"></tbody></table></div>
         </div>
@@ -596,13 +596,13 @@ tbody tr:hover{background:rgba(0,0,0,.02);}
       <div class="page-hd">
         <div>
           <h1 class="page-title">Citas</h1>
-          <div class="page-sub">Week view · Today · Upcoming</div>
+          <div class="page-sub">Vista semanal · Hoy · Próximas</div>
         </div>
         <div style="display:flex;gap:8px;">
-          <button class="btn btn-ghost">‹ Week</button>
-          <button class="btn btn-ghost">Hoy</button>
-          <button class="btn btn-ghost">Week ›</button>
-          <button class="btn btn-accent">+ New Cita</button>
+          <button class="btn btn-ghost" onclick="toast('Semana anterior (próximamente)')">‹ Semana</button>
+          <button class="btn btn-ghost" onclick="toast('Volviendo a hoy')">Hoy</button>
+          <button class="btn btn-ghost" onclick="toast('Semana siguiente (próximamente)')">Semana ›</button>
+          <button class="btn btn-accent" onclick="openBookingForm()">+ Nueva cita</button>
         </div>
       </div>
 
@@ -615,7 +615,7 @@ tbody tr:hover{background:rgba(0,0,0,.02);}
 
       <div class="card">
         <div class="card-hd"><div class="card-hd-title">Hoy</div><span style="font-size:11px;color:var(--txt3)" id="today-count"></span></div>
-        <div class="table-wrap"><table><thead><tr><th>Hora</th><th>Clienta</th><th>Tratamiento</th><th>Duration</th><th>Estado</th></tr></thead><tbody id="schedule-tbody"></tbody></table></div>
+        <div class="table-wrap"><table><thead><tr><th>Hora</th><th>Clienta</th><th>Tratamiento</th><th>Duración</th><th>Estado</th></tr></thead><tbody id="schedule-tbody"></tbody></table></div>
       </div>
     </div>
 
@@ -626,7 +626,7 @@ tbody tr:hover{background:rgba(0,0,0,.02);}
           <h1 class="page-title">En cabina</h1>
           <div class="page-sub">Flujo arrastrar y soltar</div>
         </div>
-        <button class="btn btn-accent">+ New entry</button>
+        <button class="btn btn-accent" onclick="toast('Nueva entrada en cabina (próximamente)')">+ Nueva entrada</button>
       </div>
       <div class="kanban" id="kanban"></div>
     </div>
@@ -654,12 +654,12 @@ tbody tr:hover{background:rgba(0,0,0,.02);}
           <h1 class="page-title">Clientas</h1>
           <div class="page-sub">Base de datos completa de clientas</div>
         </div>
-        <button class="btn btn-accent">+ Nueva clienta</button>
+        <button class="btn btn-accent" onclick="openClientForm()">+ Nueva clienta</button>
       </div>
       <div class="card">
         <div class="card-body">
           <input class="field-input" placeholder="Buscar por nombre, teléfono, email…" oninput="filterClients(this.value)" style="margin-bottom:14px;">
-          <div class="table-wrap"><table><thead><tr><th>Name</th><th>Teléfono</th><th>Última visita</th><th>Visitas</th><th>Gastado</th><th>Etiquetas</th></tr></thead><tbody id="clients-tbody"></tbody></table></div>
+          <div class="table-wrap"><table><thead><tr><th>Nombre</th><th>Teléfono</th><th>Última visita</th><th>Visitas</th><th>Gastado</th><th>Etiquetas</th></tr></thead><tbody id="clients-tbody"></tbody></table></div>
         </div>
       </div>
     </div>
@@ -671,7 +671,7 @@ tbody tr:hover{background:rgba(0,0,0,.02);}
           <h1 class="page-title">Servicios</h1>
           <div class="page-sub">Productos y servicios</div>
         </div>
-        <button class="btn btn-accent">+ Nuevo artículo</button>
+        <button class="btn btn-accent" onclick="toast('Formulario de nuevo artículo abierto')">+ Nuevo artículo</button>
       </div>
       <div class="card">
         <div class="card-body">
@@ -685,9 +685,9 @@ tbody tr:hover{background:rgba(0,0,0,.02);}
       <div class="page-hd">
         <div>
           <h1 class="page-title">Facturas</h1>
-          <div class="page-sub">IVA 21% · UAE</div>
+          <div class="page-sub">Régimen IGIC · Exento</div>
         </div>
-        <button class="btn btn-accent">+ New invoice</button>
+        <button class="btn btn-accent" onclick="openInvoiceForm()">+ Nueva factura</button>
       </div>
       <div class="card">
         <div class="card-body">
@@ -701,11 +701,11 @@ tbody tr:hover{background:rgba(0,0,0,.02);}
       <div class="page-hd">
         <div>
           <h1 class="page-title">Informes</h1>
-          <div class="page-sub">Financial summary · VAT · Export</div>
+          <div class="page-sub">Resumen financiero · IGIC · Exportar</div>
         </div>
         <div style="display:flex;gap:8px;">
-          <select class="topbar-btn" style="padding:8px 14px;"><option>Este mes</option><option>Last 30 days</option><option>Trimestre</option><option>Año</option></select>
-          <button class="btn btn-accent">↓ Export PDF</button>
+          <select class="topbar-btn" style="padding:8px 14px;"><option>Este mes</option><option>Últimos 30 días</option><option>Trimestre</option><option>Año</option></select>
+          <button class="btn btn-accent" onclick="toast('PDF exportado')">↓ Exportar PDF</button>
         </div>
       </div>
       <div class="stats-grid" id="reports-stats"></div>
@@ -722,21 +722,21 @@ tbody tr:hover{background:rgba(0,0,0,.02);}
       </div>
 
       <div class="card" style="margin-top:18px;">
-        <div class="card-hd"><div class="card-hd-title">VAT summary · UAE 5%</div><span style="font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--accent);font-weight:700">Para presentar a la gestoría</span></div>
+        <div class="card-hd"><div class="card-hd-title">Resumen de IGIC (régimen exento)</div><span style="font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--accent);font-weight:700">Para presentar a la gestoría</span></div>
         <div class="card-body">
           <div class="two-col">
             <div>
-              <div style="font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--txt3);margin-bottom:6px;font-weight:600;">VAT collected (MTD)</div>
+              <div style="font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--txt3);margin-bottom:6px;font-weight:600;">IGIC cobrado (mes)</div>
               <div style="font-family:var(--font-serif);font-size:34px;font-weight:500;color:var(--txt);" id="vat-collected">0€</div>
             </div>
             <div>
-              <div style="font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--txt3);margin-bottom:6px;font-weight:600;">VAT paid (purchases)</div>
+              <div style="font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--txt3);margin-bottom:6px;font-weight:600;">IGIC pagado (compras)</div>
               <div style="font-family:var(--font-serif);font-size:34px;font-weight:500;color:var(--txt);" id="vat-paid">0€</div>
             </div>
           </div>
           <hr style="margin:18px 0;border:none;border-top:1px solid var(--border);">
           <div style="display:flex;justify-content:space-between;align-items:center;">
-            <div style="font-size:14px;font-weight:700;color:var(--txt);">IVA neto a pagar</div>
+            <div style="font-size:14px;font-weight:700;color:var(--txt);">IGIC neto a pagar</div>
             <div style="font-family:var(--font-serif);font-size:28px;font-weight:500;color:var(--accent);" id="vat-net">0€</div>
           </div>
         </div>
@@ -748,17 +748,17 @@ tbody tr:hover{background:rgba(0,0,0,.02);}
       <div class="page-hd">
         <div>
           <h1 class="page-title">Bandeja IA</h1>
-          <div class="page-sub">Conversations your AI agent handled · WhatsApp · Instagram · Web</div>
+          <div class="page-sub">Conversaciones gestionadas por tu agente IA · WhatsApp · Instagram · Web</div>
         </div>
         <div style="display:flex;gap:8px;">
-          <button class="btn btn-ghost" onclick="toast('Auto-reply enabled')">⚡ Auto-reply ON</button>
-          <button class="btn btn-accent" onclick="toast('AI rules updated')">⚙︎ Train AI</button>
+          <button class="btn btn-ghost" onclick="toast('Respuesta automática activada')">⚡ Respuesta automática ON</button>
+          <button class="btn btn-accent" onclick="toast('Reglas de la IA actualizadas')">⚙︎ Entrenar IA</button>
         </div>
       </div>
       <div class="stats-grid" id="inbox-stats"></div>
       <div style="display:grid;grid-template-columns:320px 1fr;gap:18px;min-height:520px;">
         <div class="card" style="margin-bottom:0;overflow:hidden;display:flex;flex-direction:column;">
-          <div class="card-hd" style="flex-shrink:0"><div class="card-hd-title">Conversaciones</div><span style="font-size:11px;color:var(--accent);font-weight:700;" id="inbox-active">0 active</span></div>
+          <div class="card-hd" style="flex-shrink:0"><div class="card-hd-title">Conversaciones</div><span style="font-size:11px;color:var(--accent);font-weight:700;" id="inbox-active">0 activas</span></div>
           <div id="inbox-threads" style="overflow-y:auto;flex:1;"></div>
         </div>
         <div class="card" style="margin-bottom:0;display:flex;flex-direction:column;">
@@ -777,7 +777,7 @@ tbody tr:hover{background:rgba(0,0,0,.02);}
       <div class="page-hd">
         <div>
           <h1 class="page-title">Punto de venta</h1>
-          <div class="page-sub">Quick checkout · Card · Cash · Apple Pay</div>
+          <div class="page-sub">Cobro rápido · Tarjeta · Efectivo · Apple Pay</div>
         </div>
         <button class="btn btn-ghost" onclick="posClear()">Vaciar carrito</button>
       </div>
@@ -787,16 +787,16 @@ tbody tr:hover{background:rgba(0,0,0,.02);}
           <div class="card-body"><div id="pos-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;"></div></div>
         </div>
         <div class="card" style="margin-bottom:0;position:sticky;top:14px;">
-          <div class="card-hd"><div class="card-hd-title">Venta actual</div><span id="pos-count" style="font-size:11px;color:var(--txt3)">0 items</span></div>
+          <div class="card-hd"><div class="card-hd-title">Venta actual</div><span id="pos-count" style="font-size:11px;color:var(--txt3)">0 artículos</span></div>
           <div class="card-body">
             <div id="pos-cart" style="max-height:280px;overflow-y:auto;"></div>
             <hr style="margin:14px 0;border:none;border-top:1px solid var(--border);">
             <div style="display:flex;justify-content:space-between;font-size:13px;color:var(--txt2);margin-bottom:4px;"><span>Subtotal</span><span id="pos-sub">0€</span></div>
-            <div style="display:flex;justify-content:space-between;font-size:13px;color:var(--txt2);margin-bottom:8px;"><span>IVA 21%</span><span id="pos-vat">0€</span></div>
+            <div style="display:flex;justify-content:space-between;font-size:13px;color:var(--txt2);margin-bottom:8px;"><span>IGIC</span><span id="pos-vat">Exento</span></div>
             <div style="display:flex;justify-content:space-between;font-family:var(--font-serif);font-size:22px;font-weight:500;color:var(--txt);margin-bottom:14px;"><span>Total</span><span id="pos-total" style="color:var(--accent)">0€</span></div>
             <div style="display:flex;gap:6px;margin-bottom:8px;">
-              <button class="btn btn-ghost" style="flex:1" onclick="posPay('Card')">💳 Card</button>
-              <button class="btn btn-ghost" style="flex:1" onclick="posPay('Cash')">💵 Cash</button>
+              <button class="btn btn-ghost" style="flex:1" onclick="posPay('Tarjeta')">💳 Tarjeta</button>
+              <button class="btn btn-ghost" style="flex:1" onclick="posPay('Efectivo')">💵 Efectivo</button>
             </div>
             <button class="btn btn-accent" style="width:100%" onclick="posPay('Apple Pay')">  Apple Pay</button>
           </div>
@@ -809,9 +809,9 @@ tbody tr:hover{background:rgba(0,0,0,.02);}
       <div class="page-hd">
         <div>
           <h1 class="page-title">Seguimientos</h1>
-          <div class="page-sub">Clients to reach out · AI-suggested</div>
+          <div class="page-sub">Clientas a contactar · sugerido por IA</div>
         </div>
-        <button class="btn btn-accent" onclick="toast('Bulk WhatsApp draft created')">✨ Draft all with AI</button>
+        <button class="btn btn-accent" onclick="toast('Borradores de WhatsApp creados')">✨ Generar todos con IA</button>
       </div>
       <div class="stats-grid" id="fu-stats"></div>
       <div class="card">
@@ -825,11 +825,11 @@ tbody tr:hover{background:rgba(0,0,0,.02);}
       <div class="page-hd">
         <div>
           <h1 class="page-title">Stock</h1>
-          <div class="page-sub">Inventory · Low stock alerts · Reorder</div>
+          <div class="page-sub">Inventario · Alertas de stock bajo · Reponer</div>
         </div>
         <div style="display:flex;gap:8px;">
-          <button class="btn btn-ghost" onclick="toast('CSV exported')">↓ Export</button>
-          <button class="btn btn-accent" onclick="toast('Add product form opened')">+ Add item</button>
+          <button class="btn btn-ghost" onclick="toast('CSV exportado')">↓ Exportar</button>
+          <button class="btn btn-accent" onclick="toast('Formulario de nuevo artículo abierto')">+ Añadir artículo</button>
         </div>
       </div>
       <div class="stats-grid" id="stock-stats"></div>
@@ -858,17 +858,17 @@ tbody tr:hover{background:rgba(0,0,0,.02);}
       <div class="page-hd">
         <div>
           <h1 class="page-title">Contabilidad</h1>
-          <div class="page-sub">P&L · Cash flow · UAE compliance</div>
+          <div class="page-sub">Pérdidas y ganancias · Flujo de caja · Cumplimiento fiscal</div>
         </div>
         <div style="display:flex;gap:8px;">
           <select class="topbar-btn" style="padding:8px 14px;"><option>Este mes</option><option>Trimestre</option><option>Año</option></select>
-          <button class="btn btn-accent" onclick="toast('FTA report exported')">↓ FTA report</button>
+          <button class="btn btn-accent" onclick="toast('Informe fiscal exportado')">↓ Informe fiscal</button>
         </div>
       </div>
       <div class="stats-grid" id="acc-stats"></div>
 
       <div class="card">
-        <div class="card-hd"><div class="card-hd-title">Profit &amp; Loss · MTD</div></div>
+        <div class="card-hd"><div class="card-hd-title">Pérdidas y ganancias · Mes en curso</div></div>
         <div class="card-body">
           <table style="width:100%;"><tbody id="pl-tbody"></tbody></table>
         </div>
@@ -876,7 +876,7 @@ tbody tr:hover{background:rgba(0,0,0,.02);}
 
       <div class="two-col">
         <div class="card" style="margin-bottom:0;">
-          <div class="card-hd"><div class="card-hd-title">Cash flow (last 30 days)</div></div>
+          <div class="card-hd"><div class="card-hd-title">Flujo de caja (últimos 30 días)</div></div>
           <div class="card-body"><div class="bar-chart" id="cashflow-chart"></div></div>
         </div>
         <div class="card" style="margin-bottom:0;">
@@ -891,21 +891,21 @@ tbody tr:hover{background:rgba(0,0,0,.02);}
       <div class="page-hd">
         <div>
           <h1 class="page-title">Equipo</h1>
-          <div class="page-sub">Staff · Roles · Permissions</div>
+          <div class="page-sub">Personal · Roles · Permisos</div>
         </div>
-        <button class="btn btn-accent" onclick="toast('Invite form opened')">+ Invite member</button>
+        <button class="btn btn-accent" onclick="toast('Formulario de invitación abierto')">+ Invitar miembro</button>
       </div>
       <div class="card">
-        <div class="card-hd"><div class="card-hd-title">Miembros</div><span style="font-size:11px;color:var(--txt3)" id="team-count">0 active</span></div>
+        <div class="card-hd"><div class="card-hd-title">Miembros</div><span style="font-size:11px;color:var(--txt3)" id="team-count">0 activos</span></div>
         <div class="card-body"><div id="team-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;"></div></div>
       </div>
       <div class="card">
-        <div class="card-hd"><div class="card-hd-title">Roles &amp; permissions</div></div>
+        <div class="card-hd"><div class="card-hd-title">Roles y permisos</div></div>
         <div class="table-wrap"><table><thead><tr><th>Rol</th><th>POS</th><th>Citas</th><th>Clientas</th><th>Facturas</th><th>Informes</th></tr></thead><tbody>
           <tr><td><strong>Propietaria</strong></td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td></tr>
           <tr><td><strong>Encargada</strong></td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>—</td></tr>
-          <tr><td><strong>Personal</strong></td><td>✓</td><td>✓</td><td>view</td><td>—</td><td>—</td></tr>
-          <tr><td><strong>Recepción</strong></td><td>—</td><td>✓</td><td>view</td><td>—</td><td>—</td></tr>
+          <tr><td><strong>Personal</strong></td><td>✓</td><td>✓</td><td>ver</td><td>—</td><td>—</td></tr>
+          <tr><td><strong>Recepción</strong></td><td>—</td><td>✓</td><td>ver</td><td>—</td><td>—</td></tr>
         </tbody></table></div>
       </div>
     </div>
@@ -967,8 +967,8 @@ tbody tr:hover{background:rgba(0,0,0,.02);}
 <!-- FAB ACTIONS -->
 <div id="fab-actions">
   <button class="fab-action" onclick="quickActionType('client')">+ Añadir clienta</button>
-  <button class="fab-action" onclick="quickActionType('schedule')">+ New booking</button>
-  <button class="fab-action" onclick="quickActionType('invoice')">+ New invoice</button>
+  <button class="fab-action" onclick="quickActionType('schedule')">+ Nueva cita</button>
+  <button class="fab-action" onclick="quickActionType('invoice')">+ Nueva factura</button>
 </div>
 
 <!-- AI BUBBLE -->
@@ -992,7 +992,7 @@ tbody tr:hover{background:rgba(0,0,0,.02);}
 
 <script>
 // ═══════════════ DEMO CONFIG ═══════════════
-const CONFIG = {"biz": "Divas Skin Care by Louie", "colors": {"primary": "#3d4a3a", "accent": "#bc916a"}, "labels": {"schedule": "Citas", "pipeline": "En cabina", "clients": "Clientas", "catalog": "Servicios y Tienda"}, "stats": [{"label": "Citas hoy", "value": "0", "trend": "", "trendType": "neutral", "spark": [0, 0, 0, 0, 0, 0, 0, 0]}, {"label": "Facturación hoy", "value": "0", "trend": "", "trendType": "neutral", "spark": [0, 0, 0, 0, 0, 0, 0, 0]}, {"label": "Clientas nuevas (mes)", "value": "0", "trend": "", "trendType": "neutral", "spark": [0, 0, 0, 0, 0, 0, 0, 0]}, {"label": "% de no-shows", "value": "0", "trend": "", "trendType": "neutral", "spark": [0, 0, 0, 0, 0, 0, 0, 0]}], "insights": [], "schedule": [], "kanban": {"columns": [{"name": "Esperando", "color": "#94a3b8", "cards": []}, {"name": "En cabina", "color": "#bc916a", "cards": []}, {"name": "Láser IPL", "color": "#a78bfa", "cards": []}, {"name": "Caja", "color": "#16a34a", "cards": []}]}, "clients": [], "catalog": [{"name": "Limpieza profunda (peeling químico, hydrafacial y extracción / tratamiento facial)", "cat": "Faciales · 1h 15min", "price": 33, "label": "Facial"}, {"name": "Limpieza Facial Profunda + Extracción de Puntos Negros", "cat": "Faciales · 1h 15min", "price": 55, "label": "Facial"}, {"name": "Limpieza + Extracción + Radiofrecuencia", "cat": "Faciales · 1h 15min", "price": 65, "label": "Facial", "image": "img/maquina-kelaya.jpeg"}, {"name": "Limpieza + Extracción + Vitaminas/Ácido Hyaluronico", "cat": "Faciales · 1h 15min", "price": 65, "label": "Facial", "image": "img/maquina-kelaya.jpeg"}, {"name": "Limpieza + Extracción + Dermapen", "cat": "Faciales · 1h 15min", "price": 79, "label": "Facial", "image": "img/maquina-kelaya.jpeg"}, {"name": "Limpieza + Extracción + Mesoterapia Electroporación", "cat": "Faciales · 1h 15min", "price": 83, "label": "Facial", "image": "img/maquina-kelaya.jpeg"}, {"name": "Divas Glass Skin ★ (técnica coreana)", "cat": "Faciales · 1h 45min", "price": 125, "label": "Facial"}, {"name": "Divas Láser Anti-aging", "cat": "Faciales · 1h 15min", "price": 119, "label": "Facial"}, {"name": "Dermapen Capilar Anti-Caída", "cat": "Faciales · 1h 15min", "price": 89, "label": "Facial"}, {"name": "Plasma Pen · zona pequeña", "cat": "Plasma Pen · 1h", "price": 59, "label": "Plasma Pen"}, {"name": "Plasma Pen · párpados / código de barras / surco de marioneta", "cat": "Plasma Pen · 1h 45min", "price": 89, "label": "Plasma Pen"}, {"name": "Plasma Pen · abdomen o brazos", "cat": "Plasma Pen · 1h 45min", "price": 150, "label": "Plasma Pen"}, {"name": "Plasma Pen · rostro completo", "cat": "Plasma Pen · 2h 15min", "price": 220, "label": "Plasma Pen"}, {"name": "Radiofrecuencia + Presoterapia", "cat": "Corporales · 1h", "price": 55, "label": "Corporal", "image": "img/maquina-kelaya.jpeg"}, {"name": "Cavitación corporal + Presoterapia", "cat": "Corporales · 1h", "price": 45, "label": "Corporal", "image": "img/maquina-cavitacion-lipolaser-rf.jpeg"}, {"name": "Vacum Theraphy + Presoterapia", "cat": "Corporales · 50 min", "price": 45, "label": "Corporal"}, {"name": "Lipoláser + Presoterapia", "cat": "Corporales · 1h", "price": 40, "label": "Corporal"}, {"name": "CoreFit + Presoterapia (reductor y escultor)", "cat": "Corporales · 1h 10min", "price": 45, "label": "Corporal", "image": "img/maquina-corefit.jpeg"}, {"name": "Maderoterapia corporal + Presoterapia (por zonas)", "cat": "Corporales · 1h 10min", "price": 60, "label": "Corporal", "image": "img/maquina-corefit.jpeg"}, {"name": "Presoterapia", "cat": "Corporales · 55 min", "price": 30, "label": "Corporal", "image": "img/maquina-corefit.jpeg"}, {"name": "Blanqueado / Peeling Corporal (por zona)", "cat": "Corporales · 1h", "price": 45, "label": "Corporal"}, {"name": "Exfoliación Corporal", "cat": "Corporales · 1h", "price": 45, "label": "Corporal"}, {"name": "Envoltura + Exfoliación (cuerpo entero)", "cat": "Corporales · 1h", "price": 55, "label": "Corporal"}, {"name": "Peeling + Extracción Espalda", "cat": "Corporales · 1h", "price": 65, "label": "Corporal"}, {"name": "IPL Facial Completo (mujer)", "cat": "Láser IPL · 30 min", "price": 19, "label": "Láser", "image": "img/maquina-laser-ipl.jpeg"}, {"name": "IPL Cuerpo Completo (mujer)", "cat": "Láser IPL · 1h 30min", "price": 99, "label": "Láser", "image": "img/maquina-laser-ipl.jpeg"}, {"name": "IPL Bigote, Axilas, Inglés, Pubis y Perianal (mujer)", "cat": "Láser IPL · 40 min", "price": 56, "label": "Láser", "image": "img/maquina-laser-ipl.jpeg"}, {"name": "IPL Piernas, Axilas, Inglés, Pubis y Perianal (mujer)", "cat": "Láser IPL · 50 min", "price": 59, "label": "Láser", "image": "img/maquina-laser-ipl.jpeg"}, {"name": "IPL Facial Completo con Marcación de Barba (hombre)", "cat": "Láser IPL · 45 min", "price": 21, "label": "Láser", "image": "img/maquina-laser-ipl.jpeg"}, {"name": "IPL Cuerpo Completo con Marcación de Barba (hombre)", "cat": "Láser IPL · 2h", "price": 149, "label": "Láser", "image": "img/maquina-laser-ipl.jpeg"}, {"name": "Eliminación de Fibromas / Lentigos Solares / Lunares Rubís (1-10)", "cat": "Medicina Estética · 1h", "price": 40, "label": "Medicina Estética"}, {"name": "Eliminación de Fibromas / Lentigos · zona mediana", "cat": "Medicina Estética · 1h 15min", "price": 59, "label": "Medicina Estética"}, {"name": "Eliminación de Fibromas / Lentigos · zona grande", "cat": "Medicina Estética · 1h 30min", "price": 80, "label": "Medicina Estética"}, {"name": "Cejas con hilo", "cat": "Cejas y depilación · 30 min", "price": 11, "label": "Cejas"}, {"name": "Cejas y labios con hilo", "cat": "Cejas y depilación · 45 min", "price": 15, "label": "Cejas"}, {"name": "Labio superior con hilo", "cat": "Cejas y depilación · 20 min", "price": 7, "label": "Cejas"}, {"name": "Facial Completo con hilo", "cat": "Cejas y depilación · 1h", "price": 25, "label": "Cejas"}, {"name": "Depilación + Henna (cejas)", "cat": "Cejas y depilación · 1h", "price": 22, "label": "Cejas"}, {"name": "Depilación + Laminado Cejas + Henna", "cat": "Cejas y depilación · 1h 10min", "price": 40, "label": "Cejas"}, {"name": "Valoración Facial", "cat": "Diagnóstico · 30 min", "price": 0, "label": "Diagnóstico", "bookable": false}, {"name": "Valoración Corporal", "cat": "Diagnóstico · 30 min", "price": 0, "label": "Diagnóstico", "bookable": false}, {"name": "Láser Antiacné / Antimarcas", "cat": "Faciales · 30 min", "price": 0, "label": "Facial", "bookable": false}, {"name": "Láser Antimanchas", "cat": "Faciales · 30 min", "price": 0, "label": "Facial", "bookable": false}, {"name": "Láser Rejuvenecimiento / Antiarrugas", "cat": "Faciales · 30 min", "price": 0, "label": "Facial", "bookable": false}, {"name": "Peeling facial", "cat": "Faciales · 40 min", "price": 0, "label": "Facial", "bookable": false}, {"name": "Divas Skin Club · Entrada Socia + Prueba Gratis", "cat": "Skin Club · 1h", "price": 40, "label": "Skin Club", "bookable": false}, {"name": "Divas Skin Club · Socio Limpieza + Extracción", "cat": "Skin Club · 1h", "price": 33, "label": "Skin Club", "bookable": false}, {"name": "Divas Skin Club · Socio Peeling Químico + Extracción", "cat": "Skin Club · 1h", "price": 27, "label": "Skin Club", "bookable": false}], "invoices": [], "reportStats": [{"label": "Facturación del mes", "value": "0", "trend": "", "trendType": "neutral", "spark": [0, 0, 0, 0, 0, 0, 0, 0]}, {"label": "IVA recaudado", "value": "0", "trend": "", "spark": [0, 0, 0, 0, 0, 0, 0, 0], "trendType": "neutral"}, {"label": "Ticket medio", "value": "0", "trend": "", "trendType": "neutral", "spark": [0, 0, 0, 0, 0, 0, 0, 0]}, {"label": "Retención de clientas", "value": "0", "trend": "", "trendType": "neutral", "spark": [0, 0, 0, 0, 0, 0, 0, 0]}], "aiReplies": ["Todavía no hay datos suficientes para generar un resumen. En cuanto haya citas y ventas reales, te lo cuento aquí."], "currency": "EUR", "weekRevenue": [0, 0, 0, 0, 0, 0, 0], "monthsRevenue": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], "activity": [], "notifications": [], "topServices": [], "weekSchedule": {}, "followups": [], "stock": [], "accounting": {"revenue": 0, "expenses": 0, "cash": 0}, "team": [{"name": "Louie Ann", "role": "Dueña · acceso total", "email": "Louienocumlapuz@gmail.com", "todayBookings": 0, "todayRevenue": 0}, {"name": "Natalia Rijo", "role": "Recepcionista · acceso total", "email": "nataliarijogonzalez@gmail.com", "todayBookings": 0, "todayRevenue": 0}], "threads": []};
+const CONFIG = {"biz": "Divas Skin Care by Louie", "colors": {"primary": "#3d4a3a", "accent": "#bc916a"}, "labels": {"schedule": "Citas", "pipeline": "En cabina", "clients": "Clientas", "catalog": "Servicios y Tienda"}, "stats": [{"label": "Citas hoy", "value": "0", "trend": "", "trendType": "neutral", "spark": [0, 0, 0, 0, 0, 0, 0, 0]}, {"label": "Facturación hoy", "value": "0", "trend": "", "trendType": "neutral", "spark": [0, 0, 0, 0, 0, 0, 0, 0]}, {"label": "Clientas nuevas (mes)", "value": "0", "trend": "", "trendType": "neutral", "spark": [0, 0, 0, 0, 0, 0, 0, 0]}, {"label": "% de no-shows", "value": "0", "trend": "", "trendType": "neutral", "spark": [0, 0, 0, 0, 0, 0, 0, 0]}], "insights": [], "schedule": [], "kanban": {"columns": [{"name": "Esperando", "color": "#94a3b8", "cards": []}, {"name": "En cabina", "color": "#bc916a", "cards": []}, {"name": "Láser IPL", "color": "#a78bfa", "cards": []}, {"name": "Caja", "color": "#16a34a", "cards": []}]}, "clients": [], "catalog": [{"name": "Limpieza profunda (peeling químico, hydrafacial y extracción / tratamiento facial)", "cat": "Faciales · 1h 15min", "price": 33, "label": "Facial"}, {"name": "Limpieza Facial Profunda + Extracción de Puntos Negros", "cat": "Faciales · 1h 15min", "price": 55, "label": "Facial"}, {"name": "Limpieza + Extracción + Radiofrecuencia", "cat": "Faciales · 1h 15min", "price": 65, "label": "Facial", "image": "img/maquina-kelaya.jpeg"}, {"name": "Limpieza + Extracción + Vitaminas/Ácido Hyaluronico", "cat": "Faciales · 1h 15min", "price": 65, "label": "Facial", "image": "img/maquina-kelaya.jpeg"}, {"name": "Limpieza + Extracción + Dermapen", "cat": "Faciales · 1h 15min", "price": 79, "label": "Facial", "image": "img/maquina-kelaya.jpeg"}, {"name": "Limpieza + Extracción + Mesoterapia Electroporación", "cat": "Faciales · 1h 15min", "price": 83, "label": "Facial", "image": "img/maquina-kelaya.jpeg"}, {"name": "Divas Glass Skin ★ (técnica coreana)", "cat": "Faciales · 1h 45min", "price": 125, "label": "Facial"}, {"name": "Divas Láser Anti-aging", "cat": "Faciales · 1h 15min", "price": 119, "label": "Facial"}, {"name": "Dermapen Capilar Anti-Caída", "cat": "Faciales · 1h 15min", "price": 89, "label": "Facial"}, {"name": "Plasma Pen · zona pequeña", "cat": "Plasma Pen · 1h", "price": 59, "label": "Plasma Pen"}, {"name": "Plasma Pen · párpados / código de barras / surco de marioneta", "cat": "Plasma Pen · 1h 45min", "price": 89, "label": "Plasma Pen"}, {"name": "Plasma Pen · abdomen o brazos", "cat": "Plasma Pen · 1h 45min", "price": 150, "label": "Plasma Pen"}, {"name": "Plasma Pen · rostro completo", "cat": "Plasma Pen · 2h 15min", "price": 220, "label": "Plasma Pen"}, {"name": "Radiofrecuencia + Presoterapia", "cat": "Corporales · 1h", "price": 55, "label": "Corporal", "image": "img/maquina-kelaya.jpeg"}, {"name": "Cavitación corporal + Presoterapia", "cat": "Corporales · 1h", "price": 45, "label": "Corporal", "image": "img/maquina-cavitacion-lipolaser-rf.jpeg"}, {"name": "Vacum Theraphy + Presoterapia", "cat": "Corporales · 50 min", "price": 45, "label": "Corporal"}, {"name": "Lipoláser + Presoterapia", "cat": "Corporales · 1h", "price": 40, "label": "Corporal"}, {"name": "CoreFit + Presoterapia (reductor y escultor)", "cat": "Corporales · 1h 10min", "price": 45, "label": "Corporal", "image": "img/maquina-corefit.jpeg"}, {"name": "Maderoterapia corporal + Presoterapia (por zonas)", "cat": "Corporales · 1h 10min", "price": 60, "label": "Corporal", "image": "img/maquina-corefit.jpeg"}, {"name": "Presoterapia", "cat": "Corporales · 55 min", "price": 30, "label": "Corporal", "image": "img/maquina-corefit.jpeg"}, {"name": "Blanqueado / Peeling Corporal (por zona)", "cat": "Corporales · 1h", "price": 45, "label": "Corporal"}, {"name": "Exfoliación Corporal", "cat": "Corporales · 1h", "price": 45, "label": "Corporal"}, {"name": "Envoltura + Exfoliación (cuerpo entero)", "cat": "Corporales · 1h", "price": 55, "label": "Corporal"}, {"name": "Peeling + Extracción Espalda", "cat": "Corporales · 1h", "price": 65, "label": "Corporal"}, {"name": "IPL Facial Completo (mujer)", "cat": "Láser IPL · 30 min", "price": 19, "label": "Láser", "image": "img/maquina-laser-ipl.jpeg"}, {"name": "IPL Cuerpo Completo (mujer)", "cat": "Láser IPL · 1h 30min", "price": 99, "label": "Láser", "image": "img/maquina-laser-ipl.jpeg"}, {"name": "IPL Bigote, Axilas, Inglés, Pubis y Perianal (mujer)", "cat": "Láser IPL · 40 min", "price": 56, "label": "Láser", "image": "img/maquina-laser-ipl.jpeg"}, {"name": "IPL Piernas, Axilas, Inglés, Pubis y Perianal (mujer)", "cat": "Láser IPL · 50 min", "price": 59, "label": "Láser", "image": "img/maquina-laser-ipl.jpeg"}, {"name": "IPL Facial Completo con Marcación de Barba (hombre)", "cat": "Láser IPL · 45 min", "price": 21, "label": "Láser", "image": "img/maquina-laser-ipl.jpeg"}, {"name": "IPL Cuerpo Completo con Marcación de Barba (hombre)", "cat": "Láser IPL · 2h", "price": 149, "label": "Láser", "image": "img/maquina-laser-ipl.jpeg"}, {"name": "Eliminación de Fibromas / Lentigos Solares / Lunares Rubís (1-10)", "cat": "Medicina Estética · 1h", "price": 40, "label": "Medicina Estética"}, {"name": "Eliminación de Fibromas / Lentigos · zona mediana", "cat": "Medicina Estética · 1h 15min", "price": 59, "label": "Medicina Estética"}, {"name": "Eliminación de Fibromas / Lentigos · zona grande", "cat": "Medicina Estética · 1h 30min", "price": 80, "label": "Medicina Estética"}, {"name": "Cejas con hilo", "cat": "Cejas y depilación · 30 min", "price": 11, "label": "Cejas"}, {"name": "Cejas y labios con hilo", "cat": "Cejas y depilación · 45 min", "price": 15, "label": "Cejas"}, {"name": "Labio superior con hilo", "cat": "Cejas y depilación · 20 min", "price": 7, "label": "Cejas"}, {"name": "Facial Completo con hilo", "cat": "Cejas y depilación · 1h", "price": 25, "label": "Cejas"}, {"name": "Depilación + Henna (cejas)", "cat": "Cejas y depilación · 1h", "price": 22, "label": "Cejas"}, {"name": "Depilación + Laminado Cejas + Henna", "cat": "Cejas y depilación · 1h 10min", "price": 40, "label": "Cejas"}, {"name": "Valoración Facial", "cat": "Diagnóstico · 30 min", "price": 0, "label": "Diagnóstico", "bookable": false}, {"name": "Valoración Corporal", "cat": "Diagnóstico · 30 min", "price": 0, "label": "Diagnóstico", "bookable": false}, {"name": "Láser Antiacné / Antimarcas", "cat": "Faciales · 30 min", "price": 0, "label": "Facial", "bookable": false}, {"name": "Láser Antimanchas", "cat": "Faciales · 30 min", "price": 0, "label": "Facial", "bookable": false}, {"name": "Láser Rejuvenecimiento / Antiarrugas", "cat": "Faciales · 30 min", "price": 0, "label": "Facial", "bookable": false}, {"name": "Peeling facial", "cat": "Faciales · 40 min", "price": 0, "label": "Facial", "bookable": false}, {"name": "Divas Skin Club · Entrada Socia + Prueba Gratis", "cat": "Skin Club · 1h", "price": 40, "label": "Skin Club", "bookable": false}, {"name": "Divas Skin Club · Socio Limpieza + Extracción", "cat": "Skin Club · 1h", "price": 33, "label": "Skin Club", "bookable": false}, {"name": "Divas Skin Club · Socio Peeling Químico + Extracción", "cat": "Skin Club · 1h", "price": 27, "label": "Skin Club", "bookable": false}], "invoices": [], "reportStats": [{"label": "Facturación del mes", "value": "0", "trend": "", "trendType": "neutral", "spark": [0, 0, 0, 0, 0, 0, 0, 0]}, {"label": "IGIC recaudado", "value": "0", "trend": "", "spark": [0, 0, 0, 0, 0, 0, 0, 0], "trendType": "neutral"}, {"label": "Ticket medio", "value": "0", "trend": "", "trendType": "neutral", "spark": [0, 0, 0, 0, 0, 0, 0, 0]}, {"label": "Retención de clientas", "value": "0", "trend": "", "trendType": "neutral", "spark": [0, 0, 0, 0, 0, 0, 0, 0]}], "aiReplies": ["Todavía no hay datos suficientes para generar un resumen. En cuanto haya citas y ventas reales, te lo cuento aquí."], "currency": "EUR", "weekRevenue": [0, 0, 0, 0, 0, 0, 0], "monthsRevenue": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], "activity": [], "notifications": [], "topServices": [], "weekSchedule": {}, "followups": [], "stock": [], "accounting": {"revenue": 0, "expenses": 0, "cash": 0}, "team": [{"name": "Louie Ann", "role": "Dueña · acceso total", "email": "Louienocumlapuz@gmail.com", "todayBookings": 0, "todayRevenue": 0}, {"name": "Natalia Rijo", "role": "Recepcionista · acceso total", "email": "nataliarijogonzalez@gmail.com", "todayBookings": 0, "todayRevenue": 0}], "threads": []};
 
 CONFIG.salas=[
   {name:'Sala 1 — Facial',status:'libre'},
@@ -1275,7 +1275,7 @@ function renderSchedule(){
       <td><span class="tag tag-${s.statusClass}">${s.status}</span></td>
     </tr>
   `).join('');
-  document.getElementById('today-count').textContent=CONFIG.schedule.length+' bookings';
+  document.getElementById('today-count').textContent=CONFIG.schedule.length+' citas';
 
   // Schedule stat cards
   const total=CONFIG.schedule.length;
@@ -1283,10 +1283,10 @@ function renderSchedule(){
   const pending=CONFIG.schedule.filter(s=>s.statusClass==='warn').length;
   const revenue=CONFIG.schedule.reduce((a,s)=>a+(s.value||0),0);
   document.getElementById('sched-stats').innerHTML=[
-    {label:'Today total',value:total,trend:'',trendType:''},
-    {label:'Confirmed',value:confirmed,trend:Math.round(confirmed/total*100)+'%',trendType:'up'},
-    {label:'Pending',value:pending,trend:'awaiting',trendType:'warn'},
-    {label:"Today's revenue",value:fmt(revenue),trend:'',trendType:'up'}
+    {label:'Citas hoy',value:total,trend:'',trendType:''},
+    {label:'Confirmadas',value:confirmed,trend:(total?Math.round(confirmed/total*100):0)+'%',trendType:'up'},
+    {label:'Pendientes',value:pending,trend:'en espera',trendType:'warn'},
+    {label:'Facturación hoy',value:fmt(revenue),trend:'',trendType:'up'}
   ].map(s=>`<div class="stat-card"><div class="stat-label">${s.label}</div><div class="stat-val">${s.value}</div><div class="stat-trend ${s.trendType}">${s.trend}</div></div>`).join('');
 
   // Week calendar
@@ -1390,17 +1390,17 @@ function showClient(name){
       <div><div style="font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--txt3);font-weight:600;margin-bottom:4px;">Gastado total</div><div style="font-family:var(--font-serif);font-size:28px;color:var(--accent);font-weight:500;">${fmt(c.spent)}</div></div>
     </div>
     <div style="font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--txt3);font-weight:600;margin-bottom:8px;">Etiquetas</div>
-    <div style="margin-bottom:18px;">${(c.tags||[]).map(t=>`<span class="tag tag-${t.cls}">${t.text}</span>`).join(' ')||'<span style="color:var(--txt3);font-size:13px;">Ninguno</span>'}</div>
+    <div style="margin-bottom:18px;">${(c.tags||[]).map(t=>`<span class="tag tag-${t.cls}">${t.text}</span>`).join(' ')||'<span style="color:var(--txt3);font-size:13px;">Ninguna</span>'}</div>
     <div style="font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--txt3);font-weight:600;margin-bottom:8px;">Actividad reciente</div>
     <ul class="timeline">
       <li class="timeline-item"><div class="tl-when">Hoy</div><div class="tl-what">Última cita confirmada por WhatsApp con IA</div></li>
-      <li class="timeline-item"><div class="tl-when">3 days ago</div><div class="tl-what">Invoice paid · ${fmt(Math.round(c.spent*0.08))}</div></li>
-      <li class="timeline-item"><div class="tl-when">2 weeks ago</div><div class="tl-what">Visit · ${c.field||'service'}</div></li>
+      <li class="timeline-item"><div class="tl-when">Hace 3 días</div><div class="tl-what">Factura pagada · ${fmt(Math.round(c.spent*0.08))}</div></li>
+      <li class="timeline-item"><div class="tl-when">Hace 2 semanas</div><div class="tl-what">Visita · ${c.field||'tratamiento'}</div></li>
     </ul>
     <div style="display:flex;gap:8px;margin-top:18px;">
-      <button class="btn btn-ghost" onclick="toast('WhatsApp opened');closeModal()">💬 Message</button>
-      <button class="btn btn-ghost" onclick="toast('Booking created');closeModal()">+ New booking</button>
-      <button class="btn btn-accent" onclick="toast('Invoice draft saved');closeModal()">+ Invoice</button>
+      <button class="btn btn-ghost" onclick="toast('WhatsApp abierto');closeModal()">💬 Mensaje</button>
+      <button class="btn btn-ghost" onclick="toast('Cita creada');closeModal()">+ Nueva cita</button>
+      <button class="btn btn-accent" onclick="toast('Borrador de factura guardado');closeModal()">+ Factura</button>
     </div>`;
   document.getElementById('modal-host').classList.add('open');
 }
@@ -1415,7 +1415,7 @@ function renderCatalog(){
     <div style="background:#fff;border:1px solid var(--border);border-radius:10px;overflow:hidden;cursor:pointer;transition:transform .12s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''">
       ${p.image
         ? `<img src="${p.image}" alt="${p.name}" loading="lazy" style="width:100%;aspect-ratio:1/1;object-fit:cover;display:block;background:#f2f2e8" onerror="this.style.display='none'">`
-        : `<div style="aspect-ratio:1/1;background:linear-gradient(135deg,${CONFIG.colors.accent}22,${CONFIG.colors.accent}08);display:grid;place-items:center;color:${CONFIG.colors.accent};font-family:var(--font-serif);font-size:14px;font-style:italic;">${p.label||'Service'}</div>`}
+        : `<div style="aspect-ratio:1/1;background:linear-gradient(135deg,${CONFIG.colors.accent}22,${CONFIG.colors.accent}08);display:grid;place-items:center;color:${CONFIG.colors.accent};font-family:var(--font-serif);font-size:14px;font-style:italic;">${p.label||'Tratamiento'}</div>`}
       <div style="padding:14px 16px;">
         <div style="font-size:13px;font-weight:700;color:var(--txt);margin-bottom:4px;">${p.name}</div>
         <div style="font-size:11px;color:var(--txt3);margin-bottom:8px;">${p.cat||''}</div>
@@ -1438,15 +1438,15 @@ function renderInvoices(){
 }
 function showInvoice(idx){
   const inv=CONFIG.invoices[idx];
-  const sub=Math.round(inv.total/1.05);
-  const vat=inv.total-sub;
+  const sub=inv.total;
+  const vat=0;
   document.getElementById('modal-title').textContent=inv.num;
   document.getElementById('modal-body').innerHTML=`
     <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px;padding-bottom:18px;border-bottom:1px solid var(--border);">
       <div>
         <div style="font-family:var(--font-serif);font-size:20px;color:var(--txt);font-weight:500;">${CONFIG.biz}</div>
-        <div style="font-size:11px;color:var(--txt3);margin-top:2px;">Jumeirah · Dubai</div>
-        <div style="font-size:10px;color:var(--txt3);">TRN: 100xxxxxxxxxxxx</div>
+        <div style="font-size:11px;color:var(--txt3);margin-top:2px;">Calle Arguijón 1 · La Laguna, Tenerife</div>
+        <div style="font-size:10px;color:var(--txt3);">NIF: 42418484K</div>
       </div>
       <div style="text-align:right;">
         <div style="font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--txt3);font-weight:700;">Factura</div>
@@ -1467,16 +1467,16 @@ function showInvoice(idx){
     <table style="width:100%;margin-bottom:14px;font-size:13px;">
       <thead><tr><th style="text-align:left;padding:8px 0;border-bottom:1px solid var(--border);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--txt3);">Descripción</th><th style="text-align:right;padding:8px 0;border-bottom:1px solid var(--border);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--txt3);">Importe</th></tr></thead>
       <tbody>
-        <tr><td style="padding:10px 0;color:var(--txt);">${CONFIG.labels.catalog||'Services'} · package</td><td style="padding:10px 0;text-align:right;font-weight:600;">${fmt(sub)}</td></tr>
+        <tr><td style="padding:10px 0;color:var(--txt);">${CONFIG.labels.catalog||'Servicios'} · tratamiento</td><td style="padding:10px 0;text-align:right;font-weight:600;">${fmt(sub)}</td></tr>
       </tbody>
     </table>
     <div style="display:flex;justify-content:space-between;font-size:13px;color:var(--txt2);margin-bottom:6px;"><span>Subtotal</span><span>${fmt(sub)}</span></div>
-    <div style="display:flex;justify-content:space-between;font-size:13px;color:var(--txt2);margin-bottom:10px;"><span>IVA 21%</span><span>${fmt(vat)}</span></div>
+    <div style="display:flex;justify-content:space-between;font-size:13px;color:var(--txt2);margin-bottom:10px;"><span>IGIC</span><span>Exento</span></div>
     <div style="display:flex;justify-content:space-between;font-family:var(--font-serif);font-size:22px;font-weight:500;color:var(--accent);padding-top:10px;border-top:1px solid var(--border);"><span>Total</span><span>${fmt(inv.total)}</span></div>
     <div style="display:flex;gap:8px;margin-top:18px;">
-      <button class="btn btn-ghost" style="flex:1" onclick="toast('Sent via WhatsApp');closeModal()">💬 Send</button>
-      <button class="btn btn-ghost" style="flex:1" onclick="toast('PDF downloaded');closeModal()">↓ PDF</button>
-      ${inv.statusClass!=='ok'?'<button class="btn btn-accent" style="flex:1" onclick="toast(\'Marked as paid\');closeModal()">✓ Mark paid</button>':''}
+      <button class="btn btn-ghost" style="flex:1" onclick="toast('Enviada por WhatsApp');closeModal()">💬 Enviar</button>
+      <button class="btn btn-ghost" style="flex:1" onclick="toast('PDF descargado');closeModal()">↓ PDF</button>
+      ${inv.statusClass!=='ok'?"<button class=\"btn btn-accent\" style=\"flex:1\" onclick=\"toast('Marcada como pagada');closeModal()\">✓ Marcar pagada</button>":''}
     </div>`;
   document.getElementById('modal-host').classList.add('open');
 }
@@ -1526,12 +1526,12 @@ function renderInbox(){
   const handled=th.length;
   const bookings=th.filter(t=>t.booked).length;
   document.getElementById('inbox-stats').innerHTML=[
-    {label:'Conversations · 24h',value:handled,trend:'+'+Math.floor(handled*0.3),trendType:'up'},
-    {label:'Bookings via AI',value:bookings,trend:Math.round(bookings/handled*100)+'% conv',trendType:'up'},
-    {label:'Avg response',value:'47s',trend:'24/7 coverage',trendType:'up'},
-    {label:'Languages',value:'EN · AR',trend:'auto-detected',trendType:''}
+    {label:'Conversaciones · 24h',value:handled,trend:'+'+Math.floor(handled*0.3),trendType:'up'},
+    {label:'Citas vía IA',value:bookings,trend:(handled?Math.round(bookings/handled*100):0)+'% conv.',trendType:'up'},
+    {label:'Respuesta media',value:'47s',trend:'cobertura 24/7',trendType:'up'},
+    {label:'Idiomas',value:'ES · EN',trend:'detección automática',trendType:''}
   ].map(s=>`<div class="stat-card"><div class="stat-label">${s.label}</div><div class="stat-val">${s.value}</div><div class="stat-trend ${s.trendType}">${s.trend}</div></div>`).join('');
-  document.getElementById('inbox-active').textContent=active+' active';
+  document.getElementById('inbox-active').textContent=active+' activas';
   document.getElementById('inbox-threads').innerHTML=th.map((t,i)=>`
     <div onclick="inboxOpen(${i})" id="thread-${i}" style="padding:12px 14px;border-bottom:1px solid var(--border2);cursor:pointer;transition:background .15s;" onmouseover="this.style.background='rgba(0,0,0,.02)'" onmouseout="this.style.background=''">
       <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:4px;">
@@ -1545,7 +1545,7 @@ function renderInbox(){
         <div style="font-size:10px;color:var(--txt3);flex-shrink:0;">${t.when}</div>
       </div>
       <div style="font-size:12px;color:var(--txt2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding-left:38px;">${t.preview}</div>
-      ${t.booked?'<div style="margin-top:6px;padding-left:38px;"><span class="tag tag-ok">✓ Booking confirmed</span></div>':''}
+      ${t.booked?'<div style="margin-top:6px;padding-left:38px;"><span class="tag tag-ok">✓ Cita confirmada</span></div>':''}
     </div>`).join('');
   if(th.length) inboxOpen(0);
 }
@@ -1582,7 +1582,7 @@ function posFilter(q){
   const items=CONFIG.catalog.filter(c=>!q||c.name.toLowerCase().includes(q));
   document.getElementById('pos-grid').innerHTML=items.map((p,i)=>`
     <div onclick="posAdd(${i})" style="background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;cursor:pointer;transition:all .15s;" onmouseover="this.style.borderColor='var(--accent)';this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='var(--border)';this.style.transform=''">
-      ${p.image?`<img src="${p.image}" style="width:100%;aspect-ratio:1/1;object-fit:cover;display:block;background:#f2f2e8" loading="lazy">`:`<div style="aspect-ratio:1/1;background:linear-gradient(135deg,${CONFIG.colors.accent}22,${CONFIG.colors.accent}08);display:grid;place-items:center;color:var(--accent);font-family:var(--font-serif);font-size:13px;">${p.label||'Item'}</div>`}
+      ${p.image?`<img src="${p.image}" style="width:100%;aspect-ratio:1/1;object-fit:cover;display:block;background:#f2f2e8" loading="lazy">`:`<div style="aspect-ratio:1/1;background:linear-gradient(135deg,${CONFIG.colors.accent}22,${CONFIG.colors.accent}08);display:grid;place-items:center;color:var(--accent);font-family:var(--font-serif);font-size:13px;">${p.label||'Producto'}</div>`}
       <div style="padding:8px 10px;">
         <div style="font-size:11px;font-weight:600;color:var(--txt);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${p.name}</div>
         <div style="font-size:12px;font-weight:700;color:var(--accent);">${fmt(p.price)}</div>
@@ -1598,7 +1598,7 @@ function posAdd(i){
 function posRemove(i){POS_CART.splice(i,1);posRedrawCart();}
 function posRedrawCart(){
   const cart=document.getElementById('pos-cart');
-  if(!POS_CART.length){cart.innerHTML='<div style="text-align:center;padding:30px 10px;color:var(--txt3);font-size:13px;">Empty cart · click items to add</div>';}
+  if(!POS_CART.length){cart.innerHTML='<div style="text-align:center;padding:30px 10px;color:var(--txt3);font-size:13px;">Carrito vacío · pulsa un artículo para añadirlo</div>';}
   else{
     cart.innerHTML=POS_CART.map((c,i)=>`
       <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border2);">
@@ -1611,40 +1611,40 @@ function posRedrawCart(){
       </div>`).join('');
   }
   const sub=POS_CART.reduce((a,c)=>a+c.price*c.qty,0);
-  const vat=sub*0.05;
-  document.getElementById('pos-count').textContent=POS_CART.reduce((a,c)=>a+c.qty,0)+' items';
+  const vat=0;
+  document.getElementById('pos-count').textContent=POS_CART.reduce((a,c)=>a+c.qty,0)+' artículos';
   document.getElementById('pos-sub').textContent=fmt(sub);
   document.getElementById('pos-vat').textContent=fmt(vat);
   document.getElementById('pos-total').textContent=fmt(sub+vat);
 }
-function posClear(){POS_CART=[];posRedrawCart();toast('Cart cleared');}
+function posClear(){POS_CART=[];posRedrawCart();toast('Carrito vaciado');}
 function posPay(method){
-  if(!POS_CART.length){toast('Cart is empty');return;}
+  if(!POS_CART.length){toast('El carrito está vacío');return;}
   const sub=POS_CART.reduce((a,c)=>a+c.price*c.qty,0);
-  const vat=sub*0.05;
+  const vat=0;
   const total=sub+vat;
   const num='RCP-'+Math.floor(Math.random()*9000+1000);
   const items=POS_CART.slice();
-  document.getElementById('modal-title').textContent='Receipt '+num;
+  document.getElementById('modal-title').textContent='Recibo '+num;
   document.getElementById('modal-body').innerHTML=`
     <div style="text-align:center;margin-bottom:18px;padding-bottom:14px;border-bottom:1px dashed var(--border);">
       <div style="font-family:var(--font-serif);font-size:22px;color:var(--txt);font-weight:500;">${CONFIG.biz}</div>
-      <div style="font-size:11px;color:var(--txt3);margin-top:4px;letter-spacing:.06em;">Jumeirah · Dubai</div>
-      <div style="font-size:10px;color:var(--txt3);margin-top:2px;">TRN: 100xxxxxxxxxxxx</div>
+      <div style="font-size:11px;color:var(--txt3);margin-top:4px;letter-spacing:.06em;">Calle Arguijón 1 · La Laguna, Tenerife</div>
+      <div style="font-size:10px;color:var(--txt3);margin-top:2px;">NIF: 42418484K</div>
     </div>
     <div style="font-size:11px;color:var(--txt3);display:flex;justify-content:space-between;margin-bottom:12px;">
-      <span>${new Date().toLocaleString('en-GB')}</span>
+      <span>${new Date().toLocaleString('es-ES')}</span>
       <span>${method}</span>
     </div>
     ${items.map(c=>`<div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0;color:var(--txt);"><span>${c.qty} × ${c.name}</span><span style="font-weight:600;">${fmt(c.price*c.qty)}</span></div>`).join('')}
     <hr style="margin:14px 0 8px;border:none;border-top:1px solid var(--border);">
     <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--txt2);"><span>Subtotal</span><span>${fmt(sub)}</span></div>
-    <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--txt2);margin-top:4px;"><span>IVA 21%</span><span>${fmt(vat)}</span></div>
+    <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--txt2);margin-top:4px;"><span>IGIC</span><span>Exento</span></div>
     <div style="display:flex;justify-content:space-between;font-family:var(--font-serif);font-size:22px;color:var(--accent);font-weight:600;margin-top:10px;padding-top:10px;border-top:1px solid var(--border);"><span>Total</span><span>${fmt(total)}</span></div>
-    <div style="margin-top:20px;text-align:center;font-size:10px;color:var(--txt3);letter-spacing:.18em;text-transform:uppercase;">Thank you · See you soon</div>
+    <div style="margin-top:20px;text-align:center;font-size:10px;color:var(--txt3);letter-spacing:.18em;text-transform:uppercase;">Gracias · Hasta pronto</div>
     <div style="display:flex;gap:8px;margin-top:18px;">
-      <button class="btn btn-ghost" style="flex:1" onclick="toast('Receipt sent via WhatsApp');closeModal()">💬 Send</button>
-      <button class="btn btn-ghost" style="flex:1" onclick="toast('Printing...');closeModal()">🖨 Print</button>
+      <button class="btn btn-ghost" style="flex:1" onclick="toast('Recibo enviado por WhatsApp');closeModal()">💬 Enviar</button>
+      <button class="btn btn-ghost" style="flex:1" onclick="toast('Imprimiendo…');closeModal()">🖨 Imprimir</button>
       <button class="btn btn-accent" style="flex:1" onclick="closeModal()">Hecho</button>
     </div>`;
   document.getElementById('modal-host').classList.add('open');
@@ -1655,10 +1655,10 @@ function posPay(method){
 function renderFollowups(){
   const fu=CONFIG.followups||[];
   document.getElementById('fu-stats').innerHTML=[
-    {label:'Due today',value:fu.filter(f=>f.priority==='high').length,trend:'high priority',trendType:'warn'},
-    {label:'This week',value:fu.length,trend:'',trendType:''},
-    {label:'Avg response',value:'3 min',trend:'via AI agent',trendType:'up'},
-    {label:'Conversion',value:'42%',trend:'+8 pts',trendType:'up'}
+    {label:'Para hoy',value:fu.filter(f=>f.priority==='high').length,trend:'alta prioridad',trendType:'warn'},
+    {label:'Esta semana',value:fu.length,trend:'',trendType:''},
+    {label:'Respuesta media',value:'3 min',trend:'vía agente IA',trendType:'up'},
+    {label:'Conversión',value:'42%',trend:'+8 pts',trendType:'up'}
   ].map(s=>`<div class="stat-card"><div class="stat-label">${s.label}</div><div class="stat-val">${s.value}</div><div class="stat-trend ${s.trendType}">${s.trend}</div></div>`).join('');
   document.getElementById('fu-tbody').innerHTML=fu.map(f=>`
     <tr>
@@ -1666,7 +1666,7 @@ function renderFollowups(){
       <td>${f.last}</td>
       <td>${f.reason}</td>
       <td><span style="font-size:12px;color:var(--accent);font-style:italic;">${f.action}</span></td>
-      <td><button class="btn btn-ghost" style="padding:6px 12px;font-size:11px;" onclick="toast('WhatsApp draft opened')">💬 Send</button></td>
+      <td><button class="btn btn-ghost" style="padding:6px 12px;font-size:11px;" onclick="toast('Borrador de WhatsApp abierto')">💬 Enviar</button></td>
     </tr>`).join('');
 }
 
@@ -1676,17 +1676,17 @@ function renderStock(){
   const lowCount=items.filter(i=>i.qty<=i.min).length;
   const total=items.reduce((a,i)=>a+i.qty*i.cost,0);
   document.getElementById('stock-stats').innerHTML=[
-    {label:'SKUs',value:items.length,trend:'',trendType:''},
-    {label:'Low stock',value:lowCount,trend:lowCount>0?'reorder needed':'all good',trendType:lowCount>0?'warn':'up'},
-    {label:'Inventory value',value:fmt(total),trend:'',trendType:''},
-    {label:'Avg margin',value:'52%',trend:'+3 pts',trendType:'up'}
+    {label:'Referencias',value:items.length,trend:'',trendType:''},
+    {label:'Stock bajo',value:lowCount,trend:lowCount>0?'reponer':'todo en orden',trendType:lowCount>0?'warn':'up'},
+    {label:'Valor de inventario',value:fmt(total),trend:'',trendType:''},
+    {label:'Margen medio',value:'52%',trend:'+3 pts',trendType:'up'}
   ].map(s=>`<div class="stat-card"><div class="stat-label">${s.label}</div><div class="stat-val">${s.value}</div><div class="stat-trend ${s.trendType}">${s.trend}</div></div>`).join('');
   document.getElementById('stock-tbody').innerHTML=items.map(s=>{
     const low=s.qty<=s.min;
     return `<tr>
       <td>${s.image?`<img src="${s.image}" style="width:38px;height:38px;border-radius:6px;object-fit:cover;background:#f2f2e8" loading="lazy">`:''}</td>
       <td><strong>${s.name}</strong></td>
-      <td style="font-family:monospace;font-size:11px;color:var(--txt3);">${s.sku}</td>
+      <td style="font-family:monospace;font-size:11px;color:var(--txt3);">${s.sku||'—'}</td>
       <td><strong>${s.qty}</strong></td>
       <td>${s.min}</td>
       <td>${fmt(s.cost)}</td>
@@ -1720,14 +1720,14 @@ function renderAccounting(){
   document.getElementById('pl-tbody').innerHTML=`
     <tr style="border-top:1px solid var(--border);"><td style="padding:10px 0;font-weight:700;">Facturación total</td><td style="text-align:right;font-weight:700;color:#16a34a;">${fmt(rev)}</td></tr>
     <tr style="border-top:1px solid var(--border);"><td style="padding:10px 0;font-weight:700;">Gastos totales</td><td style="text-align:right;font-weight:700;color:#ef4444;">- ${fmt(exp)}</td></tr>
-    <tr><td style="padding:8px 0;color:var(--txt2);">IVA recaudado</td><td style="text-align:right;">${fmt(vat)}</td></tr>
+    <tr><td style="padding:8px 0;color:var(--txt2);">IGIC recaudado</td><td style="text-align:right;">${fmt(vat)}</td></tr>
     <tr style="border-top:2px solid var(--accent);"><td style="padding:12px 0;font-family:var(--font-serif);font-size:18px;font-weight:600;">Beneficio neto</td><td style="text-align:right;font-family:var(--font-serif);font-size:22px;font-weight:600;color:var(--accent);">${fmt(rev-exp)}</td></tr>`;
 }
 
 // ═══════════════ TEAM ═══════════════
 function renderTeam(){
   const t=CONFIG.team||[];
-  document.getElementById('team-count').textContent=t.length+' active';
+  document.getElementById('team-count').textContent=t.length+' activos';
   document.getElementById('team-grid').innerHTML=t.map(m=>`
     <div style="padding:14px;border:1px solid var(--border);border-radius:10px;background:var(--surface);">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
@@ -1738,7 +1738,7 @@ function renderTeam(){
         </div>
       </div>
       <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--txt3);">
-        <span>Today: <strong style="color:var(--txt);">${m.todayBookings} bookings</strong></span>
+        <span>Hoy: <strong style="color:var(--txt);">${m.todayBookings} citas</strong></span>
         <span style="color:#16a34a;font-weight:700;">${fmt(m.todayRevenue)}</span>
       </div>
     </div>`).join('');
@@ -1756,11 +1756,11 @@ function toggleBell(e){e.stopPropagation();
   const p=document.getElementById('bell-panel');
   if(!p.dataset.built){
     const notifs=CONFIG.notifications||[
-      {what:'New WhatsApp booking from agent',when:'2 min ago'},
-      {what:'Invoice INV-0142 paid',when:'1 hour ago'},
-      {what:'Low stock alert · 3 items',when:'today'}
+      {what:'Nueva cita por WhatsApp desde el agente',when:'hace 2 min'},
+      {what:'Factura INV-0142 pagada',when:'hace 1 hora'},
+      {what:'Alerta de stock bajo · 3 artículos',when:'hoy'}
     ];
-    p.innerHTML=notifs.map(n=>`<div class="bell-item" onclick="toast('Opened')"><div>${n.what}</div><div class="bi-when">${n.when}</div></div>`).join('');
+    p.innerHTML=notifs.map(n=>`<div class="bell-item" onclick="toast('Abierto')"><div>${n.what}</div><div class="bi-when">${n.when}</div></div>`).join('');
     p.dataset.built='1';
   }
   p.classList.toggle('open');
@@ -1800,23 +1800,23 @@ function openBookingForm(){
   const clients=CONFIG.clients.map(c=>`<option>${c.name}</option>`).join('');
   const services=CONFIG.catalog.map(c=>`<option data-price="${c.price}">${c.name} · ${fmt(c.price)}</option>`).join('');
   const times=['09:00','09:30','10:00','10:30','11:00','11:30','12:00','14:00','14:30','15:00','15:30','16:00','16:30','17:00','17:30','18:00'];
-  document.getElementById('modal-title').textContent='New '+(CONFIG.labels.schedule||'Booking').toLowerCase();
+  document.getElementById('modal-title').textContent='Nueva cita';
   document.getElementById('modal-body').innerHTML=`
     <div style="display:flex;flex-direction:column;gap:14px;">
       <label style="display:flex;flex-direction:column;gap:4px;"><span style="font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--txt3);font-weight:600;">Clienta</span><select id="bf-client" style="padding:10px 12px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--txt);font-size:13px;">${clients}<option>+ Nueva clienta...</option></select></label>
-      <label style="display:flex;flex-direction:column;gap:4px;"><span style="font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--txt3);font-weight:600;">${CONFIG.labels.catalog||'Service'}</span><select id="bf-svc" style="padding:10px 12px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--txt);font-size:13px;">${services}</select></label>
+      <label style="display:flex;flex-direction:column;gap:4px;"><span style="font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--txt3);font-weight:600;">${CONFIG.labels.catalog||'Tratamiento'}</span><select id="bf-svc" style="padding:10px 12px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--txt);font-size:13px;">${services}</select></label>
       <div class="two-col">
         <label style="display:flex;flex-direction:column;gap:4px;"><span style="font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--txt3);font-weight:600;">Fecha</span><input type="date" id="bf-date" value="${new Date().toISOString().slice(0,10)}" style="padding:10px 12px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--txt);font-size:13px;"></label>
         <label style="display:flex;flex-direction:column;gap:4px;"><span style="font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--txt3);font-weight:600;">Hora</span><select id="bf-time" style="padding:10px 12px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--txt);font-size:13px;">${times.map(t=>`<option>${t}</option>`).join('')}</select></label>
       </div>
-      <label style="display:flex;flex-direction:column;gap:4px;"><span style="font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--txt3);font-weight:600;">Notas</span><textarea rows="2" placeholder="VIP · prefers chair 2 · allergy peanuts..." style="padding:10px 12px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--txt);font-size:13px;resize:vertical;"></textarea></label>
+      <label style="display:flex;flex-direction:column;gap:4px;"><span style="font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--txt3);font-weight:600;">Notas</span><textarea rows="2" placeholder="VIP · prefiere silla 2 · alergia a cacahuetes..." style="padding:10px 12px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--txt);font-size:13px;resize:vertical;"></textarea></label>
       <div style="background:rgba(0,0,0,.03);border:1px dashed var(--border);padding:12px 14px;border-radius:8px;font-size:12px;color:var(--txt2);">
-        <strong style="color:var(--accent);">✦ AI suggestion:</strong> Send confirmation via WhatsApp + reminder 24h before. Voucher 10% off for next visit if loyal client.
+        <strong style="color:var(--accent);">✦ Sugerencia IA:</strong> Enviar confirmación por WhatsApp + recordatorio 24h antes. Cupón 10% en la próxima visita si es clienta habitual.
       </div>
     </div>
     <div style="display:flex;gap:8px;margin-top:18px;">
       <button class="btn btn-ghost" style="flex:1" onclick="closeModal()">Cancelar</button>
-      <button class="btn btn-accent" style="flex:1" onclick="toast('✓ Booking confirmed · WhatsApp sent');closeModal()">Confirmar</button>
+      <button class="btn btn-accent" style="flex:1" onclick="toast('✓ Cita confirmada · WhatsApp enviado');closeModal()">Confirmar</button>
     </div>`;
   document.getElementById('modal-host').classList.add('open');
 }
@@ -1840,19 +1840,19 @@ function openClientForm(){
 }
 function openInvoiceForm(){
   const clients=CONFIG.clients.map(c=>`<option>${c.name}</option>`).join('');
-  document.getElementById('modal-title').textContent='New invoice';
+  document.getElementById('modal-title').textContent='Nueva factura';
   document.getElementById('modal-body').innerHTML=`
     <div style="display:flex;flex-direction:column;gap:14px;">
       <label style="display:flex;flex-direction:column;gap:4px;"><span style="font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--txt3);font-weight:600;">Facturar a</span><select style="padding:10px 12px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--txt);font-size:13px;">${clients}</select></label>
       <label style="display:flex;flex-direction:column;gap:4px;"><span style="font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--txt3);font-weight:600;">Artículos</span><textarea rows="3" placeholder="1 × Radiofrecuencia facial · 55€&#10;1 × Sérum reafirmante · 38€" style="padding:10px 12px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--txt);font-size:13px;resize:vertical;"></textarea></label>
       <div class="two-col">
-        <label style="display:flex;flex-direction:column;gap:4px;"><span style="font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--txt3);font-weight:600;">Total (EUR)</span><input value="990" style="padding:10px 12px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--txt);font-size:13px;"></label>
-        <label style="display:flex;flex-direction:column;gap:4px;"><span style="font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--txt3);font-weight:600;">VAT</span><input value="21% · 8,20€" disabled style="padding:10px 12px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--txt3);font-size:13px;"></label>
+        <label style="display:flex;flex-direction:column;gap:4px;"><span style="font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--txt3);font-weight:600;">Total (EUR)</span><input value="55" style="padding:10px 12px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--txt);font-size:13px;"></label>
+        <label style="display:flex;flex-direction:column;gap:4px;"><span style="font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--txt3);font-weight:600;">IGIC</span><input value="Exento (régimen IGIC)" disabled style="padding:10px 12px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--txt3);font-size:13px;"></label>
       </div>
     </div>
     <div style="display:flex;gap:8px;margin-top:18px;">
       <button class="btn btn-ghost" style="flex:1" onclick="closeModal()">Cancelar</button>
-      <button class="btn btn-accent" style="flex:1" onclick="toast('✓ Invoice created · sent');closeModal()">Create &amp; send</button>
+      <button class="btn btn-accent" style="flex:1" onclick="toast('✓ Factura creada y enviada');closeModal()">Crear y enviar</button>
     </div>`;
   document.getElementById('modal-host').classList.add('open');
 }
