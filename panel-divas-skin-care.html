@@ -675,7 +675,7 @@ tbody tr:hover{background:rgba(0,0,0,.02);}
           <h1 class="page-title">Servicios</h1>
           <div class="page-sub">Productos y servicios</div>
         </div>
-        <button class="btn btn-accent" onclick="toast('Formulario de nuevo artículo abierto')">+ Nuevo artículo</button>
+        <button class="btn btn-accent" onclick="openServicioForm()">+ Nuevo servicio</button>
       </div>
       <div class="card">
         <div class="card-body">
@@ -709,7 +709,7 @@ tbody tr:hover{background:rgba(0,0,0,.02);}
         </div>
         <div style="display:flex;gap:8px;">
           <select class="topbar-btn" style="padding:8px 14px;"><option>Este mes</option><option>Últimos 30 días</option><option>Trimestre</option><option>Año</option></select>
-          <button class="btn btn-accent" onclick="toast('PDF exportado')">↓ Exportar PDF</button>
+          <button class="btn btn-accent" onclick="toast('Exportar PDF: próximamente')">↓ Exportar PDF</button>
         </div>
       </div>
       <div class="stats-grid" id="reports-stats"></div>
@@ -755,8 +755,8 @@ tbody tr:hover{background:rgba(0,0,0,.02);}
           <div class="page-sub">Conversaciones gestionadas por tu agente IA · WhatsApp · Instagram · Web</div>
         </div>
         <div style="display:flex;gap:8px;">
-          <button class="btn btn-ghost" onclick="toast('Respuesta automática activada')">⚡ Respuesta automática ON</button>
-          <button class="btn btn-accent" onclick="toast('Reglas de la IA actualizadas')">⚙︎ Entrenar IA</button>
+          <button class="btn btn-ghost" onclick="toast('Respuesta automática con IA: próximamente')">⚡ Respuesta automática</button>
+          <button class="btn btn-accent" onclick="toast('Entrenar IA: próximamente')">⚙︎ Entrenar IA</button>
         </div>
       </div>
       <div class="stats-grid" id="inbox-stats"></div>
@@ -821,7 +821,7 @@ tbody tr:hover{background:rgba(0,0,0,.02);}
           <h1 class="page-title">Seguimientos</h1>
           <div class="page-sub">Clientas a contactar · sugerido por IA</div>
         </div>
-        <button class="btn btn-accent" onclick="toast('Borradores de WhatsApp creados')">✨ Generar todos con IA</button>
+        <button class="btn btn-accent" onclick="toast('Generación automática con IA: próximamente')">✨ Generar todos con IA</button>
       </div>
       <div class="stats-grid" id="fu-stats"></div>
       <div class="card">
@@ -838,7 +838,7 @@ tbody tr:hover{background:rgba(0,0,0,.02);}
           <div class="page-sub">Inventario · Alertas de stock bajo · Reponer</div>
         </div>
         <div style="display:flex;gap:8px;">
-          <button class="btn btn-ghost" onclick="toast('CSV exportado')">↓ Exportar</button>
+          <button class="btn btn-ghost" onclick="exportarStockCSV()">↓ Exportar</button>
           <button class="btn btn-accent" onclick="openArticuloForm()">+ Añadir artículo</button>
         </div>
       </div>
@@ -888,7 +888,7 @@ tbody tr:hover{background:rgba(0,0,0,.02);}
         </div>
         <div style="display:flex;gap:8px;">
           <select class="topbar-btn" style="padding:8px 14px;"><option>Este mes</option><option>Trimestre</option><option>Año</option></select>
-          <button class="btn btn-accent" onclick="toast('Informe fiscal exportado')">↓ Informe fiscal</button>
+          <button class="btn btn-accent" onclick="toast('Informe fiscal: próximamente')">↓ Informe fiscal</button>
         </div>
       </div>
       <div class="stats-grid" id="acc-stats"></div>
@@ -919,7 +919,7 @@ tbody tr:hover{background:rgba(0,0,0,.02);}
           <h1 class="page-title">Equipo</h1>
           <div class="page-sub">Personal · Roles · Permisos</div>
         </div>
-        <button class="btn btn-accent" onclick="toast('Formulario de invitación abierto')">+ Invitar miembro</button>
+        <button class="btn btn-accent" onclick="toast('Invitar miembro: próximamente')">+ Invitar miembro</button>
       </div>
       <div class="card">
         <div class="card-hd"><div class="card-hd-title">Miembros</div><span style="font-size:11px;color:var(--txt3)" id="team-count">0 activos</span></div>
@@ -1382,6 +1382,10 @@ function refreshAllViews(){
 
 // Abre WhatsApp de verdad (wa.me) con el texto precargado. Si no hay teléfono,
 // lo pide — nunca finge un envío que no ha pasado.
+function buscarTelefonoPorNombre(nombre){
+  const c=(ALL_CLIENTS||[]).find(x=>x.name===nombre);
+  return c?c.phone:'';
+}
 function enviarWhatsApp(phone, texto){
   let tel=(phone||'').replace(/[^\d+]/g,'');
   if(!tel){
@@ -1603,8 +1607,8 @@ function showClient(name){
     </ul>
     <div style="display:flex;gap:8px;margin-top:18px;">
       <button class="btn btn-ghost" onclick="enviarWhatsApp('${c.phone}','Hola ${c.name.split(' ')[0]}, te escribimos desde Divas Skin Care 💛')">💬 Mensaje</button>
-      <button class="btn btn-ghost" onclick="toast('Cita creada');closeModal()">+ Nueva cita</button>
-      <button class="btn btn-accent" onclick="toast('Borrador de factura guardado');closeModal()">+ Factura</button>
+      <button class="btn btn-ghost" onclick="openBookingForm()">+ Nueva cita</button>
+      <button class="btn btn-accent" onclick="toast('Crear factura desde ficha: próximamente, usa la página Facturas')">+ Factura</button>
     </div>`;
   document.getElementById('modal-host').classList.add('open');
 }
@@ -1924,7 +1928,7 @@ function renderFollowups(){
       <td>${f.last}</td>
       <td>${f.reason}</td>
       <td><span style="font-size:12px;color:var(--accent);font-style:italic;">${f.action}</span></td>
-      <td><button class="btn btn-ghost" style="padding:6px 12px;font-size:11px;" onclick="toast('Borrador de WhatsApp abierto')">💬 Enviar</button></td>
+      <td><button class="btn btn-ghost" style="padding:6px 12px;font-size:11px;" onclick="enviarWhatsApp(buscarTelefonoPorNombre('${f.client}'), 'Hola ${(f.client||'').split(' ')[0]}, ${(f.action||'').toLowerCase()}')">💬 Enviar</button></td>
     </tr>`).join('');
 }
 
@@ -1952,6 +1956,20 @@ function renderStock(){
       <td>${low?'<span class="tag tag-warn">Reponer</span>':'<span class="tag tag-ok">OK</span>'}</td>
     </tr>`;
   }).join('');
+}
+function exportarStockCSV(){
+  const items=CONFIG.stock||[];
+  if(!items.length){ toast('No hay artículos que exportar'); return; }
+  const rows=[['Artículo','SKU','Stock','Mínimo','Coste','Venta']];
+  items.forEach(s=>rows.push([s.name,s.sku||'',s.qty,s.min,s.cost,s.price]));
+  const csv=rows.map(r=>r.map(v=>`"${String(v??'').replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url; a.download='stock-divas-skin-care.csv';
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+  toast('✓ CSV descargado');
 }
 function openArticuloForm(){
   document.getElementById('modal-title').textContent='Nuevo artículo';
@@ -1991,6 +2009,43 @@ async function submitArticuloForm(){
   refreshAllViews();
   closeModal();
   toast('✓ Artículo añadido');
+}
+
+function openServicioForm(){
+  document.getElementById('modal-title').textContent='Nuevo servicio';
+  document.getElementById('modal-body').innerHTML=`
+    <div style="display:flex;flex-direction:column;gap:14px;">
+      <label style="display:flex;flex-direction:column;gap:4px;"><span style="font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--txt3);font-weight:600;">Nombre</span><input id="sf-nombre" placeholder="ej. Limpieza facial profunda" style="padding:10px 12px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--txt);font-size:13px;"></label>
+      <div class="two-col">
+        <label style="display:flex;flex-direction:column;gap:4px;"><span style="font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--txt3);font-weight:600;">Categoría</span><input id="sf-categoria" placeholder="ej. Faciales" style="padding:10px 12px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--txt);font-size:13px;"></label>
+        <label style="display:flex;flex-direction:column;gap:4px;"><span style="font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--txt3);font-weight:600;">Duración</span><input id="sf-duracion" placeholder="ej. 1h 15min" style="padding:10px 12px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--txt);font-size:13px;"></label>
+      </div>
+      <label style="display:flex;flex-direction:column;gap:4px;"><span style="font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--txt3);font-weight:600;">Precio (EUR)</span><input id="sf-precio" placeholder="0" style="padding:10px 12px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--txt);font-size:13px;"></label>
+      <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--txt2);"><input type="checkbox" id="sf-reservable" checked style="width:16px;height:16px;"> Reservable online</label>
+    </div>
+    <p id="sf-error" style="color:#b3441e;font-size:12px;margin-top:8px;"></p>
+    <div style="display:flex;gap:8px;margin-top:18px;">
+      <button class="btn btn-ghost" style="flex:1" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-accent" style="flex:1" onclick="submitServicioForm()">Guardar servicio</button>
+    </div>`;
+  document.getElementById('modal-host').classList.add('open');
+}
+async function submitServicioForm(){
+  const nombre=document.getElementById('sf-nombre').value.trim();
+  const categoria=document.getElementById('sf-categoria').value.trim()||null;
+  const duracion=document.getElementById('sf-duracion').value.trim()||null;
+  const precio=parseFloat(document.getElementById('sf-precio').value.replace(',','.'))||0;
+  const reservable=document.getElementById('sf-reservable').checked;
+  const err=document.getElementById('sf-error');
+  if(!nombre){ err.textContent='Falta el nombre del servicio.'; return; }
+  err.textContent='Guardando...';
+  const orden=(CONFIG.catalog||[]).length+1;
+  const { error } = await sb.from('servicios').insert({ nombre, categoria, duracion, precio, reservable, orden });
+  if(error){ err.textContent='No se pudo guardar: '+error.message; return; }
+  await loadRealData();
+  refreshAllViews();
+  closeModal();
+  toast('✓ Servicio añadido');
 }
 
 // ═══════════════ ACCOUNTING ═══════════════
