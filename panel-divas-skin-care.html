@@ -506,6 +506,10 @@ tbody tr:hover{background:rgba(0,0,0,.02);}
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
         Facturas
       </div>
+      <div class="nav-item" onclick="goPage('gastos',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><path d="M12 6v12M15 9.5c0-1.4-1.3-2.5-3-2.5s-3 1.1-3 2.5 1.3 2.5 3 2.5 3 1.1 3 2.5-1.3 2.5-3 2.5-3-1.1-3-2.5"/></svg>
+        Gastos
+      </div>
       <div class="nav-item" onclick="goPage('accounting',this)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
         Contabilidad
@@ -835,7 +839,7 @@ tbody tr:hover{background:rgba(0,0,0,.02);}
         </div>
         <div style="display:flex;gap:8px;">
           <button class="btn btn-ghost" onclick="toast('CSV exportado')">↓ Exportar</button>
-          <button class="btn btn-accent" onclick="toast('Formulario de nuevo artículo abierto')">+ Añadir artículo</button>
+          <button class="btn btn-accent" onclick="openArticuloForm()">+ Añadir artículo</button>
         </div>
       </div>
       <div class="stats-grid" id="stock-stats"></div>
@@ -856,6 +860,22 @@ tbody tr:hover{background:rgba(0,0,0,.02);}
       <div class="card">
         <div class="card-hd"><div class="card-hd-title">Pedidos nuevos</div></div>
         <div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Clienta</th><th>Contacto</th><th>Producto</th><th>Estado</th></tr></thead><tbody id="pedidos-tbody"><tr><td colspan="5" style="text-align:center;color:var(--muted);padding:24px;">Sin pedidos todavía</td></tr></tbody></table></div>
+      </div>
+    </div>
+
+    <!-- ─── GASTOS ─── -->
+    <div id="page-gastos" class="page">
+      <div class="page-hd">
+        <div>
+          <h1 class="page-title">Gastos</h1>
+          <div class="page-sub">Registro de gastos reales del negocio</div>
+        </div>
+        <button class="btn btn-accent" onclick="openGastoForm()">+ Nuevo gasto</button>
+      </div>
+      <div class="card">
+        <div class="card-body">
+          <div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Concepto</th><th>Categoría</th><th>Importe</th><th></th></tr></thead><tbody id="gastos-tbody"></tbody></table></div>
+        </div>
       </div>
     </div>
 
@@ -1046,17 +1066,19 @@ async function logout(){
 // Los datos de clientas/facturación/citas ficticias que quedan sin tocar son
 // solo demo visual del panel, no vienen de Supabase.
 async function loadRealData(){
-  const [{ data: servicios }, { data: stock }, { data: citas }, { data: pedidos }, { data: clientas }, { data: ventas }, { data: facturas }] = await Promise.all([
+  const [{ data: servicios }, { data: stock }, { data: citas }, { data: pedidos }, { data: clientas }, { data: ventas }, { data: facturas }, { data: gastos }] = await Promise.all([
     sb.from('servicios').select('*').order('orden', { ascending: true }),
     sb.from('stock').select('*').order('nombre', { ascending: true }),
     sb.from('citas').select('*').order('creado_en', { ascending: false }).limit(50),
     sb.from('pedidos').select('*').order('created_at', { ascending: false }).limit(50),
     sb.from('clientas').select('*').order('creado_en', { ascending: false }),
     sb.from('ventas').select('*'),
-    sb.from('facturas').select('*')
+    sb.from('facturas').select('*'),
+    sb.from('gastos').select('*').order('fecha', { ascending: false })
   ]);
   CONFIG.ventasReales = ventas || [];
   CONFIG.facturasReales = facturas || [];
+  CONFIG.gastosReales = gastos || [];
 
   if (servicios && servicios.length) {
     CONFIG.catalog = servicios.map(s => ({
@@ -1084,6 +1106,7 @@ async function loadRealData(){
 
   if (citas) {
     CONFIG.citasWeb = citas.map(c => ({
+      id: c.id,
       cliente: c.cliente_nombre,
       telefono: c.cliente_telefono,
       email: c.cliente_email,
@@ -1206,6 +1229,17 @@ function calcularFinanzasReales(){
   const numVentas = ventas.length + facturasPagadas.length;
   const ticketMedio = numVentas ? facturacionTotal / numVentas : 0;
 
+  const gastos = CONFIG.gastosReales || [];
+  let gastosMes = 0;
+  const gastosPorCategoria = {};
+  gastos.forEach(g => {
+    const d = new Date(g.fecha);
+    const m = Number(g.monto) || 0;
+    if (d.getMonth() === mesActual && d.getFullYear() === anioActual) gastosMes += m;
+    gastosPorCategoria[g.categoria] = (gastosPorCategoria[g.categoria] || 0) + m;
+  });
+  CONFIG.gastosPorCategoria = Object.entries(gastosPorCategoria).map(([name, total]) => ({ name, total }));
+
   CONFIG.monthsRevenue = porMes.map(v => Math.round(v));
   CONFIG.topServices = Object.values(porServicio).sort((a, b) => b.total - a.total).slice(0, 5);
   CONFIG.reportStats = [
@@ -1214,7 +1248,7 @@ function calcularFinanzasReales(){
     { label: 'Ticket medio', value: fmt(Math.round(ticketMedio)), trend: '', trendType: 'neutral' },
     { label: 'Ventas registradas', value: String(numVentas), trend: '', trendType: 'neutral' },
   ];
-  CONFIG.accounting = { revenue: Math.round(facturacionMes), expenses: 0, cash: Math.round(facturacionMes) };
+  CONFIG.accounting = { revenue: Math.round(facturacionMes), expenses: Math.round(gastosMes), cash: Math.round(facturacionMes - gastosMes) };
 }
 
 async function crearClientaReal(nombre, telefono, email){
@@ -1322,6 +1356,7 @@ function initApp(){
   renderFollowups();
   renderStock();
   renderPedidos();
+  renderGastos();
   renderAccounting();
   renderTeam();
   renderInbox();
@@ -1334,13 +1369,27 @@ function initApp(){
 function refreshAllViews(){
   renderDashboard();
   renderSchedule();
+  renderKanban();
   renderClients();
   renderCatalog();
   renderInvoices();
   renderReports();
   renderStock();
   renderPedidos();
+  renderGastos();
   renderAccounting();
+}
+
+// Abre WhatsApp de verdad (wa.me) con el texto precargado. Si no hay teléfono,
+// lo pide — nunca finge un envío que no ha pasado.
+function enviarWhatsApp(phone, texto){
+  let tel=(phone||'').replace(/[^\d+]/g,'');
+  if(!tel){
+    tel=(window.prompt('No hay teléfono guardado. Introduce el número (con prefijo, ej. +34...):')||'').replace(/[^\d+]/g,'');
+    if(!tel){ toast('Cancelado, no se ha enviado nada'); return; }
+  }
+  tel=tel.replace(/^\+/,'');
+  window.open('https://wa.me/'+tel+'?text='+encodeURIComponent(texto), '_blank');
 }
 
 function fmt(n,currency='EUR'){return Number(n||0).toLocaleString('es-ES',{maximumFractionDigits:0})+'€';}
@@ -1469,27 +1518,46 @@ function renderSalas(){
   `).join('');
 }
 
+const KANBAN_COLS=[
+  {key:'esperando',name:'Esperando',color:'#94a3b8',next:'en_cabina',nextLabel:'→ En cabina'},
+  {key:'en_cabina',name:'En cabina',color:'#bc916a',next:'completada',nextLabel:'→ Completada'},
+  {key:'completada',name:'Completada',color:'#16a34a',next:null,nextLabel:''},
+];
 function renderKanban(){
-  document.getElementById('kanban').innerHTML=CONFIG.kanban.columns.map(col=>`
+  const hoy=new Date().toISOString().slice(0,10);
+  const citasHoy=(CONFIG.citasWeb||[]).filter(c=>c.fecha && c.fecha.slice(0,10)===hoy);
+  const porColumna={esperando:[],en_cabina:[],completada:[]};
+  citasHoy.forEach(c=>{
+    const col=(c.estado==='en_cabina'||c.estado==='completada')?c.estado:'esperando';
+    porColumna[col].push(c);
+  });
+  document.getElementById('kanban').innerHTML=KANBAN_COLS.map(col=>`
     <div class="kan-col">
       <div class="kan-col-hd">
         <span class="kan-col-name">${col.name}</span>
-        <span class="kan-col-count">${col.cards.length}</span>
+        <span class="kan-col-count">${porColumna[col.key].length}</span>
       </div>
       <div class="kan-body">
-        ${col.cards.map(c=>`
+        ${porColumna[col.key].length?porColumna[col.key].map(c=>`
           <div class="kan-card" style="border-left-color:${col.color}">
-            <div class="kan-card-title">${c.title}</div>
-            <div class="kan-card-sub">${c.sub}</div>
+            <div class="kan-card-title">${c.cliente}</div>
+            <div class="kan-card-sub">${(c.notas||'').replace('Servicio: ','').split(' · ')[0]||'Sin especificar'}</div>
             <div class="kan-card-foot">
-              <span style="font-size:10px;color:var(--txt3)">${c.meta||''}</span>
-              <span class="kan-card-price">${c.price?fmt(c.price):''}</span>
+              <span style="font-size:10px;color:var(--txt3)">${c.fecha?new Date(c.fecha).toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'}):''}</span>
+              ${col.next?`<button class="btn btn-ghost" style="padding:4px 10px;font-size:10px;" onclick="avanzarCita('${c.id}','${col.next}')">${col.nextLabel}</button>`:'<span style="font-size:10px;color:#16a34a;">✓ Hecho</span>'}
             </div>
           </div>
-        `).join('')}
+        `).join(''):'<p style="text-align:center;color:var(--txt3);font-size:12px;padding:16px 0;">Sin citas hoy</p>'}
       </div>
     </div>
   `).join('');
+}
+async function avanzarCita(id,nuevoEstado){
+  const { error } = await sb.from('citas').update({ estado: nuevoEstado }).eq('id', id);
+  if(error){ toast('No se pudo actualizar: '+error.message); return; }
+  await loadRealData();
+  renderKanban();
+  toast('✓ Cita actualizada');
 }
 
 let ALL_CLIENTS=[];
@@ -1534,7 +1602,7 @@ function showClient(name){
       <li class="timeline-item"><div class="tl-when">Hace 2 semanas</div><div class="tl-what">Visita · ${c.field||'tratamiento'}</div></li>
     </ul>
     <div style="display:flex;gap:8px;margin-top:18px;">
-      <button class="btn btn-ghost" onclick="toast('WhatsApp abierto');closeModal()">💬 Mensaje</button>
+      <button class="btn btn-ghost" onclick="enviarWhatsApp('${c.phone}','Hola ${c.name.split(' ')[0]}, te escribimos desde Divas Skin Care 💛')">💬 Mensaje</button>
       <button class="btn btn-ghost" onclick="toast('Cita creada');closeModal()">+ Nueva cita</button>
       <button class="btn btn-accent" onclick="toast('Borrador de factura guardado');closeModal()">+ Factura</button>
     </div>`;
@@ -1610,8 +1678,8 @@ function showInvoice(idx){
     <div style="display:flex;justify-content:space-between;font-size:13px;color:var(--txt2);margin-bottom:10px;"><span>IGIC</span><span>Exento</span></div>
     <div style="display:flex;justify-content:space-between;font-family:var(--font-serif);font-size:22px;font-weight:500;color:var(--accent);padding-top:10px;border-top:1px solid var(--border);"><span>Total</span><span>${fmt(inv.total)}</span></div>
     <div style="display:flex;gap:8px;margin-top:18px;">
-      <button class="btn btn-ghost" style="flex:1" onclick="toast('Enviada por WhatsApp');closeModal()">💬 Enviar</button>
-      <button class="btn btn-ghost" style="flex:1" onclick="toast('PDF descargado');closeModal()">↓ PDF</button>
+      <button class="btn btn-ghost" style="flex:1" onclick="enviarWhatsApp('${(CONFIG.clients||[]).find(c=>c.email===inv.clientEmail)?.phone||''}','Hola, te enviamos la factura ${inv.num} de Divas Skin Care — total ${fmt(inv.total)}. ¡Gracias!')">💬 Enviar</button>
+      <button class="btn btn-ghost" style="flex:1" onclick="window.print()">↓ PDF</button>
       ${inv.statusClass!=='ok'?`<button class="btn btn-accent" style="flex:1" onclick="marcarFacturaPagada('${inv.id}')">✓ Marcar pagada</button>`:''}
     </div>`;
   document.getElementById('modal-host').classList.add('open');
@@ -1711,6 +1779,7 @@ function inboxSend(){
 // ═══════════════ POS ═══════════════
 let POS_CART=[];
 let POS_TAB='servicios';
+let ULTIMO_RECIBO_TEXTO='';
 function renderPOS(){
   posSwitchTab('servicios');
 }
@@ -1811,6 +1880,7 @@ async function posPay(method){
   refreshAllViews();
 
   const num='RCP-'+(ventaGuardada?.id||'').slice(0,8).toUpperCase();
+  ULTIMO_RECIBO_TEXTO='Recibo '+num+' · Divas Skin Care\n'+items.map(c=>c.qty+' × '+c.name+' · '+fmt(c.price*c.qty)).join('\n')+'\nTotal: '+fmt(total);
   document.getElementById('modal-title').textContent='Recibo '+num;
   document.getElementById('modal-body').innerHTML=`
     <div style="text-align:center;margin-bottom:18px;padding-bottom:14px;border-bottom:1px dashed var(--border);">
@@ -1829,8 +1899,8 @@ async function posPay(method){
     <div style="display:flex;justify-content:space-between;font-family:var(--font-serif);font-size:22px;color:var(--accent);font-weight:600;margin-top:10px;padding-top:10px;border-top:1px solid var(--border);"><span>Total</span><span>${fmt(total)}</span></div>
     <div style="margin-top:20px;text-align:center;font-size:10px;color:var(--txt3);letter-spacing:.18em;text-transform:uppercase;">Gracias · Hasta pronto</div>
     <div style="display:flex;gap:8px;margin-top:18px;">
-      <button class="btn btn-ghost" style="flex:1" onclick="toast('Recibo enviado por WhatsApp');closeModal()">💬 Enviar</button>
-      <button class="btn btn-ghost" style="flex:1" onclick="toast('Imprimiendo…');closeModal()">🖨 Imprimir</button>
+      <button class="btn btn-ghost" style="flex:1" onclick="enviarWhatsApp('',ULTIMO_RECIBO_TEXTO)">💬 Enviar</button>
+      <button class="btn btn-ghost" style="flex:1" onclick="window.print()">🖨 Imprimir</button>
       <button class="btn btn-accent" style="flex:1" onclick="closeModal()">Hecho</button>
     </div>`;
   document.getElementById('modal-host').classList.add('open');
@@ -1883,6 +1953,45 @@ function renderStock(){
     </tr>`;
   }).join('');
 }
+function openArticuloForm(){
+  document.getElementById('modal-title').textContent='Nuevo artículo';
+  document.getElementById('modal-body').innerHTML=`
+    <div style="display:flex;flex-direction:column;gap:14px;">
+      <label style="display:flex;flex-direction:column;gap:4px;"><span style="font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--txt3);font-weight:600;">Nombre</span><input id="af-nombre" placeholder="ej. Aloe Vera 500ml" style="padding:10px 12px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--txt);font-size:13px;"></label>
+      <div class="two-col">
+        <label style="display:flex;flex-direction:column;gap:4px;"><span style="font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--txt3);font-weight:600;">SKU</span><input id="af-sku" placeholder="opcional" style="padding:10px 12px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--txt);font-size:13px;"></label>
+        <label style="display:flex;flex-direction:column;gap:4px;"><span style="font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--txt3);font-weight:600;">Stock inicial</span><input id="af-cantidad" placeholder="0" style="padding:10px 12px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--txt);font-size:13px;"></label>
+      </div>
+      <div class="two-col">
+        <label style="display:flex;flex-direction:column;gap:4px;"><span style="font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--txt3);font-weight:600;">Mínimo</span><input id="af-minimo" placeholder="2" style="padding:10px 12px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--txt);font-size:13px;"></label>
+        <label style="display:flex;flex-direction:column;gap:4px;"><span style="font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--txt3);font-weight:600;">Coste (EUR)</span><input id="af-coste" placeholder="0" style="padding:10px 12px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--txt);font-size:13px;"></label>
+      </div>
+      <label style="display:flex;flex-direction:column;gap:4px;"><span style="font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--txt3);font-weight:600;">Precio de venta (EUR)</span><input id="af-precio" placeholder="0" style="padding:10px 12px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--txt);font-size:13px;"></label>
+    </div>
+    <p id="af-error" style="color:#b3441e;font-size:12px;margin-top:8px;"></p>
+    <div style="display:flex;gap:8px;margin-top:18px;">
+      <button class="btn btn-ghost" style="flex:1" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-accent" style="flex:1" onclick="submitArticuloForm()">Guardar artículo</button>
+    </div>`;
+  document.getElementById('modal-host').classList.add('open');
+}
+async function submitArticuloForm(){
+  const nombre=document.getElementById('af-nombre').value.trim();
+  const sku=document.getElementById('af-sku').value.trim()||null;
+  const cantidad=parseInt(document.getElementById('af-cantidad').value)||0;
+  const minimo=parseInt(document.getElementById('af-minimo').value)||0;
+  const coste=parseFloat(document.getElementById('af-coste').value.replace(',','.'))||0;
+  const precio=parseFloat(document.getElementById('af-precio').value.replace(',','.'))||0;
+  const err=document.getElementById('af-error');
+  if(!nombre){ err.textContent='Falta el nombre del artículo.'; return; }
+  err.textContent='Guardando...';
+  const { error } = await sb.from('stock').insert({ nombre, sku, cantidad, minimo, coste, precio });
+  if(error){ err.textContent='No se pudo guardar: '+error.message; return; }
+  await loadRealData();
+  refreshAllViews();
+  closeModal();
+  toast('✓ Artículo añadido');
+}
 
 // ═══════════════ ACCOUNTING ═══════════════
 function renderAccounting(){
@@ -1914,7 +2023,75 @@ function renderAccounting(){
   const labels=['E','F','M','A','M','J','J','A','S','O','N','D'];
   const mx=Math.max(...mo)||1;
   document.getElementById('cashflow-chart').innerHTML=mo.map((v,i)=>`<div class="bar" style="height:${(v/mx)*100}%" title="${labels[i]}: ${fmt(v)}"><span class="bar-label">${labels[i]}</span></div>`).join('');
-  document.getElementById('expense-cats').innerHTML=`<div style="padding:20px;text-align:center;color:var(--txt3);font-size:13px;">Todavía no se registran gastos en el panel — solo ingresos.</div>`;
+  const cats=CONFIG.gastosPorCategoria||[];
+  if(!cats.length){
+    document.getElementById('expense-cats').innerHTML=`<div style="padding:20px;text-align:center;color:var(--txt3);font-size:13px;">Sin gastos registrados todavía.</div>`;
+  } else {
+    const catMax=Math.max(...cats.map(c=>c.total))||1;
+    document.getElementById('expense-cats').innerHTML=cats.sort((a,b)=>b.total-a.total).map(c=>`
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border2);">
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:13px;font-weight:600;color:var(--txt);">${c.name}</div>
+          <div style="height:3px;background:var(--border2);border-radius:2px;margin-top:4px;overflow:hidden;"><div style="height:100%;background:#ef4444;width:${(c.total/catMax)*100}%"></div></div>
+        </div>
+        <div style="font-size:13px;font-weight:700;color:#ef4444;margin-left:14px;">${fmt(c.total)}</div>
+      </div>`).join('');
+  }
+}
+
+// ═══════════════ GASTOS ═══════════════
+function renderGastos(){
+  const gastos=CONFIG.gastosReales||[];
+  document.getElementById('gastos-tbody').innerHTML=gastos.length?gastos.map(g=>`
+    <tr>
+      <td>${new Date(g.fecha).toLocaleDateString('es-ES')}</td>
+      <td><strong>${g.concepto}</strong></td>
+      <td>${g.categoria}</td>
+      <td>${fmt(g.monto)}</td>
+      <td><button class="btn btn-ghost" style="padding:4px 10px;font-size:11px;" onclick="borrarGastoReal('${g.id}')">Borrar</button></td>
+    </tr>`).join(''):'<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:24px;">Sin gastos registrados todavía</td></tr>';
+}
+function openGastoForm(){
+  document.getElementById('modal-title').textContent='Nuevo gasto';
+  document.getElementById('modal-body').innerHTML=`
+    <div style="display:flex;flex-direction:column;gap:14px;">
+      <label style="display:flex;flex-direction:column;gap:4px;"><span style="font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--txt3);font-weight:600;">Concepto</span><input id="gf-concepto" placeholder="ej. Alquiler local, producto proveedor..." style="padding:10px 12px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--txt);font-size:13px;"></label>
+      <div class="two-col">
+        <label style="display:flex;flex-direction:column;gap:4px;"><span style="font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--txt3);font-weight:600;">Categoría</span><select id="gf-categoria" style="padding:10px 12px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--txt);font-size:13px;"><option>Alquiler</option><option>Suministros</option><option>Producto/Material</option><option>Nóminas</option><option>Marketing</option><option>Mantenimiento</option><option>Otros</option></select></label>
+        <label style="display:flex;flex-direction:column;gap:4px;"><span style="font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--txt3);font-weight:600;">Importe (EUR)</span><input id="gf-monto" placeholder="0" style="padding:10px 12px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--txt);font-size:13px;"></label>
+      </div>
+      <label style="display:flex;flex-direction:column;gap:4px;"><span style="font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--txt3);font-weight:600;">Fecha</span><input type="date" id="gf-fecha" value="${new Date().toISOString().slice(0,10)}" style="padding:10px 12px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--txt);font-size:13px;"></label>
+    </div>
+    <p id="gf-error" style="color:#b3441e;font-size:12px;margin-top:8px;"></p>
+    <div style="display:flex;gap:8px;margin-top:18px;">
+      <button class="btn btn-ghost" style="flex:1" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-accent" style="flex:1" onclick="submitGastoForm()">Guardar gasto</button>
+    </div>`;
+  document.getElementById('modal-host').classList.add('open');
+}
+async function submitGastoForm(){
+  const concepto=document.getElementById('gf-concepto').value.trim();
+  const categoria=document.getElementById('gf-categoria').value;
+  const monto=parseFloat(document.getElementById('gf-monto').value.replace(',','.'));
+  const fecha=document.getElementById('gf-fecha').value;
+  const err=document.getElementById('gf-error');
+  if(!concepto){ err.textContent='Falta el concepto.'; return; }
+  if(!monto||monto<=0){ err.textContent='El importe debe ser mayor que 0.'; return; }
+  err.textContent='Guardando...';
+  const { error } = await sb.from('gastos').insert({ concepto, categoria, monto, fecha });
+  if(error){ err.textContent='No se pudo guardar: '+error.message; return; }
+  await loadRealData();
+  refreshAllViews();
+  closeModal();
+  toast('✓ Gasto guardado');
+}
+async function borrarGastoReal(id){
+  if(!window.confirm('¿Borrar este gasto?')) return;
+  const { error } = await sb.from('gastos').delete().eq('id', id);
+  if(error){ toast('No se pudo borrar: '+error.message); return; }
+  await loadRealData();
+  refreshAllViews();
+  toast('✓ Gasto borrado');
 }
 
 // ═══════════════ TEAM ═══════════════
