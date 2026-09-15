@@ -1115,16 +1115,41 @@ async function loadRealData(){
       origen: c.origen,
       notas: c.notas
     }));
-    // Antepone las citas reales de la web a la agenda demo para que se vean en "Citas".
-    CONFIG.schedule = CONFIG.citasWeb.map(c => ({
-      time: c.fecha ? new Date(c.fecha).toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'}) : '-',
-      client: c.cliente,
-      service: (c.notas||'').replace('Servicio solicitado: ','').split(' · ')[0] || 'Sin especificar',
-      duration: '-',
-      status: c.estado === 'pendiente' ? 'Pendiente' : c.estado,
-      statusClass: c.estado === 'pendiente' ? 'pending' : 'info',
-      value: 0
-    })).concat(CONFIG.schedule);
+    // Solo las citas de HOY — antes se mezclaban aquí TODAS las citas de cualquier fecha.
+    const hoyStr = new Date().toDateString();
+    CONFIG.schedule = CONFIG.citasWeb
+      .filter(c => c.fecha && new Date(c.fecha).toDateString() === hoyStr)
+      .map(c => ({
+        time: c.fecha ? new Date(c.fecha).toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'}) : '-',
+        client: c.cliente,
+        service: (c.notas||'').replace('Servicio solicitado: ','').split(' · ')[0] || 'Sin especificar',
+        duration: '-',
+        status: c.estado === 'pendiente' ? 'Pendiente' : c.estado,
+        statusClass: c.estado === 'pendiente' ? 'pending' : 'info',
+        value: 0
+      }));
+
+    // Calendario semanal real: solo citas de esta semana (lunes-domingo), agrupadas por día+hora.
+    const hoyD = new Date();
+    const dowHoy = (hoyD.getDay() + 6) % 7;
+    const lunes = new Date(hoyD); lunes.setHours(0,0,0,0); lunes.setDate(hoyD.getDate() - dowHoy);
+    const domingo = new Date(lunes); domingo.setDate(lunes.getDate() + 7);
+    const wk = {};
+    CONFIG.citasWeb.forEach(c => {
+      if (!c.fecha) return;
+      const d = new Date(c.fecha);
+      if (d < lunes || d >= domingo) return;
+      const dow = (d.getDay() + 6) % 7; // 0=lunes
+      const h = String(d.getHours()).padStart(2,'0') + ':00';
+      const key = dow + '-' + h;
+      if (!wk[key]) wk[key] = [];
+      wk[key].push({
+        client: c.cliente,
+        label: (c.cliente || 'Cita').split(' ')[0],
+        cls: c.estado === 'pendiente' ? 'pending' : 'confirmed'
+      });
+    });
+    CONFIG.weekSchedule = wk;
   }
 
   if (pedidos) {
@@ -1168,6 +1193,7 @@ async function loadRealData(){
       field: ultimaVisitaPorEmail[c.email] ? new Date(ultimaVisitaPorEmail[c.email]).toLocaleDateString('es-ES') : 'Sin citas registradas',
       visits: visitasPorEmail[c.email] || 0,
       spent: gastoPorEmail[c.email] || 0,
+      createdAt: c.creado_en || null,
       tags: []
     }));
   }
@@ -1249,6 +1275,42 @@ function calcularFinanzasReales(){
     { label: 'Ventas registradas', value: String(numVentas), trend: '', trendType: 'neutral' },
   ];
   CONFIG.accounting = { revenue: Math.round(facturacionMes), expenses: Math.round(gastosMes), cash: Math.round(facturacionMes - gastosMes) };
+
+  // ── Tarjetas del Dashboard (antes se quedaban congeladas en los valores de ejemplo) ──
+  const hoyStr = ahora.toDateString();
+  const citasHoy = (CONFIG.citasWeb || []).filter(c => c.fecha && new Date(c.fecha).toDateString() === hoyStr);
+  let facturacionHoy = 0;
+  ventas.forEach(v => { if (new Date(v.created_at).toDateString() === hoyStr) facturacionHoy += Number(v.total) || 0; });
+  facturasPagadas.forEach(f => { if (new Date(f.created_at).toDateString() === hoyStr) facturacionHoy += Number(f.total) || 0; });
+  const clientasNuevasMes = (CONFIG.clients || []).filter(c => {
+    if (!c.createdAt) return false;
+    const d = new Date(c.createdAt);
+    return d.getMonth() === mesActual && d.getFullYear() === anioActual;
+  }).length;
+
+  CONFIG.stats = [
+    { label: 'Citas hoy', value: String(citasHoy.length), trend: '', trendType: 'neutral', spark: [0,0,0,0,0,0,0,0] },
+    { label: 'Facturación hoy', value: fmt(Math.round(facturacionHoy)), trend: '', trendType: 'neutral', spark: [0,0,0,0,0,0,0,0] },
+    { label: 'Clientas nuevas (mes)', value: String(clientasNuevasMes), trend: '', trendType: 'neutral', spark: [0,0,0,0,0,0,0,0] },
+    { label: '% de no-shows', value: '—', trend: 'sin seguimiento todavía', trendType: 'neutral', spark: [0,0,0,0,0,0,0,0] }
+  ];
+
+  // ── Gráfico de facturación de esta semana (Lun-Dom, mismo rango que la tabla de días) ──
+  const week=[0,0,0,0,0,0,0];
+  const dowHoy2=(ahora.getDay()+6)%7;
+  const lunes2=new Date(ahora); lunes2.setHours(0,0,0,0); lunes2.setDate(ahora.getDate()-dowHoy2);
+  const dayIdx=d=>Math.floor((new Date(d).setHours(0,0,0,0)-lunes2)/86400000);
+  ventas.forEach(v=>{ const i=dayIdx(v.created_at); if(i>=0&&i<7) week[i]+=Number(v.total)||0; });
+  facturasPagadas.forEach(f=>{ const i=dayIdx(f.created_at); if(i>=0&&i<7) week[i]+=Number(f.total)||0; });
+  CONFIG.weekRevenue = week.map(v=>Math.round(v));
+
+  // Semana anterior, para el % de variación real (antes era un "+12%" fijo en el HTML).
+  const prevWeek=[0,0,0,0,0,0,0];
+  const dayIdxPrev=d=>{ const t=new Date(lunes2); t.setDate(lunes2.getDate()-7); return Math.floor((new Date(d).setHours(0,0,0,0)-t)/86400000); };
+  ventas.forEach(v=>{ const i=dayIdxPrev(v.created_at); if(i>=0&&i<7) prevWeek[i]+=Number(v.total)||0; });
+  facturasPagadas.forEach(f=>{ const i=dayIdxPrev(f.created_at); if(i>=0&&i<7) prevWeek[i]+=Number(f.total)||0; });
+  const totalWeek=week.reduce((a,b)=>a+b,0), totalPrevWeek=prevWeek.reduce((a,b)=>a+b,0);
+  CONFIG.weekRevenueTrend = totalPrevWeek>0 ? Math.round(((totalWeek-totalPrevWeek)/totalPrevWeek)*100) : null;
 }
 
 async function crearClientaReal(nombre, telefono, email){
@@ -1435,10 +1497,16 @@ function renderDashboard(){
   `).join('');
 
   // Weekly revenue chart on dashboard
-  const wk=CONFIG.weekRevenue||[420,580,490,720,650,890,760];
-  const max=Math.max(...wk);
+  const wk=CONFIG.weekRevenue||[0,0,0,0,0,0,0];
+  const max=Math.max(...wk)||1;
   const days=['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
   document.getElementById('dash-chart').innerHTML=`<div class="bar-chart">${wk.map((v,i)=>`<div class="bar" style="height:${(v/max)*100}%" title="${days[i]}: ${fmt(v)}"><span class="bar-label">${days[i]}</span></div>`).join('')}</div>`;
+  const trendEl=document.getElementById('dash-revenue-trend');
+  if(trendEl){
+    const t=CONFIG.weekRevenueTrend;
+    if(t===null||t===undefined){ trendEl.textContent='—'; trendEl.style.color='var(--txt3)'; }
+    else{ trendEl.textContent=(t>=0?'+':'')+t+'%'; trendEl.style.color=t>=0?'#16a34a':'#ef4444'; }
+  }
 
   // Activity timeline
   const tl=CONFIG.activity||[];
