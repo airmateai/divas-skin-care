@@ -1270,10 +1270,10 @@ function renderPedidos(){
   tbody.innerHTML = pedidos.map(p => `
     <tr>
       <td>${p.fecha ? new Date(p.fecha).toLocaleString('es-ES',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : '-'}</td>
-      <td>${p.cliente || '-'}</td>
-      <td>${p.email || p.telefono || '-'}</td>
-      <td>${p.producto}</td>
-      <td><span class="tag tag-info">${p.estado === 'pendiente_preparar' ? 'Pendiente de preparar' : p.estado}</span></td>
+      <td>${esc(p.cliente || '-')}</td>
+      <td>${esc(p.email || p.telefono || '-')}</td>
+      <td>${esc(p.producto)}</td>
+      <td><span class="tag tag-info">${p.estado === 'pendiente_preparar' ? 'Pendiente de preparar' : esc(p.estado)}</span></td>
     </tr>
   `).join('');
 }
@@ -1397,6 +1397,11 @@ function enviarWhatsApp(phone, texto){
 }
 
 function fmt(n,currency='EUR'){return Number(n||0).toLocaleString('es-ES',{maximumFractionDigits:0})+'€';}
+// Escapa HTML — obligatorio en cualquier dato que venga de un formulario público
+// (nombre/teléfono/notas de clienta) antes de meterlo en innerHTML, o es XSS.
+function esc(str){
+  return String(str??'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
 
 function sparkline(values, color){
   if(!values||!values.length) return '';
@@ -1447,21 +1452,21 @@ function renderDashboard(){
   // Today's upcoming (first 4 from schedule)
   document.getElementById('dash-today-tbody').innerHTML=CONFIG.schedule.slice(0,4).map(s=>`
     <tr onclick="showClient('${(s.client||'').replace(/'/g,"\\'")}')" style="cursor:pointer">
-      <td><strong>${s.time}</strong></td>
-      <td>${s.client}</td>
-      <td>${s.service}</td>
-      <td><span class="tag tag-${s.statusClass}">${s.status}</span></td>
+      <td><strong>${esc(s.time)}</strong></td>
+      <td>${esc(s.client)}</td>
+      <td>${esc(s.service)}</td>
+      <td><span class="tag tag-${s.statusClass}">${esc(s.status)}</span></td>
     </tr>`).join('');
 }
 
 function renderSchedule(){
   document.getElementById('schedule-tbody').innerHTML=CONFIG.schedule.map(s=>`
     <tr onclick="showClient('${(s.client||'').replace(/'/g,"\\'")}')" style="cursor:pointer">
-      <td><strong>${s.time}</strong></td>
-      <td>${s.client}</td>
-      <td>${s.service}</td>
-      <td>${s.duration}</td>
-      <td><span class="tag tag-${s.statusClass}">${s.status}</span></td>
+      <td><strong>${esc(s.time)}</strong></td>
+      <td>${esc(s.client)}</td>
+      <td>${esc(s.service)}</td>
+      <td>${esc(s.duration)}</td>
+      <td><span class="tag tag-${s.statusClass}">${esc(s.status)}</span></td>
     </tr>
   `).join('');
   document.getElementById('today-count').textContent=CONFIG.schedule.length+' citas';
@@ -1494,7 +1499,7 @@ function renderSchedule(){
     html+=`<div class="wc-time-cell">${h}</div>`;
     for(let d=0;d<7;d++){
       const evs=(wk[d+'-'+h]||[]);
-      html+=`<div class="wc-cell">${evs.map(e=>`<div class="wc-event ${e.cls||'confirmed'}" onclick="showClient('${(e.client||'').replace(/'/g,"\\'")}')">${e.label}</div>`).join('')}</div>`;
+      html+=`<div class="wc-cell">${evs.map(e=>`<div class="wc-event ${e.cls||'confirmed'}" onclick="showClient('${(e.client||'').replace(/'/g,"\\'")}')">${esc(e.label)}</div>`).join('')}</div>`;
     }
   });
   document.getElementById('week-cal').innerHTML=html;
@@ -1544,8 +1549,8 @@ function renderKanban(){
       <div class="kan-body">
         ${porColumna[col.key].length?porColumna[col.key].map(c=>`
           <div class="kan-card" style="border-left-color:${col.color}">
-            <div class="kan-card-title">${c.cliente}</div>
-            <div class="kan-card-sub">${(c.notas||'').replace('Servicio: ','').split(' · ')[0]||'Sin especificar'}</div>
+            <div class="kan-card-title">${esc(c.cliente)}</div>
+            <div class="kan-card-sub">${esc((c.notas||'').replace('Servicio: ','').split(' · ')[0]||'Sin especificar')}</div>
             <div class="kan-card-foot">
               <span style="font-size:10px;color:var(--txt3)">${c.fecha?new Date(c.fecha).toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'}):''}</span>
               ${col.next?`<button class="btn btn-ghost" style="padding:4px 10px;font-size:10px;" onclick="avanzarCita('${c.id}','${col.next}')">${col.nextLabel}</button>`:'<span style="font-size:10px;color:#16a34a;">✓ Hecho</span>'}
@@ -1572,9 +1577,9 @@ function renderClients(){
 function drawClients(list){
   document.getElementById('clients-tbody').innerHTML=list.map(c=>`
     <tr onclick='showClient(${JSON.stringify(c.name)})' style="cursor:pointer">
-      <td><strong>${c.name}</strong></td>
-      <td>${c.phone}</td>
-      <td>${c.field}</td>
+      <td><strong>${esc(c.name)}</strong></td>
+      <td>${esc(c.phone)}</td>
+      <td>${esc(c.field)}</td>
       <td>${c.visits}</td>
       <td><strong>${fmt(c.spent)}</strong></td>
       <td>${(c.tags||[]).map(t=>`<span class="tag tag-${t.cls}">${t.text}</span>`).join(' ')}</td>
@@ -1589,8 +1594,8 @@ function showClient(name){
     <div style="display:flex;gap:18px;align-items:center;margin-bottom:18px;">
       <div style="width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,${CONFIG.colors.accent}33,${CONFIG.colors.accent}11);display:grid;place-items:center;font-family:var(--font-serif);font-size:24px;color:var(--accent);font-weight:600;">${c.name.split(' ').map(w=>w[0]).slice(0,2).join('')}</div>
       <div>
-        <div style="font-size:13px;color:var(--txt2);">${c.phone}</div>
-        <div style="font-size:11px;color:var(--txt3);margin-top:2px;">${c.field||''}</div>
+        <div style="font-size:13px;color:var(--txt2);">${esc(c.phone)}</div>
+        <div style="font-size:11px;color:var(--txt3);margin-top:2px;">${esc(c.field||'')}</div>
       </div>
     </div>
     <div class="two-col" style="margin-bottom:18px;">
@@ -1606,7 +1611,7 @@ function showClient(name){
       <li class="timeline-item"><div class="tl-when">Hace 2 semanas</div><div class="tl-what">Visita · ${c.field||'tratamiento'}</div></li>
     </ul>
     <div style="display:flex;gap:8px;margin-top:18px;">
-      <button class="btn btn-ghost" onclick="enviarWhatsApp('${c.phone}','Hola ${c.name.split(' ')[0]}, te escribimos desde Divas Skin Care 💛')">💬 Mensaje</button>
+      <button class="btn btn-ghost" onclick="enviarWhatsApp('${esc(c.phone)}','Hola ${esc(c.name.split(' ')[0])}, te escribimos desde Divas Skin Care 💛')">💬 Mensaje</button>
       <button class="btn btn-ghost" onclick="openBookingForm()">+ Nueva cita</button>
       <button class="btn btn-accent" onclick="toast('Crear factura desde ficha: próximamente, usa la página Facturas')">+ Factura</button>
     </div>`;
@@ -1636,10 +1641,10 @@ function renderCatalog(){
 function renderInvoices(){
   document.getElementById('inv-tbody').innerHTML=CONFIG.invoices.map((i,idx)=>`
     <tr onclick="showInvoice(${idx})" style="cursor:pointer">
-      <td><strong>${i.num}</strong></td>
-      <td>${i.client}</td>
-      <td>${i.date}</td>
-      <td><span class="tag tag-${i.statusClass}">${i.status}</span></td>
+      <td><strong>${esc(i.num)}</strong></td>
+      <td>${esc(i.client)}</td>
+      <td>${esc(i.date)}</td>
+      <td><span class="tag tag-${i.statusClass}">${esc(i.status)}</span></td>
       <td><strong>${fmt(i.total)}</strong></td>
     </tr>
   `).join('');
@@ -2204,9 +2209,9 @@ function renderCmdK(){
   const inv=CONFIG.invoices.filter(i=>!q||i.num.toLowerCase().includes(q)||i.client.toLowerCase().includes(q)).slice(0,3);
   const sec=(title,arr,build)=>arr.length?`<div class="cmdk-section">${title}</div>`+arr.map(build).join(''):'';
   document.getElementById('cmdk-results').innerHTML=
-    sec('Clients',cli,c=>`<div class="cmdk-item" onclick="closeCmdK();showClient('${c.name.replace(/'/g,"\\'")}')"><div class="cmdk-item-title">${c.name}</div><div class="cmdk-item-meta">${c.phone}</div></div>`)+
+    sec('Clients',cli,c=>`<div class="cmdk-item" onclick="closeCmdK();showClient('${c.name.replace(/'/g,"\\'")}')"><div class="cmdk-item-title">${esc(c.name)}</div><div class="cmdk-item-meta">${esc(c.phone)}</div></div>`)+
     sec(CONFIG.labels.catalog||'Catalog',cat,c=>`<div class="cmdk-item" onclick="closeCmdK();toast('Open ${c.name}')"><div class="cmdk-item-title">${c.name}</div><div class="cmdk-item-meta">${fmt(c.price)}</div></div>`)+
-    sec('Facturas',inv,i=>`<div class="cmdk-item" onclick="closeCmdK();toast('Open ${i.num}')"><div class="cmdk-item-title">${i.num} · ${i.client}</div><div class="cmdk-item-meta">${fmt(i.total)}</div></div>`);
+    sec('Facturas',inv,i=>`<div class="cmdk-item" onclick="closeCmdK();toast('Open ${esc(i.num)}')"><div class="cmdk-item-title">${esc(i.num)} · ${esc(i.client)}</div><div class="cmdk-item-meta">${fmt(i.total)}</div></div>`);
 }
 document.addEventListener('keydown',e=>{
   if((e.metaKey||e.ctrlKey)&&e.key==='k'){e.preventDefault();openCmdK();}
