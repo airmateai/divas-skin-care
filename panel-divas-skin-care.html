@@ -673,10 +673,14 @@ tbody tr:hover{background:rgba(0,0,0,.02);}
         </div>
         <button class="btn btn-accent" onclick="openClientForm()">+ Nueva clienta</button>
       </div>
+      <div class="card" id="birthdays-card" style="display:none;">
+        <div class="card-hd"><div class="card-hd-title">🎂 Cumpleaños este mes</div></div>
+        <div class="table-wrap"><table><thead><tr><th>Nombre</th><th>Teléfono</th><th>Fecha</th><th></th></tr></thead><tbody id="birthdays-tbody"></tbody></table></div>
+      </div>
       <div class="card">
         <div class="card-body">
           <input class="field-input" placeholder="Buscar por nombre, teléfono, email…" oninput="filterClients(this.value)" style="margin-bottom:14px;">
-          <div class="table-wrap"><table><thead><tr><th>Nombre</th><th>Teléfono</th><th>Última visita</th><th>Visitas</th><th>Gastado</th><th>Etiquetas</th></tr></thead><tbody id="clients-tbody"></tbody></table></div>
+          <div class="table-wrap"><table><thead><tr><th>Nombre</th><th>Teléfono</th><th>Cumpleaños</th><th>Última visita</th><th>Visitas</th><th>Gastado</th><th>Etiquetas</th></tr></thead><tbody id="clients-tbody"></tbody></table></div>
         </div>
       </div>
     </div>
@@ -1398,8 +1402,8 @@ function calcularFinanzasReales(){
   CONFIG.weekRevenueTrend = totalPrevWeek>0 ? Math.round(((totalWeek-totalPrevWeek)/totalPrevWeek)*100) : null;
 }
 
-async function crearClientaReal(nombre, telefono, email){
-  const { error } = await sb.from('clientas').insert({ nombre, telefono: telefono || null, email: email || null });
+async function crearClientaReal(nombre, telefono, email, fechaNacimiento){
+  const { error } = await sb.from('clientas').insert({ nombre, telefono: telefono || null, email: email || null, fecha_nacimiento: fechaNacimiento || null });
   if (error) return { error: error.message };
   await loadRealData();
   refreshAllViews();
@@ -1847,10 +1851,28 @@ function drawClients(list){
     <tr onclick='showClient(${JSON.stringify(c.name)})' style="cursor:pointer">
       <td><strong>${esc(c.name)}</strong></td>
       <td>${esc(c.phone)}</td>
+      <td>${c.fechaNacimiento?new Date(c.fechaNacimiento+'T00:00:00').toLocaleDateString('es-ES',{day:'numeric',month:'short'}):'—'}</td>
       <td>${esc(c.field)}</td>
       <td>${c.visits}</td>
       <td><strong>${fmt(c.spent)}</strong></td>
       <td>${(c.tags||[]).map(t=>`<span class="tag tag-${t.cls}">${t.text}</span>`).join(' ')}</td>
+    </tr>
+  `).join('');
+  renderBirthdaysThisMonth(list);
+}
+function renderBirthdaysThisMonth(list){
+  const mesActual = new Date().getMonth();
+  const cumples = (list||[]).filter(c => c.fechaNacimiento && new Date(c.fechaNacimiento+'T00:00:00').getMonth() === mesActual)
+    .sort((a,b) => new Date(a.fechaNacimiento+'T00:00:00').getDate() - new Date(b.fechaNacimiento+'T00:00:00').getDate());
+  const card = document.getElementById('birthdays-card');
+  if (!cumples.length) { card.style.display = 'none'; return; }
+  card.style.display = '';
+  document.getElementById('birthdays-tbody').innerHTML = cumples.map(c => `
+    <tr>
+      <td><strong>${esc(c.name)}</strong></td>
+      <td>${esc(c.phone)}</td>
+      <td>${new Date(c.fechaNacimiento+'T00:00:00').toLocaleDateString('es-ES',{day:'numeric',month:'long'})}</td>
+      <td><button class="btn btn-ghost" style="padding:4px 10px;font-size:10px;" onclick="enviarWhatsApp('${esc(c.phone)}','¡Feliz cumpleaños, ${esc(c.name.split(' ')[0])}! 🎉 Desde Divas Skin Care queremos regalarte algo especial este mes, ¿te apetece que te contemos la oferta?')">💬 Enviar oferta</button></td>
     </tr>
   `).join('');
 }
@@ -2628,6 +2650,7 @@ function openClientForm(){
         <label style="display:flex;flex-direction:column;gap:4px;"><span style="font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--txt3);font-weight:600;">Teléfono</span><input id="cf-phone" placeholder="+34..." style="padding:10px 12px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--txt);font-size:13px;"></label>
         <label style="display:flex;flex-direction:column;gap:4px;"><span style="font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--txt3);font-weight:600;">Email</span><input id="cf-email" placeholder="opcional" style="padding:10px 12px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--txt);font-size:13px;"></label>
       </div>
+      <label style="display:flex;flex-direction:column;gap:4px;max-width:200px;"><span style="font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--txt3);font-weight:600;">Fecha de nacimiento</span><input type="date" id="cf-nacimiento-new" style="padding:10px 12px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--txt);font-size:13px;"></label>
     </div>
     <p id="cf-error" style="color:#b3441e;font-size:12px;margin-top:8px;"></p>
     <div style="display:flex;gap:8px;margin-top:18px;">
@@ -2640,10 +2663,11 @@ async function submitClientForm(){
   const name=document.getElementById('cf-name').value.trim();
   const phone=document.getElementById('cf-phone').value.trim();
   const email=document.getElementById('cf-email').value.trim();
+  const nacimiento=document.getElementById('cf-nacimiento-new').value||null;
   const err=document.getElementById('cf-error');
   if(!name){ err.textContent='Falta el nombre.'; return; }
   err.textContent='Guardando...';
-  const result=await crearClientaReal(name, phone, email);
+  const result=await crearClientaReal(name, phone, email, nacimiento);
   if(result.error){ err.textContent='No se pudo guardar: '+result.error; return; }
   toast('✓ Clienta añadida');
   closeModal();

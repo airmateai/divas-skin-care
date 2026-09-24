@@ -131,7 +131,7 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:22px 0
   border-color:rgba(212,181,150,.55);
   box-shadow:inset 0 0 24px rgba(212,181,150,.12);
 }
-.svc-img{aspect-ratio:4/3;overflow:hidden;background:#eef1e6;position:relative;display:flex;align-items:center;justify-content:center;}
+.svc-img{aspect-ratio:4/5;overflow:hidden;background:#eef1e6;position:relative;display:flex;align-items:center;justify-content:center;}
 .svc-img::after{
   content:'';position:absolute;inset:0;z-index:1;pointer-events:none;
   background:
@@ -140,7 +140,7 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:22px 0
   opacity:.85;transition:opacity .45s ease;
 }
 .svc-card:hover .svc-img::after{opacity:1;}
-.svc-img img,.svc-img video{width:100%;height:100%;object-fit:contain;transition:transform .6s ease,filter .6s ease;filter:saturate(1.02);}
+.svc-img img,.svc-img video,#sd-media img,#sd-media video{width:100%;height:100%;object-fit:cover;object-position:center 30%;transition:transform .6s ease,filter .6s ease;filter:saturate(1.02);}
 .svc-card:hover .svc-img img,.svc-card:hover .svc-img video{transform:scale(1.045);filter:saturate(1.12) brightness(1.03);}
 .svc-body h3{transition:color .35s ease,transform .35s ease;}
 .svc-card:hover .svc-body h3{color:var(--accent);}
@@ -1227,7 +1227,7 @@ footer{background:var(--primary-dk);color:var(--cream);padding:0 0 34px;}
       <p>Además, Natalia se encarga de la gestión de nuestras redes sociales, espacio desde el cual también estará encantada de atenderte y ayudarte en lo que necesites.</p>
     </div>
     <div class="about-img" style="order:1;">
-      <img src="img/natalia-rijo.jpeg" alt="Natalia Rijo González - Recepción Divas Skin Care">
+      <img src="img/natalia-rijo.jpeg" alt="Natalia Rijo González - Recepción Divas Skin Care" style="object-position:center 12%;">
     </div>
   </div>
 </section>
@@ -1376,6 +1376,22 @@ document.querySelectorAll('#svc-tabs .cat-tab').forEach(tab=>{
   },{passive:true});
 })();
 </script>
+
+<!-- Modal de detalle de servicio -->
+<div id="service-detail-modal" style="display:none;position:fixed;inset:0;background:rgba(20,24,19,.55);z-index:100;align-items:center;justify-content:center;padding:16px;">
+  <div style="background:#fff;border-radius:16px;max-width:420px;width:100%;max-height:90vh;overflow-y:auto;position:relative;">
+    <button id="service-detail-close" style="position:absolute;top:12px;right:12px;background:rgba(255,255,255,.85);border:none;border-radius:50%;width:28px;height:28px;font-size:16px;cursor:pointer;color:#3d4a3a;z-index:2;">✕</button>
+    <div id="sd-media" style="width:100%;aspect-ratio:4/5;background:#eee;overflow:hidden;border-radius:16px 16px 0 0;"></div>
+    <div style="padding:22px 24px 26px;">
+      <div id="sd-cat" style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#bc916a;font-weight:700;margin-bottom:6px;"></div>
+      <h3 id="sd-title" style="font-family:var(--font-serif,serif);font-size:22px;color:#3d4a3a;margin:0 0 8px;"></h3>
+      <p id="sd-desc" style="font-size:13px;color:#5c6358;line-height:1.5;margin-bottom:14px;"></p>
+      <div id="sd-dur" style="font-size:12.5px;color:#5c6358;margin-bottom:6px;"></div>
+      <div id="sd-price" style="font-size:20px;font-weight:700;color:#3d4a3a;margin-bottom:16px;"></div>
+      <button id="sd-book-btn" type="button" style="width:100%;padding:12px;border:none;border-radius:30px;background:#3d4a3a;color:#fff;font-weight:600;font-size:13.5px;cursor:pointer;">Reservar →</button>
+    </div>
+  </div>
+</div>
 
 <!-- Modal de reserva -->
 <div id="booking-modal" style="display:none;position:fixed;inset:0;background:rgba(20,24,19,.55);z-index:100;align-items:center;justify-content:center;padding:16px;">
@@ -1560,22 +1576,56 @@ let SERVICIOS_MAP = {}; // servicio_id -> duracion_min, para bloquear el rango c
   });
 })();
 
+async function abrirFormularioReserva(card, bookBtn){
+  currentService = card.querySelector('h3').textContent.trim();
+  currentServicioId = bookBtn.dataset.servicioId || null;
+  currentPrecio = bookBtn.dataset.precio ? parseFloat(bookBtn.dataset.precio) : null;
+  document.getElementById('booking-service-name').textContent = currentService;
+  msg.textContent = '';
+  form.reset();
+  modal.style.display = 'flex';
+  const dias = proximosDias(14);
+  await cargarOcupadosRango(dias);
+  renderDayPicker();
+}
+
+const serviceDetailModal = document.getElementById('service-detail-modal');
+function abrirDetalleServicio(card, bookBtn){
+  const titulo = card.querySelector('h3').textContent.trim();
+  const cat = card.querySelector('.svc-cat')?.textContent.trim() || '';
+  const dur = card.querySelector('.dur')?.textContent.trim() || '';
+  const media = card.querySelector('.svc-img')?.innerHTML || '';
+  const precioTxt = bookBtn ? bookBtn.parentElement.querySelector('.svc-price')?.textContent.trim() : '';
+  document.getElementById('sd-media').innerHTML = media;
+  document.getElementById('sd-cat').textContent = cat;
+  document.getElementById('sd-title').textContent = titulo;
+  document.getElementById('sd-desc').textContent = `Tratamiento realizado por profesionales de Divas Skin Care, con productos y protocolos propios del centro. Consúltanos cualquier duda antes de reservar por WhatsApp.`;
+  document.getElementById('sd-dur').textContent = dur ? `Duración: ${dur}` : '';
+  document.getElementById('sd-price').textContent = precioTxt || '';
+  const sdBookBtn = document.getElementById('sd-book-btn');
+  if (bookBtn) {
+    sdBookBtn.style.display = '';
+    sdBookBtn.onclick = () => { serviceDetailModal.style.display = 'none'; abrirFormularioReserva(card, bookBtn); };
+  } else {
+    sdBookBtn.style.display = 'none'; // servicio informativo, sin reserva online
+  }
+  serviceDetailModal.style.display = 'flex';
+}
+document.getElementById('service-detail-close').addEventListener('click', ()=> serviceDetailModal.style.display='none');
+serviceDetailModal.addEventListener('click', e=>{ if(e.target===serviceDetailModal) serviceDetailModal.style.display='none'; });
+
 document.querySelectorAll('.svc-card').forEach(card=>{
   const bookBtn = card.querySelector('.svc-book');
-  if(!bookBtn) return; // servicios no reservables no tienen este botón
+  card.style.cursor = 'pointer';
+  card.addEventListener('click', (e)=>{
+    if (bookBtn && e.target === bookBtn) return; // el botón Reservar tiene su propio handler
+    abrirDetalleServicio(card, bookBtn || null);
+  });
+  if (!bookBtn) return; // servicios no reservables no tienen este botón
   bookBtn.style.cursor = 'pointer';
   bookBtn.addEventListener('click', async (e)=>{
     e.preventDefault(); // ya no se va directo a Stripe: primero se elige hora
-    currentService = card.querySelector('h3').textContent.trim();
-    currentServicioId = bookBtn.dataset.servicioId || null;
-    currentPrecio = bookBtn.dataset.precio ? parseFloat(bookBtn.dataset.precio) : null;
-    document.getElementById('booking-service-name').textContent = currentService;
-    msg.textContent = '';
-    form.reset();
-    modal.style.display = 'flex';
-    const dias = proximosDias(14);
-    await cargarOcupadosRango(dias);
-    renderDayPicker();
+    await abrirFormularioReserva(card, bookBtn);
   });
 });
 
