@@ -1540,8 +1540,16 @@ let currentServicioId = null;
 let currentPrecio = null;
 let SERVICIOS_MAP = {}; // servicio_id -> duracion_min, para bloquear el rango completo al reservar
 (async function cargarDuracionesServicios(){
-  const { data } = await sb.from('servicios').select('id,duracion_min');
+  const { data } = await sb.from('servicios').select('id,duracion_min,reservable');
   (data || []).forEach(s => { SERVICIOS_MAP[s.id] = s.duracion_min || 60; });
+  // Sincronización CRM → web: si un servicio se desactiva (reservable=false) desde
+  // el panel, su tarjeta desaparece de la web real, sin tocar el resto del HTML.
+  (data || []).filter(s => s.reservable === false).forEach(s => {
+    document.querySelectorAll(`.svc-book[data-servicio-id="${s.id}"]`).forEach(btn => {
+      const card = btn.closest('.svc-card');
+      if (card) card.style.display = 'none';
+    });
+  });
 })();
 
 document.querySelectorAll('.svc-card').forEach(card=>{
@@ -1604,6 +1612,7 @@ form.addEventListener('submit', async (e)=>{
     msg.textContent = 'No se pudo enviar la solicitud. Inténtalo de nuevo o escríbenos por WhatsApp.';
     return;
   }
+  sb.from('notificaciones').insert({ tipo: 'nueva_cita', mensaje: `Nueva reserva web: ${fd.get('nombre')} · ${currentService}` });
   if (necesitaDeposito) {
     msg.style.color = '#3d4a3a';
     msg.textContent = 'Hora reservada. Te llevamos a pagar el depósito de 20€ para confirmarla...';
