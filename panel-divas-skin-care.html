@@ -1087,7 +1087,9 @@ async function loadRealData(){
       cat: `${s.categoria || ''} · ${s.duracion || ''}`,
       price: s.precio,
       label: s.categoria || 'Servicio',
-      bookable: s.reservable
+      bookable: s.reservable,
+      duracionMin: s.duracion_min || 60,
+      color: s.color || '#A9B6A2'
     }));
   }
 
@@ -1113,7 +1115,9 @@ async function loadRealData(){
       fecha: c.fecha,
       estado: c.estado,
       origen: c.origen,
-      notas: c.notas
+      notas: c.notas,
+      servicioId: c.servicio_id,
+      profesional: c.profesional
     }));
     // Solo las citas de HOY — antes se mezclaban aquí TODAS las citas de cualquier fecha.
     const hoyStr = new Date().toDateString();
@@ -2329,6 +2333,24 @@ async function submitBookingForm(){
   const err=document.getElementById('bf-error');
   if(!clientName){ err.textContent='Elige una clienta (dala de alta primero en Clientas si no existe).'; return; }
   if(!servicioId){ err.textContent='No hay servicios cargados.'; return; }
+
+  // Comprueba que el rango completo (inicio + duración del servicio) no se solape
+  // con ninguna cita ya existente ese día — misma regla que en la web pública.
+  const svc = (CONFIG.catalog||[]).find(s => String(s.id) === String(servicioId));
+  const duracionMin = svc?.duracionMin || 60;
+  const [hh, mm] = hora.split(':').map(Number);
+  const inicioMin = hh*60 + mm;
+  const finMin = inicioMin + duracionMin;
+  const mismoDia = (CONFIG.citasWeb||[]).filter(c => c.fecha && new Date(c.fecha).toDateString() === new Date(fecha+'T00:00:00').toDateString() && c.estado !== 'cancelada' && c.estado !== 'rechazada');
+  const solapa = mismoDia.some(c => {
+    const d = new Date(c.fecha);
+    const cIni = d.getHours()*60 + d.getMinutes();
+    const otroSvc = (CONFIG.catalog||[]).find(s => String(s.id) === String(c.servicioId));
+    const cFin = cIni + (otroSvc?.duracionMin || 60);
+    return inicioMin < cFin && finMin > cIni;
+  });
+  if (solapa) { err.textContent = 'Esa hora se solapa con otra cita ya existente (teniendo en cuenta la duración del servicio). Elige otra hora.'; return; }
+
   err.textContent='Guardando...';
   const { error } = await sb.from('citas').insert({
     cliente_nombre: clientName,

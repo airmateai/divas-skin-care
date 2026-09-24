@@ -1394,6 +1394,10 @@ document.querySelectorAll('#svc-tabs .cat-tab').forEach(tab=>{
         <input type="hidden" name="fecha" id="fecha-elegida" required>
       </div>
       <div style="margin-bottom:14px;"><label style="display:block;font-size:11.5px;font-weight:600;color:#3d4a3a;margin-bottom:4px;">Notas</label><textarea name="notas" rows="2" style="width:100%;padding:8px 12px;border:1.5px solid #dce5d1;border-radius:7px;font-size:13.5px;font-family:inherit;"></textarea></div>
+      <div style="margin-bottom:14px;display:flex;gap:8px;align-items:flex-start;">
+        <input required type="checkbox" id="booking-consentimiento" name="consentimiento" style="margin-top:3px;width:16px;height:16px;flex:0 0 auto;">
+        <label for="booking-consentimiento" style="font-size:11px;color:#5c6358;line-height:1.4;">He leído y acepto la política de privacidad y el tratamiento de mis datos por parte de Divas Skin Care para gestionar esta reserva, conforme al RGPD.</label>
+      </div>
       <button type="submit" id="booking-submit" style="width:100%;padding:12px;border:none;border-radius:30px;background:#3d4a3a;color:#fff;font-weight:600;font-size:13.5px;cursor:pointer;">Enviar solicitud de reserva</button>
       <div id="booking-msg" style="margin-top:10px;font-size:12.5px;text-align:center;"></div>
     </form>
@@ -1449,14 +1453,16 @@ async function cargarOcupadosRango(dias){
   const desde = fmtDia(dias[0]);
   const hasta = fmtDia(dias[dias.length-1]);
   const { data, error } = await sb.rpc('get_busy_slots', { desde, hasta });
+  // busySlotsCache[dia] = array de intervalos ocupados {ini,fin} en minutos desde medianoche.
   busySlotsCache = {};
   if (error || !data) return;
   data.forEach(row=>{
     const d = new Date(row.fecha);
     const key = fmtDia(d);
-    const hhmm = String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
-    if (!busySlotsCache[key]) busySlotsCache[key] = new Set();
-    busySlotsCache[key].add(hhmm);
+    const ini = d.getHours()*60 + d.getMinutes();
+    const dur = row.duracion_min || 60;
+    if (!busySlotsCache[key]) busySlotsCache[key] = [];
+    busySlotsCache[key].push({ ini, fin: ini + dur });
   });
 }
 
@@ -1490,9 +1496,10 @@ function renderSlotPicker(){
   if (!diaSeleccionado) return;
   const franjas = HORARIO[diaSeleccionado.getDay()];
   const key = fmtDia(diaSeleccionado);
-  const ocupados = busySlotsCache[key] || new Set();
+  const ocupados = busySlotsCache[key] || [];
   const esHoy = fmtDia(new Date()) === key;
   const ahoraMin = new Date().getHours()*60 + new Date().getMinutes();
+  const duracionServicio = SERVICIOS_MAP[currentServicioId] || 60;
 
   franjas.forEach(([ini,fin])=>{
     for (let m = ini; m < fin; m += DURACION_SLOT) {
@@ -1500,7 +1507,11 @@ function renderSlotPicker(){
       const mm = String(m%60).padStart(2,'0');
       const hhmm = `${hh}:${mm}`;
       const pasado = esHoy && m <= ahoraMin;
-      const ocupado = ocupados.has(hhmm);
+      const finServicio = m + duracionServicio;
+      // Bloqueado si el servicio (inicio+duración) se solapa con alguna cita ya ocupada,
+      // o si no cabe entero dentro de la franja horaria de apertura.
+      const noCabe = finServicio > fin;
+      const ocupado = noCabe || ocupados.some(o => m < o.fin && finServicio > o.ini);
       const btn = document.createElement('button');
       btn.type = 'button';
       btn.textContent = hhmm;
@@ -1527,6 +1538,11 @@ const DEPOSITO_LINK = 'https://buy.stripe.com/00w28k9Ma6Q28p2dgz1VK3o';
 const DEPOSITO_MINIMO_PRECIO = 20; // servicios de 20€ o menos no piden depósito, se paga en cabina
 let currentServicioId = null;
 let currentPrecio = null;
+let SERVICIOS_MAP = {}; // servicio_id -> duracion_min, para bloquear el rango completo al reservar
+(async function cargarDuracionesServicios(){
+  const { data } = await sb.from('servicios').select('id,duracion_min');
+  (data || []).forEach(s => { SERVICIOS_MAP[s.id] = s.duracion_min || 60; });
+})();
 
 document.querySelectorAll('.svc-card').forEach(card=>{
   const bookBtn = card.querySelector('.svc-book');
@@ -1557,6 +1573,11 @@ form.addEventListener('submit', async (e)=>{
     msg.textContent = 'Elige un día y una hora antes de enviar la solicitud.';
     return;
   }
+  if (!document.getElementById('booking-consentimiento').checked) {
+    msg.style.color = '#b3441e';
+    msg.textContent = 'Debes aceptar la política de privacidad para reservar.';
+    return;
+  }
   const fd = new FormData(form);
   const submitBtn = document.getElementById('booking-submit');
   submitBtn.disabled = true;
@@ -1572,7 +1593,9 @@ form.addEventListener('submit', async (e)=>{
     servicio_id: currentServicioId,
     estado: necesitaDeposito ? 'pendiente_deposito' : 'pendiente_confirmar',
     notas: `Servicio: ${currentService}${fd.get('notas') ? ' · ' + fd.get('notas') : ''}${necesitaDeposito ? ' · En espera de depósito de 20€.' : ' · Sin depósito, se paga en cabina.'}`,
-    origen: 'web'
+    origen: 'web',
+    consentimiento_privacidad: true,
+    consentimiento_fecha: new Date().toISOString()
   });
   submitBtn.disabled = false;
   submitBtn.textContent = 'Enviar solicitud de reserva';
