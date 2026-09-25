@@ -465,7 +465,7 @@ footer{background:var(--primary-dk);color:var(--cream);padding:0 0 34px;}
         </div>
       </div>
       <div class="svc-card">
-        <div class="svc-img"><video autoplay muted loop playsinline poster="img/svc-rf-presoterapia-poster.jpg" style="object-position:center 50%"><source src="img/svc-rf-presoterapia.mp4" type="video/mp4"></video></div>
+        <div class="svc-img"><video autoplay muted loop playsinline poster="img/svc-rf-presoterapia-poster.jpg" style="object-position:center top"><source src="img/svc-rf-presoterapia.mp4" type="video/mp4"></video></div>
         <div class="svc-body">
           <div class="svc-cat">Reductor corporal</div>
           <h3>Radiofrecuencia + Presoterapia</h3>
@@ -474,7 +474,7 @@ footer{background:var(--primary-dk);color:var(--cream);padding:0 0 34px;}
         </div>
       </div>
       <div class="svc-card">
-        <div class="svc-img"><video autoplay muted loop playsinline poster="img/svc-cavitacion-presoterapia-poster.jpg" style="object-position:center 50%"><source src="img/svc-cavitacion-presoterapia.mp4" type="video/mp4"></video></div>
+        <div class="svc-img"><video autoplay muted loop playsinline poster="img/svc-cavitacion-presoterapia-poster.jpg" style="object-position:center top"><source src="img/svc-cavitacion-presoterapia.mp4" type="video/mp4"></video></div>
         <div class="svc-body">
           <div class="svc-cat">Reductor corporal</div>
           <h3>Cavitación corporal + Presoterapia</h3>
@@ -510,7 +510,7 @@ footer{background:var(--primary-dk);color:var(--cream);padding:0 0 34px;}
         </div>
       </div>
       <div class="svc-card">
-        <div class="svc-img"><video autoplay muted loop playsinline poster="img/svc-vacuum-presoterapia-poster.jpg" style="object-position:center 50%"><source src="img/svc-vacuum-presoterapia.mp4" type="video/mp4"></video></div>
+        <div class="svc-img"><video autoplay muted loop playsinline poster="img/svc-vacuum-presoterapia-poster.jpg" style="object-position:center top"><source src="img/svc-vacuum-presoterapia.mp4" type="video/mp4"></video></div>
         <div class="svc-body">
           <div class="svc-cat">Reductor corporal</div>
           <h3>Vacum Therapy + Presoterapia</h3>
@@ -1379,6 +1379,16 @@ document.querySelectorAll('#svc-tabs .cat-tab').forEach(conectarPestanaServicio)
   targets.forEach(el=>io.observe(el));
 })();
 
+// ═══ Vídeos de servicios: se ponen en marcha solos al aparecer en pantalla ═══
+// (algunos navegadores no arrancan un vídeo que estaba oculto en otra pestaña de
+// categoría al cargar la página hasta que se pasa el ratón por encima)
+(function(){
+  const arrancar=v=>{ v.muted=true; v.playsInline=true; const p=v.play(); if(p&&p.catch) p.catch(()=>{}); };
+  const io=new IntersectionObserver(es=>es.forEach(e=>{ if(e.isIntersecting) arrancar(e.target); else e.target.pause(); }),{threshold:.2});
+  document.querySelectorAll('.svc-img video').forEach(v=>io.observe(v));
+  window._arrancarVideo=arrancar;
+})();
+
 // ═══ WOW: botón volver arriba ═══
 (function(){
   const btn=document.getElementById('toTopBtn');
@@ -1647,6 +1657,7 @@ function abrirDetalleServicio(card, bookBtn){
   const media = card.querySelector('.svc-img')?.innerHTML || '';
   const precioTxt = bookBtn ? bookBtn.parentElement.querySelector('.svc-price')?.textContent.trim() : '';
   document.getElementById('sd-media').innerHTML = media;
+  document.querySelectorAll('#sd-media video').forEach(v => window._arrancarVideo && window._arrancarVideo(v));
   document.getElementById('sd-cat').textContent = cat;
   document.getElementById('sd-title').textContent = titulo;
   const svcDb = (bookBtn && SERVICIOS_DB[bookBtn.dataset.servicioId]) || Object.values(SERVICIOS_DB).find(x => normCat(x.nombre) === normCat(titulo)) || null;
