@@ -3478,6 +3478,126 @@ function goPage(id,el,isBottom){
   if(id==='dashboard') renderDashboard();
   window.scrollTo({top:0,behavior:'smooth'});
 }
+
+// ═════════════════════════════════════════════════════════════════════
+// Objetivo de facturación del mes (pedido por Louie 25/09/2026): se fija
+// una cantidad por mes y el panel la va descontando con las ventas reales,
+// repartiendo lo que falta entre los días de apertura que quedan.
+// ═════════════════════════════════════════════════════════════════════
+let OBJETIVOS={};
+async function cargarObjetivos(){
+  const { data, error }=await sb.from('objetivos_mensuales').select('*');
+  if(error){ console.warn('objetivos',error.message); return; }
+  OBJETIVOS={}; (data||[]).forEach(o=>{ OBJETIVOS[o.mes]=o; });
+}
+function mesKey(d){ d=d||new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'); }
+function ingresosDelDia(k){
+  return sumar((CONFIG.ventasReales||[]).filter(v=>dayKey(v.created_at)===k),'total')
+       + sumar((CONFIG.facturasReales||[]).filter(f=>f.estado==='pagada'&&dayKey(f.created_at)===k),'total');
+}
+function diasAbiertosMes(anio, mes){ // [{k, abierto}]
+  const out=[], n=new Date(anio, mes+1, 0).getDate();
+  for(let d=1; d<=n; d++){ const f=new Date(anio, mes, d); out.push({ k:dayKey(f), abierto:(HORARIO_CENTRO[f.getDay()]||[]).length>0, f }); }
+  return out;
+}
+function calcularObjetivo(){
+  const hoy=new Date(), mk=mesKey(hoy), o=OBJETIVOS[mk];
+  if(!o) return null;
+  const hoyK=dayKey(hoy);
+  const dias=diasAbiertosMes(hoy.getFullYear(), hoy.getMonth());
+  const porDia=dias.map(d=>({ ...d, ingresos:ingresosDelDia(d.k) }));
+  const total=Math.round(porDia.reduce((a,d)=>a+d.ingresos,0)*100)/100;
+  const antesDeHoy=porDia.filter(d=>d.k<hoyK).reduce((a,d)=>a+d.ingresos,0);
+  const hechoHoy=ingresosDelDia(hoyK);
+  const abiertos=dias.filter(d=>d.abierto);
+  const restantesInclHoy=abiertos.filter(d=>d.k>=hoyK).length;
+  const transcurridos=abiertos.filter(d=>d.k<hoyK).length;
+  const objetivo=Number(o.objetivo)||0;
+  const falta=Math.max(0, Math.round((objetivo-total)*100)/100);
+  // Lo que había que hacer hoy, calculado con lo que faltaba al empezar el día
+  const objetivoHoy=restantesInclHoy?Math.max(0,(objetivo-antesDeHoy)/restantesInclHoy):0;
+  const esperadoHastaHoy=abiertos.length?objetivo*(transcurridos+(abiertos.some(d=>d.k===hoyK)?1:0))/abiertos.length:0;
+  // Dinero ya reservado en citas activas desde ahora hasta fin de mes
+  const reservado=(CONFIG.citasWeb||[]).filter(c=>citaActiva(c) && new Date(c.fecha)>hoy && mesKey(new Date(c.fecha))===mk)
+    .reduce((a,c)=>a+(Number(servicioDe(c.servicioId)?.price)||0),0);
+  return { o, objetivo, total, falta, hechoHoy, objetivoHoy, restantesInclHoy, abiertos:abiertos.length, porDia, esperadoHastaHoy, reservado, pct:objetivo?Math.min(100,Math.round(total/objetivo*100)):0 };
+}
+function renderObjetivo(){
+  const host=document.getElementById('dash-objetivo'); if(!host) return;
+  const hoy=new Date(), nombreMes=hoy.toLocaleDateString('es-ES',{month:'long'});
+  const r=calcularObjetivo();
+  if(!r){
+    host.innerHTML=`<div class="card" style="margin-bottom:18px;"><div style="padding:18px 20px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+      <div style="flex:1;min-width:200px"><div style="font-family:var(--font-serif);font-size:20px;color:var(--txt);">Objetivo de ${nombreMes}</div>
+      <div style="font-size:12.5px;color:var(--txt3);margin-top:2px;">Fija cuánto queréis facturar este mes y el panel os dirá cada día cuánto falta y cuánto hay que hacer hoy.</div></div>
+      <button class="btn btn-accent" onclick="abrirObjetivo()">🎯 Fijar objetivo del mes</button></div></div>`;
+    return;
+  }
+  const vaBien=r.total>=r.esperadoHastaHoy;
+  const difRitmo=Math.round(Math.abs(r.total-r.esperadoHastaHoy));
+  const pctHoy=r.objetivoHoy?Math.min(100,Math.round(r.hechoHoy/r.objetivoHoy*100)):100;
+  const maxDia=Math.max(1,...r.porDia.map(d=>d.ingresos), r.objetivoHoy);
+  const hoyK=dayKey(hoy);
+  host.innerHTML=`<div class="card" style="margin-bottom:18px;">
+    <div class="card-hd"><div class="card-hd-title">🎯 Objetivo de ${nombreMes}: ${fmt2(r.objetivo)}</div><button class="btn btn-ghost" style="padding:4px 10px;font-size:11px;" onclick="abrirObjetivo()">Cambiar</button></div>
+    <div style="padding:6px 20px 18px;">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:6px;">
+        <div><span style="font-family:var(--font-serif);font-size:30px;color:var(--txt);">${fmt2(r.total)}</span> <span style="font-size:13px;color:var(--txt3);">facturado · ${r.pct}%</span></div>
+        <div style="font-size:14px;color:${r.falta?'var(--txt)':'#16a34a'};font-weight:700;">${r.falta?'Faltan '+fmt2(r.falta):'🎉 ¡Objetivo conseguido!'}</div>
+      </div>
+      <div style="height:12px;background:var(--border2);border-radius:8px;overflow:hidden;position:relative;margin-bottom:4px;">
+        <div style="height:100%;width:${r.pct}%;background:linear-gradient(90deg,var(--accent),#d4b596);border-radius:8px;transition:width .4s;"></div>
+        <div title="Donde deberíais ir hoy" style="position:absolute;top:-2px;bottom:-2px;left:${Math.min(100,r.objetivo?r.esperadoHastaHoy/r.objetivo*100:0)}%;width:2px;background:var(--txt);opacity:.5;"></div>
+      </div>
+      <div style="font-size:11.5px;color:${vaBien?'#16a34a':'#b3441e'};margin-bottom:16px;">${vaBien?'▲ Vais '+fmt(difRitmo)+' por delante del ritmo':'▼ Vais '+fmt(difRitmo)+' por detrás del ritmo'} · la rayita marca dónde deberíais estar hoy</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:16px;">
+        <div style="border:1px solid var(--border);border-radius:10px;padding:12px;"><div style="${LBL}">Objetivo de hoy</div><div style="font-size:19px;font-weight:800;color:var(--txt);margin-top:4px;">${r.restantesInclHoy?fmt2(r.objetivoHoy):'—'}</div>
+          <div style="height:5px;background:var(--border2);border-radius:4px;margin-top:6px;overflow:hidden;"><div style="height:100%;width:${pctHoy}%;background:${pctHoy>=100?'#16a34a':'var(--accent)'};"></div></div>
+          <div style="font-size:11px;color:var(--txt3);margin-top:4px;">hoy llevamos ${fmt2(r.hechoHoy)}</div></div>
+        <div style="border:1px solid var(--border);border-radius:10px;padding:12px;"><div style="${LBL}">Días de apertura</div><div style="font-size:19px;font-weight:800;color:var(--txt);margin-top:4px;">${r.restantesInclHoy}</div><div style="font-size:11px;color:var(--txt3);margin-top:4px;">quedan de ${r.abiertos} este mes</div></div>
+        <div style="border:1px solid var(--border);border-radius:10px;padding:12px;"><div style="${LBL}">Ya reservado</div><div style="font-size:19px;font-weight:800;color:var(--txt);margin-top:4px;">${fmt2(r.reservado)}</div><div style="font-size:11px;color:var(--txt3);margin-top:4px;">en citas del resto del mes</div></div>
+      </div>
+      <div style="display:flex;align-items:flex-end;gap:2px;height:70px;" title="Facturación de cada día del mes">
+        ${r.porDia.map(d=>`<div title="${d.f.toLocaleDateString('es-ES',{weekday:'short',day:'numeric'})}: ${fmt2(d.ingresos)}" style="flex:1;height:${Math.max(d.ingresos?4:1,d.ingresos/maxDia*100)}%;background:${d.k===hoyK?'var(--accent)':!d.abierto?'transparent':d.k>hoyK?'var(--border2)':'#d4b596'};border-radius:2px 2px 0 0;${!d.abierto?'border-bottom:1px dashed var(--border);':''}"></div>`).join('')}
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--txt3);margin-top:3px;"><span>1</span><span>facturación por día</span><span>${r.porDia.length}</span></div>
+    </div>
+  </div>`;
+}
+function abrirObjetivo(){
+  const mk=mesKey(), actual=OBJETIVOS[mk];
+  const sig=new Date(); sig.setMonth(sig.getMonth()+1,1);
+  abrirModal('Objetivo del mes', `
+    <p style="font-size:13px;color:var(--txt2);margin:0 0 14px;">Cuánto queréis facturar en total (ventas del TPV y facturas cobradas). El panel lo irá descontando cada día.</p>
+    <div class="two-col">
+      ${campo('Mes',`<select id="obj-mes" style="${INP}" onchange="document.getElementById('obj-imp').value=(OBJETIVOS[this.value]?.objetivo??'')"><option value="${mk}">${new Date().toLocaleDateString('es-ES',{month:'long',year:'numeric'})}</option><option value="${mesKey(sig)}">${sig.toLocaleDateString('es-ES',{month:'long',year:'numeric'})}</option></select>`)}
+      ${campo('Objetivo (€)',`<input id="obj-imp" type="number" min="0" step="50" value="${actual?.objetivo??''}" placeholder="ej. 8000" style="${INP}font-size:16px;">`)}
+    </div>
+    <div style="display:flex;gap:8px;margin-top:18px;">
+      <button class="btn btn-ghost" style="flex:1" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-accent" style="flex:1" onclick="guardarObjetivo()">Guardar objetivo</button>
+    </div>`);
+}
+async function guardarObjetivo(){
+  const mes=document.getElementById('obj-mes').value, objetivo=parseFloat(document.getElementById('obj-imp').value);
+  if(!(objetivo>0)){ toast('Escribe el objetivo en euros'); return; }
+  const { data, error }=await sb.from('objetivos_mensuales').upsert({ mes, objetivo, actualizado_por:CURRENT_USER.nombre||null, updated_at:new Date().toISOString() }).select('mes');
+  if(error||!data?.length){ toast('No se pudo guardar: '+(error?.message||'sin permiso')); return; }
+  await cargarObjetivos(); closeModal(); renderObjetivo(); toast('✓ Objetivo guardado: '+fmt2(objetivo));
+}
+(function(){
+  const _rd=renderDashboard;
+  renderDashboard=function(){
+    _rd.apply(this,arguments);
+    if(!document.getElementById('dash-objetivo')){
+      const stats=document.getElementById('dash-stats');
+      if(stats) stats.insertAdjacentHTML('beforebegin','<div id="dash-objetivo"></div>');
+    }
+    renderObjetivo();
+  };
+  const _lr=loadRealData;
+  loadRealData=async function(){ await Promise.all([_lr.apply(this,arguments), cargarObjetivos().catch(()=>{})]); };
+})();
 </script>
 </body>
 </html>
