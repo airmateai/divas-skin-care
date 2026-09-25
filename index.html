@@ -243,8 +243,8 @@ footer{background:var(--primary-dk);color:var(--cream);padding:0 0 34px;}
 
 <section class="hero">
   <div class="hero-bg">
-    <video autoplay muted loop playsinline poster="img/hero-video-fuente-poster.jpg">
-      <source src="img/hero-video-fuente.mp4" type="video/mp4">
+    <video autoplay muted loop playsinline poster="img/hero-video-limpieza-sinlogo-poster.jpg">
+      <source src="img/hero-video-limpieza-sinlogo.mp4" type="video/mp4">
     </video>
   </div>
   <div class="wrap hero-inner">
@@ -338,7 +338,7 @@ footer{background:var(--primary-dk);color:var(--cream);padding:0 0 34px;}
           <div class="svc-foot"><span class="svc-price">83€</span><a class="svc-book" href="https://buy.stripe.com/dRm3co5vUcam9t6ekD1VK3q" data-servicio-id="580ddd98-a824-4a9f-8fcc-ed90f8080eed" data-precio="83">Reservar →</a></div>
         </div>
       </div>
-      <div class="svc-card">
+      <div class="svc-card" data-grupo="dermapen" data-grupo-rol="opcion">
         <div class="svc-img"><video autoplay muted loop playsinline poster="img/svc-dermapen1-poster.jpg"><source src="img/svc-dermapen1.mp4" type="video/mp4"></video></div>
         <div class="svc-body">
           <div class="svc-cat">Limpieza facial Profunda</div>
@@ -347,7 +347,7 @@ footer{background:var(--primary-dk);color:var(--cream);padding:0 0 34px;}
           <div class="svc-foot"><span class="svc-price">189,60€ <span style="text-decoration:line-through;opacity:.5;font-size:14px;">237€</span></span></div>
         </div>
       </div>
-      <div class="svc-card">
+      <div class="svc-card" data-grupo="dermapen" data-grupo-rol="opcion">
         <div class="svc-img"><video autoplay muted loop playsinline poster="img/svc-dermapen2-new-poster.jpg"><source src="img/svc-dermapen2-new.mp4" type="video/mp4"></video></div>
         <div class="svc-body">
           <div class="svc-cat">Limpieza facial Profunda</div>
@@ -446,7 +446,7 @@ footer{background:var(--primary-dk);color:var(--cream);padding:0 0 34px;}
           <div class="svc-foot"><span class="svc-price">220€</span><a class="svc-book" href="https://buy.stripe.com/dRmeV6cYmeiu8p2foH1VK07" data-servicio-id="d39be6ef-5f18-4909-a4ce-f8a593b6b101" data-precio="220">Reservar →</a></div>
         </div>
       </div>
-      <div class="svc-card">
+      <div class="svc-card" data-grupo="dermapen" data-grupo-rol="principal">
         <div class="svc-img"><video autoplay muted loop playsinline poster="img/svc-dermapen2-new-poster.jpg"><source src="img/svc-dermapen2-new.mp4" type="video/mp4"></video></div>
         <div class="svc-body">
           <div class="svc-cat">Limpieza facial Profunda</div>
@@ -1299,7 +1299,7 @@ function filterSvcByCat(cat){
   document.querySelectorAll('.svc-card').forEach(card=>{
     const cardCat=card.querySelector('.svc-cat').textContent.trim();
     // Los servicios desactivados en el CRM no vuelven a aparecer al cambiar de pestaña
-    card.style.display=(cardCat===cat && card.dataset.inactivo!=='1')?'':'none';
+    card.style.display=(cardCat===cat && card.dataset.inactivo!=='1' && card.dataset.grupoRol!=='opcion')?'':'none';
   });
 }
 function conectarPestanaServicio(tab){
@@ -1400,6 +1400,7 @@ document.querySelectorAll('#svc-tabs .cat-tab').forEach(conectarPestanaServicio)
       <p id="sd-desc" style="font-size:13px;color:#5c6358;line-height:1.5;margin-bottom:14px;"></p>
       <div id="sd-dur" style="font-size:12.5px;color:#5c6358;margin-bottom:6px;"></div>
       <div id="sd-price" style="font-size:20px;font-weight:700;color:#3d4a3a;margin-bottom:16px;"></div>
+      <div id="sd-opciones" style="display:none;margin-bottom:16px;"></div>
       <button id="sd-book-btn" type="button" style="width:100%;padding:12px;border:none;border-radius:30px;background:#3d4a3a;color:#fff;font-weight:600;font-size:13.5px;cursor:pointer;">Reservar →</button>
     </div>
   </div>
@@ -1659,12 +1660,50 @@ function abrirDetalleServicio(card, bookBtn){
   } else {
     sdBookBtn.style.display = 'none'; // servicio informativo, sin reserva online
   }
+  // Servicios agrupados (ej. sesión suelta + bonos): una sola tarjeta y aquí todas las opciones
+  const opcBox = document.getElementById('sd-opciones');
+  const grupo = card.dataset.grupo;
+  if (grupo) {
+    const cards = [...document.querySelectorAll(`.svc-card[data-grupo="${grupo}"]`)].filter(c => c.dataset.inactivo !== '1');
+    cards.sort((a,b) => (a.dataset.grupoRol==='principal'?-1:0) - (b.dataset.grupoRol==='principal'?-1:0));
+    opcBox.innerHTML = '<div style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#bc916a;font-weight:700;margin-bottom:8px;">Elige opción</div>' + cards.map((c,i) => {
+      const t = c.querySelector('h3').textContent.trim();
+      const nombre = c.dataset.grupoRol==='principal' ? 'Sesión suelta' : t.split(' · ')[0];
+      const d = c.querySelector('.dur')?.textContent.trim() || '';
+      const p = c.querySelector('.svc-price')?.innerHTML || '';
+      const b = c.querySelector('.svc-book');
+      return `<div style="display:flex;align-items:center;gap:10px;padding:12px 14px;border:1.5px solid #dce5d1;border-radius:12px;margin-bottom:8px;">
+        <div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:600;color:#3d4a3a">${nombre}</div><div style="font-size:11.5px;color:#5c6358">${d}</div></div>
+        <div style="font-size:16px;font-weight:700;color:#3d4a3a;white-space:nowrap">${p}</div>
+        ${b?`<button type="button" data-opc="${i}" style="padding:8px 14px;border:none;border-radius:20px;background:#3d4a3a;color:#fff;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap">Reservar</button>`:`<span style="font-size:11px;color:#5c6358;white-space:nowrap">En cabina</span>`}
+      </div>`;
+    }).join('');
+    opcBox.querySelectorAll('button[data-opc]').forEach(btn => btn.addEventListener('click', () => {
+      const c = cards[Number(btn.dataset.opc)];
+      serviceDetailModal.style.display = 'none';
+      abrirFormularioReserva(c, c.querySelector('.svc-book'));
+    }));
+    opcBox.style.display = '';
+    document.getElementById('sd-price').style.display = 'none';
+    sdBookBtn.style.display = 'none';
+    document.getElementById('sd-title').textContent = (cards.find(c=>c.dataset.grupoRol==='principal')||card).querySelector('h3').textContent.trim();
+    document.getElementById('sd-dur').textContent = 'Duración: 1h 15min por sesión';
+  } else {
+    opcBox.style.display = 'none';
+    document.getElementById('sd-price').style.display = '';
+  }
   serviceDetailModal.style.display = 'flex';
 }
 document.getElementById('service-detail-close').addEventListener('click', ()=> serviceDetailModal.style.display='none');
 serviceDetailModal.addEventListener('click', e=>{ if(e.target===serviceDetailModal) serviceDetailModal.style.display='none'; });
 
 document.querySelectorAll('.svc-card').forEach(conectarTarjetaServicio);
+document.querySelectorAll('.svc-card[data-grupo-rol="opcion"]').forEach(c => { c.style.display = 'none'; });
+document.querySelectorAll('.svc-card[data-grupo-rol="principal"]').forEach(c => {
+  const n = document.querySelectorAll(`.svc-card[data-grupo="${c.dataset.grupo}"][data-grupo-rol="opcion"]`).length;
+  const dur = c.querySelector('.dur');
+  if (dur && n) dur.insertAdjacentHTML('afterend', `<div style="font-size:11.5px;color:#bc916a;font-weight:600;margin-top:4px;">También en bono de 3 y 6 sesiones · pulsa para ver</div>`);
+});
 function conectarTarjetaServicio(card){
   const bookBtn = card.querySelector('.svc-book');
   card.style.cursor = 'pointer';
