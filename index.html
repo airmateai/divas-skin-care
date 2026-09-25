@@ -140,7 +140,7 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:22px 0
   opacity:.85;transition:opacity .45s ease;
 }
 .svc-card:hover .svc-img::after{opacity:1;}
-.svc-img img,.svc-img video,#sd-media img,#sd-media video{width:100%;height:100%;object-fit:cover;object-position:center 30%;transition:transform .6s ease,filter .6s ease;filter:saturate(1.02);}
+.svc-img img,.svc-img video,#sd-media img,#sd-media video{width:100%;height:100%;object-fit:cover;object-position:center 30%;transition:filter .6s ease;filter:saturate(1.02);}
 /* Corrección de ángulo de cámara: algunos vídeos se grabaron desde un lado
    de la camilla en vez de desde la cabeza, dejando la cara girada. Se
    rota+escala el vídeo en concreto (no la foto/vídeo genérica) para que
@@ -154,16 +154,9 @@ video:has(source[src*="vitaminas"]){transform:rotate(180deg);}
 video:has(source[src*="mesoterapia"]){transform:rotate(180deg);}
 video:has(source[src*="vitamina7"]){transform:rotate(180deg);}
 img[src*="real-plasmapen-rostro-completo"]{transform:rotate(180deg);}
-.svc-card:hover .svc-img img,.svc-card:hover .svc-img video{transform:scale(1.045);filter:saturate(1.12) brightness(1.03);}
-.svc-card:hover .svc-img video:has(source[src*="puntosnegros2"]){transform:rotate(78deg) scale(2.7);filter:saturate(1.12) brightness(1.03);}
-.svc-card:hover .svc-img video:has(source[src*="controlacne"]){transform:rotate(180deg) scale(1.045);filter:saturate(1.12) brightness(1.03);}
-.svc-card:hover .svc-img video:has(source[src*="dermapen2-new"]){transform:rotate(26deg) scale(1.7);filter:saturate(1.12) brightness(1.03);}
-.svc-card:hover .svc-img video:has(source[src*="antimanchas"]){transform:rotate(12deg) scale(1.3);filter:saturate(1.12) brightness(1.03);}
-.svc-card:hover .svc-img video:has(source[src*="dermapen1"]){transform:scaleX(-1) scale(1.045);filter:saturate(1.12) brightness(1.03);}
-.svc-card:hover .svc-img video:has(source[src*="vitaminas"]){transform:rotate(180deg) scale(1.045);filter:saturate(1.12) brightness(1.03);}
-.svc-card:hover .svc-img video:has(source[src*="mesoterapia"]){transform:rotate(180deg) scale(1.045);filter:saturate(1.12) brightness(1.03);}
-.svc-card:hover .svc-img video:has(source[src*="vitamina7"]){transform:rotate(180deg) scale(1.045);filter:saturate(1.12) brightness(1.03);}
-.svc-card:hover .svc-img img[src*="real-plasmapen-rostro-completo"]{transform:rotate(180deg) scale(1.045);filter:saturate(1.12) brightness(1.03);}
+/* Sin zoom al pasar el ratón (pedido del cliente 25/09): la foto/vídeo se queda quieta,
+   solo gana un poco de color. Los giros de arriba se mantienen tal cual. */
+.svc-card:hover .svc-img img,.svc-card:hover .svc-img video{filter:saturate(1.12) brightness(1.03);}
 .svc-body h3{transition:color .35s ease,transform .35s ease;}
 .svc-card:hover .svc-body h3{color:var(--accent);}
 .svc-book{display:inline-block;transition:transform .3s ease;}
@@ -1305,29 +1298,26 @@ footer{background:var(--primary-dk);color:var(--cream);padding:0 0 34px;}
 function filterSvcByCat(cat){
   document.querySelectorAll('.svc-card').forEach(card=>{
     const cardCat=card.querySelector('.svc-cat').textContent.trim();
-    card.style.display=(cardCat===cat)?'':'none';
+    // Los servicios desactivados en el CRM no vuelven a aparecer al cambiar de pestaña
+    card.style.display=(cardCat===cat && card.dataset.inactivo!=='1')?'':'none';
+  });
+}
+function conectarPestanaServicio(tab){
+  tab.addEventListener('click',()=>{
+    document.querySelectorAll('#svc-tabs .cat-tab').forEach(t=>t.classList.remove('active'));
+    tab.classList.add('active');
+    const cat=tab.textContent.trim();
+    const grid=document.querySelector('.svc-grid');
+    if(grid){
+      grid.classList.add('switching');
+      setTimeout(()=>{ filterSvcByCat(cat); grid.classList.remove('switching'); },220);
+    } else filterSvcByCat(cat);
   });
 }
 const _initialTab=document.querySelector('#svc-tabs .cat-tab.active');
 if(_initialTab)filterSvcByCat(_initialTab.textContent.trim());
 
-const svcGrid=document.querySelector('.svc-grid');
-document.querySelectorAll('#svc-tabs .cat-tab').forEach(tab=>{
-  tab.addEventListener('click',()=>{
-    document.querySelectorAll('#svc-tabs .cat-tab').forEach(t=>t.classList.remove('active'));
-    tab.classList.add('active');
-    const cat=tab.textContent.trim();
-    if(svcGrid){
-      svcGrid.classList.add('switching');
-      setTimeout(()=>{
-        filterSvcByCat(cat);
-        svcGrid.classList.remove('switching');
-      },220);
-    } else {
-      filterSvcByCat(cat);
-    }
-  });
-});
+document.querySelectorAll('#svc-tabs .cat-tab').forEach(conectarPestanaServicio);
 
 // ═══ Tienda: filtro por marca ═══
 (function(){
@@ -1586,17 +1576,53 @@ const DEPOSITO_MINIMO_PRECIO = 20; // servicios de 20€ o menos no piden depós
 let currentServicioId = null;
 let currentPrecio = null;
 let SERVICIOS_MAP = {}; // servicio_id -> duracion_min, para bloquear el rango completo al reservar
-(async function cargarDuracionesServicios(){
-  const { data } = await sb.from('servicios').select('id,duracion_min,reservable');
-  (data || []).forEach(s => { SERVICIOS_MAP[s.id] = s.duracion_min || 60; });
-  // Sincronización CRM → web: si un servicio se desactiva (reservable=false) desde
-  // el panel, su tarjeta desaparece de la web real, sin tocar el resto del HTML.
-  (data || []).filter(s => s.reservable === false).forEach(s => {
-    document.querySelectorAll(`.svc-book[data-servicio-id="${s.id}"]`).forEach(btn => {
-      const card = btn.closest('.svc-card');
-      if (card) card.style.display = 'none';
-    });
+let SERVICIOS_DB = {};  // servicio_id -> fila de "servicios" (fuente de verdad: el CRM)
+
+// Sincronización CRM → web. El CRM manda sobre precio, duración, descripción y
+// activo/inactivo de cada servicio; los vídeos/fotos de las tarjetas siguen en el HTML.
+// Un servicio activo creado en el CRM que no tiene tarjeta se añade aquí.
+function normCat(t){ return String(t||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().trim(); }
+function precioWeb(p){ p=Number(p)||0; return (Number.isInteger(p)?p:p.toFixed(2).replace('.',','))+'€'; }
+function escWeb(t){ return String(t??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+const RE_DURACION = /^\s*(\d+\s*h)?\s*(\d+\s*min)?\s*$/i;
+(async function sincronizarServiciosWeb(){
+  const { data, error } = await sb.from('servicios').select('id,nombre,categoria,duracion,duracion_min,precio,reservable,descripcion,color,img_url,video_url,orden').order('orden');
+  if (error || !data) return;
+  const conTarjeta = new Set();
+  data.forEach(s => { SERVICIOS_MAP[s.id] = s.duracion_min || 60; SERVICIOS_DB[s.id] = s; });
+  document.querySelectorAll('.svc-book[data-servicio-id]').forEach(btn => {
+    const s = SERVICIOS_DB[btn.dataset.servicioId];
+    const card = btn.closest('.svc-card');
+    if (!s || !card) return;
+    conTarjeta.add(s.id);
+    if (s.reservable === false) { card.dataset.inactivo = '1'; card.style.display = 'none'; return; }
+    btn.dataset.precio = s.precio;
+    const precioEl = card.querySelector('.svc-price');
+    if (precioEl) precioEl.textContent = precioWeb(s.precio);
+    const durEl = card.querySelector('.dur');
+    if (durEl && s.duracion_min && RE_DURACION.test(durEl.textContent)) {
+      const h = Math.floor(s.duracion_min/60), m = s.duracion_min%60;
+      durEl.textContent = h && m ? `${h}h ${m}min` : h ? `${h}h` : `${m} min`;
+    }
   });
+  const grid = document.querySelector('.svc-grid');
+  const tabs = document.getElementById('svc-tabs');
+  data.filter(s => s.reservable === true && !conTarjeta.has(s.id)).forEach(s => {
+    let tab = [...tabs.querySelectorAll('.cat-tab')].find(t => normCat(t.textContent) === normCat(s.categoria));
+    if (!tab) { tab = document.createElement('div'); tab.className = 'cat-tab'; tab.textContent = s.categoria || 'Otros'; tabs.appendChild(tab); conectarPestanaServicio(tab); }
+    const h = Math.floor((s.duracion_min||60)/60), m = (s.duracion_min||60)%60;
+    const color = s.color || '#A9B6A2';
+    const media = s.video_url ? `<video autoplay muted loop playsinline><source src="${escWeb(s.video_url)}" type="video/mp4"></video>`
+      : s.img_url ? `<img src="${escWeb(s.img_url)}" alt="${escWeb(s.nombre)}" loading="lazy">`
+      : `<div style="width:100%;height:100%;display:grid;place-items:center;background:linear-gradient(135deg,${color},${color}88);color:#fff;font-family:var(--font-serif);font-size:22px;font-style:italic;padding:20px;text-align:center;">${escWeb(s.nombre)}</div>`;
+    const card = document.createElement('div');
+    card.className = 'svc-card';
+    card.innerHTML = `<div class="svc-img">${media}</div><div class="svc-body"><div class="svc-cat">${escWeb(tab.textContent.trim())}</div><h3>${escWeb(s.nombre)}</h3><div class="dur">${h&&m?`${h}h ${m}min`:h?`${h}h`:`${m} min`}</div><div class="svc-foot"><span class="svc-price">${precioWeb(s.precio)}</span><a class="svc-book" href="#reservar" data-servicio-id="${s.id}" data-precio="${s.precio}">Reservar →</a></div></div>`;
+    grid.appendChild(card);
+    conectarTarjetaServicio(card);
+  });
+  const activa = tabs.querySelector('.cat-tab.active');
+  if (activa) filterSvcByCat(activa.textContent.trim());
 })();
 
 async function abrirFormularioReserva(card, bookBtn){
@@ -1622,7 +1648,8 @@ function abrirDetalleServicio(card, bookBtn){
   document.getElementById('sd-media').innerHTML = media;
   document.getElementById('sd-cat').textContent = cat;
   document.getElementById('sd-title').textContent = titulo;
-  document.getElementById('sd-desc').textContent = `Tratamiento realizado por profesionales de Divas Skin Care, con productos y protocolos propios del centro. Consúltanos cualquier duda antes de reservar por WhatsApp.`;
+  const svcDb = bookBtn ? SERVICIOS_DB[bookBtn.dataset.servicioId] : null;
+  document.getElementById('sd-desc').textContent = svcDb?.descripcion || `Tratamiento realizado por profesionales de Divas Skin Care, con productos y protocolos propios del centro. Consúltanos cualquier duda antes de reservar por WhatsApp.`;
   document.getElementById('sd-dur').textContent = dur ? `Duración: ${dur}` : '';
   document.getElementById('sd-price').textContent = precioTxt || '';
   const sdBookBtn = document.getElementById('sd-book-btn');
@@ -1637,7 +1664,8 @@ function abrirDetalleServicio(card, bookBtn){
 document.getElementById('service-detail-close').addEventListener('click', ()=> serviceDetailModal.style.display='none');
 serviceDetailModal.addEventListener('click', e=>{ if(e.target===serviceDetailModal) serviceDetailModal.style.display='none'; });
 
-document.querySelectorAll('.svc-card').forEach(card=>{
+document.querySelectorAll('.svc-card').forEach(conectarTarjetaServicio);
+function conectarTarjetaServicio(card){
   const bookBtn = card.querySelector('.svc-book');
   card.style.cursor = 'pointer';
   card.addEventListener('click', (e)=>{
@@ -1650,7 +1678,7 @@ document.querySelectorAll('.svc-card').forEach(card=>{
     e.preventDefault(); // ya no se va directo a Stripe: primero se elige hora
     await abrirFormularioReserva(card, bookBtn);
   });
-});
+}
 
 document.getElementById('booking-close').addEventListener('click', ()=> modal.style.display='none');
 modal.addEventListener('click', e=>{ if(e.target===modal) modal.style.display='none'; });
@@ -1672,47 +1700,35 @@ form.addEventListener('submit', async (e)=>{
   submitBtn.disabled = true;
   submitBtn.textContent = 'Reservando...';
   const necesitaDeposito = currentPrecio !== null && currentPrecio > DEPOSITO_MINIMO_PRECIO;
-  const citaId = crypto.randomUUID(); // generado aquí: la RLS de "citas" no deja leer de vuelta la fila insertada
-  const { error } = await sb.from('citas').insert({
-    id: citaId,
-    cliente_nombre: fd.get('nombre'),
-    cliente_telefono: fd.get('telefono'),
-    cliente_email: fd.get('email') || null,
-    fecha: new Date(fd.get('fecha')).toISOString(),
-    servicio_id: currentServicioId,
-    estado: necesitaDeposito ? 'pendiente_deposito' : 'pendiente_confirmar',
-    notas: `Servicio: ${currentService}${fd.get('notas') ? ' · ' + fd.get('notas') : ''}${necesitaDeposito ? ' · En espera de depósito de 20€.' : ' · Sin depósito, se paga en cabina.'}`,
-    origen: 'web',
-    consentimiento_privacidad: true,
-    consentimiento_fecha: new Date().toISOString()
+  // Una sola llamada: crea/actualiza la ficha de la clienta, crea la cita y guarda el
+  // consentimiento de privacidad. La base de datos rechaza la reserva si la franja
+  // (inicio + duración) ya está ocupada, aunque dos personas reserven a la vez.
+  const { data: citaId, error } = await sb.rpc('reservar_cita_web', {
+    p_nombre: fd.get('nombre'),
+    p_telefono: fd.get('telefono'),
+    p_email: fd.get('email') || null,
+    p_fecha_nacimiento: fd.get('fecha_nacimiento') || null,
+    p_fecha: new Date(fd.get('fecha')).toISOString(),
+    p_servicio_id: currentServicioId,
+    p_notas: `Servicio: ${currentService}${fd.get('notas') ? ' · ' + fd.get('notas') : ''}${necesitaDeposito ? ' · En espera de depósito de 20€.' : ' · Sin depósito, se paga en cabina.'}`,
+    p_con_deposito: necesitaDeposito,
+    p_consentimiento: document.getElementById('booking-consentimiento').checked
   });
-  // Guarda/actualiza la ficha de clienta con nombre/teléfono/fecha de nacimiento,
-  // para que Louie vea los cumpleaños sin tener que rellenarlo ella a mano.
-  const fechaNacimientoForm = fd.get('fecha_nacimiento') || null;
-  const emailForm = fd.get('email') || null;
-  if (emailForm) {
-    sb.from('clientas').upsert({
-      nombre: fd.get('nombre'),
-      telefono: fd.get('telefono'),
-      email: emailForm,
-      fecha_nacimiento: fechaNacimientoForm
-    }, { onConflict: 'email' });
-  } else {
-    sb.from('clientas').insert({
-      nombre: fd.get('nombre'),
-      telefono: fd.get('telefono'),
-      email: null,
-      fecha_nacimiento: fechaNacimientoForm
-    });
-  }
   submitBtn.disabled = false;
   submitBtn.textContent = 'Enviar solicitud de reserva';
-  if (error) {
+  if (error || !citaId) {
     msg.style.color = '#b3441e';
-    msg.textContent = 'No se pudo enviar la solicitud. Inténtalo de nuevo o escríbenos por WhatsApp.';
+    if (/SOLAPE/.test(error?.message || '')) {
+      msg.textContent = 'Vaya, esa hora se acaba de ocupar. Elige otra, por favor.';
+      await cargarOcupadosRango(proximosDias(14));
+      renderSlotPicker();
+    } else if (/SERVICIO/.test(error?.message || '')) {
+      msg.textContent = 'Este servicio ya no se puede reservar online. Escríbenos por WhatsApp y te ayudamos.';
+    } else {
+      msg.textContent = 'No se pudo enviar la solicitud. Inténtalo de nuevo o escríbenos por WhatsApp.';
+    }
     return;
   }
-  sb.from('notificaciones').insert({ tipo: 'nueva_cita', mensaje: `Nueva reserva web: ${fd.get('nombre')} · ${currentService}` });
   if (necesitaDeposito) {
     msg.style.color = '#3d4a3a';
     msg.textContent = 'Hora reservada. Te llevamos a pagar el depósito de 20€ para confirmarla...';

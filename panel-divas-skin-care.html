@@ -404,7 +404,66 @@ tbody tr:hover{background:rgba(0,0,0,.02);}
 @media(max-width:840px){.two-col{grid-template-columns:1fr;}}
 
 </style>
-<style></style>
+<style>
+/* ── CRM v2: calendario ── */
+.cal-toolbar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:14px 18px;border-bottom:1px solid var(--border);}
+.cal-seg{display:inline-flex;border:1px solid var(--border);border-radius:8px;overflow:hidden;}
+.cal-seg button{background:var(--surface);color:var(--txt2);border:none;padding:7px 14px;font-size:12px;font-weight:600;cursor:pointer;border-right:1px solid var(--border);font-family:inherit;}
+.cal-seg button:last-child{border-right:none;}
+.cal-on,.cal-seg button.cal-on{background:var(--accent)!important;color:#fff!important;}
+.cal-label{font-family:var(--font-serif);font-size:17px;color:var(--txt);margin-left:6px;text-transform:capitalize;}
+.cal-prof{padding:7px 10px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--txt);font-size:12px;font-family:inherit;}
+.cal-scroll{overflow:auto;max-height:78vh;}
+.cal-grid{display:grid;min-width:0;}
+.cal-hcell{position:sticky;top:0;z-index:3;background:var(--surface);padding:10px 6px;font-size:11px;color:var(--txt3);text-align:center;border-bottom:1px solid var(--border);border-left:1px solid var(--border2);text-transform:capitalize;cursor:pointer;}
+.cal-hcell b{font-size:15px;color:var(--txt);margin-left:2px;}
+.cal-hcell.cal-today b{color:#fff;background:var(--accent);border-radius:50%;padding:2px 7px;}
+.cal-hcount{display:block;font-size:10px;color:var(--txt3);min-height:12px;}
+.cal-horas{position:relative;}
+.cal-hora{position:absolute;right:8px;transform:translateY(-50%);font-size:10.5px;color:var(--txt3);}
+.cal-hora:first-child{transform:none;}
+.cal-col{position:relative;border-left:1px solid var(--border2);background-image:repeating-linear-gradient(to bottom,var(--border2) 0,var(--border2) 1px,transparent 1px,transparent 75px);cursor:copy;}
+.cal-cerrado{position:absolute;left:0;right:0;background:repeating-linear-gradient(135deg,rgba(0,0,0,.035) 0 6px,transparent 6px 12px);pointer-events:none;}
+.cal-ev{position:absolute;z-index:2;border-radius:7px;padding:4px 7px;overflow:hidden;cursor:pointer;background:color-mix(in srgb,var(--c) 22%,var(--surface));border-left:4px solid var(--c);color:var(--txt);box-shadow:0 1px 2px rgba(0,0,0,.06);transition:transform .12s,box-shadow .12s;}
+.cal-ev:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(0,0,0,.12);z-index:4;}
+.cal-ev-pend{background:repeating-linear-gradient(135deg,color-mix(in srgb,var(--c) 22%,var(--surface)) 0 8px,color-mix(in srgb,var(--c) 10%,var(--surface)) 8px 16px);}
+.cal-ev-t{font-size:10px;color:var(--txt2);font-weight:600;white-space:nowrap;}
+.cal-ev-n{font-size:12px;font-weight:700;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.cal-ev-s,.cal-ev-p{font-size:10.5px;color:var(--txt2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.cal-now{position:absolute;left:0;right:0;height:2px;background:#e0564a;z-index:3;pointer-events:none;}
+.cal-now::before{content:'';position:absolute;left:-4px;top:-3px;width:8px;height:8px;border-radius:50%;background:#e0564a;}
+.cal-mes{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));}
+.cal-mhead{padding:8px;font-size:10px;font-weight:700;color:var(--txt3);text-align:center;letter-spacing:.12em;text-transform:uppercase;border-bottom:1px solid var(--border);}
+.cal-mcell{min-height:112px;padding:6px;border-right:1px solid var(--border2);border-bottom:1px solid var(--border2);cursor:pointer;overflow:hidden;}
+.cal-mcell:nth-child(7n+7){border-right:none;}
+.cal-mcell:hover{background:rgba(0,0,0,.02);}
+.cal-fuera{opacity:.4;}
+.cal-mnum{font-size:12px;font-weight:700;color:var(--txt2);margin-bottom:4px;}
+.cal-mcell.cal-today .cal-mnum{color:#fff;background:var(--accent);border-radius:50%;width:22px;height:22px;display:grid;place-items:center;}
+.cal-chip{font-size:10.5px;padding:2px 6px;border-radius:4px;margin-bottom:2px;background:color-mix(in srgb,var(--c) 25%,var(--surface));border-left:3px solid var(--c);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.cal-mas{font-size:10px;color:var(--txt3);padding-left:4px;}
+.cal-legend{display:flex;flex-wrap:wrap;gap:6px 14px;padding:12px 18px 6px;}
+.cal-ley{display:inline-flex;align-items:center;gap:6px;font-size:11px;color:var(--txt2);}
+.cal-ley i,.svc-dot{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px;}
+.cal-ley i{margin-right:0;}
+/* ── servicios / ficha / tpv / caja ── */
+.svc-admin{background:var(--surface);border:1px solid var(--border);border-top:5px solid var(--c);border-radius:10px;padding:14px 16px;}
+.svc-off{opacity:.55;}
+.swatch{width:26px;height:26px;border-radius:50%;border:2px solid transparent;cursor:pointer;padding:0;}
+.swatch-on{border-color:var(--txt);box-shadow:0 0 0 2px var(--surface) inset;}
+.ficha-tabs{display:flex;gap:4px;border-bottom:1px solid var(--border);margin-bottom:14px;}
+.ficha-tab{background:none;border:none;border-radius:6px 6px 0 0;padding:8px 14px;font-size:12px;font-weight:600;color:var(--txt2);cursor:pointer;font-family:inherit;}
+.pos-item{background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;cursor:pointer;transition:border-color .15s,transform .15s;}
+.pos-item:hover{border-color:var(--accent);transform:translateY(-2px);}
+.pos-off{opacity:.45;cursor:not-allowed;}
+.pos-q{width:24px;height:24px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--txt);cursor:pointer;font-size:14px;line-height:1;}
+.caja-linea{display:flex;justify-content:space-between;font-size:13px;color:var(--txt2);padding:5px 0;border-bottom:1px dashed var(--border2);}
+.caja-total{font-size:14px;color:var(--txt);border-bottom:none;padding-top:8px;}
+.notif-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--accent);}
+.nav-count{margin-left:auto;background:var(--accent);color:#fff;font-size:10px;font-weight:700;border-radius:10px;padding:1px 7px;}
+.kan-card{cursor:pointer;}
+@media(max-width:760px){.cal-mcell{min-height:72px;padding:4px;} .cal-chip{font-size:9.5px;} .cal-label{font-size:14px;} }
+</style>
 </head>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <body>
@@ -495,7 +554,7 @@ tbody tr:hover{background:rgba(0,0,0,.02);}
       </div>
       <div class="nav-item" onclick="goPage('notificaciones',this)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-        Notificaciones
+        Notificaciones <span id="nav-notif-count" class="nav-count" style="display:none;"></span>
       </div>
       <div class="nav-section">Fichas</div>
       <div class="nav-item" onclick="goPage('clients',this)">
@@ -562,7 +621,7 @@ tbody tr:hover{background:rgba(0,0,0,.02);}
         <div class="bell-wrap">
           <button class="bell-btn" onclick="toggleBell(event)" title="Notifications">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
-            <span class="bell-badge" id="bell-count">3</span>
+            <span class="bell-badge" id="bell-count" style="display:none;">0</span>
           </button>
           <div class="bell-panel" id="bell-panel"></div>
         </div>
@@ -613,12 +672,10 @@ tbody tr:hover{background:rgba(0,0,0,.02);}
       <div class="page-hd">
         <div>
           <h1 class="page-title">Citas</h1>
-          <div class="page-sub">Vista semanal · Hoy · Próximas</div>
+          <div class="page-sub">Calendario · Día, semana y mes · Colores por servicio</div>
         </div>
-        <div style="display:flex;gap:8px;">
-          <button class="btn btn-ghost" onclick="toast('Semana anterior (próximamente)')">‹ Semana</button>
-          <button class="btn btn-ghost" onclick="toast('Volviendo a hoy')">Hoy</button>
-          <button class="btn btn-ghost" onclick="toast('Semana siguiente (próximamente)')">Semana ›</button>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn btn-ghost" onclick="openWaitlistForm()">+ Lista de espera</button>
           <button class="btn btn-accent" onclick="openBookingForm()">+ Nueva cita</button>
         </div>
       </div>
@@ -626,13 +683,32 @@ tbody tr:hover{background:rgba(0,0,0,.02);}
       <div class="stats-grid" id="sched-stats"></div>
 
       <div class="card">
-        <div class="card-hd"><div class="card-hd-title">Vista semanal</div><span style="font-size:10px;color:var(--txt3);letter-spacing:.18em;text-transform:uppercase" id="sched-week-range"></span></div>
-        <div class="card-body"><div class="week-cal" id="week-cal"></div></div>
+        <div class="cal-toolbar">
+          <div class="cal-seg">
+            <button id="cal-v-dia" onclick="calSetVista('dia')">Día</button>
+            <button id="cal-v-semana" class="cal-on" onclick="calSetVista('semana')">Semana</button>
+            <button id="cal-v-mes" onclick="calSetVista('mes')">Mes</button>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <button class="btn btn-ghost" style="padding:6px 12px;" onclick="calMover(-1)" aria-label="Anterior">‹</button>
+            <button class="btn btn-ghost" style="padding:6px 12px;" onclick="calHoy()">Hoy</button>
+            <button class="btn btn-ghost" style="padding:6px 12px;" onclick="calMover(1)" aria-label="Siguiente">›</button>
+            <span id="cal-label" class="cal-label"></span>
+          </div>
+          <select onchange="calSetProf(this.value)" class="cal-prof">
+            <option value="">Todas las profesionales</option>
+            <option>Louie</option><option>Natalia</option>
+            <option value="__sin">Sin asignar</option>
+          </select>
+        </div>
+        <div id="cal-host"></div>
+        <div id="cal-legend" class="cal-legend"></div>
+        <div style="font-size:11px;color:var(--txt3);padding:0 18px 14px;">Pulsa en un hueco vacío para crear una cita a esa hora · pulsa una cita para ver su detalle · las zonas rayadas son horas de cierre.</div>
       </div>
 
       <div class="card">
         <div class="card-hd"><div class="card-hd-title">Hoy</div><span style="font-size:11px;color:var(--txt3)" id="today-count"></span></div>
-        <div class="table-wrap"><table><thead><tr><th>Hora</th><th>Clienta</th><th>Tratamiento</th><th>Duración</th><th>Estado</th></tr></thead><tbody id="schedule-tbody"></tbody></table></div>
+        <div class="table-wrap"><table><thead><tr><th>Hora</th><th>Clienta</th><th>Tratamiento</th><th>Duración</th><th>Profesional</th><th>Estado</th></tr></thead><tbody id="schedule-tbody"></tbody></table></div>
       </div>
     </div>
 
@@ -798,7 +874,7 @@ tbody tr:hover{background:rgba(0,0,0,.02);}
       <div class="page-hd">
         <div>
           <h1 class="page-title">Punto de venta</h1>
-          <div class="page-sub">Cobro rápido · Tarjeta · Efectivo · Apple Pay</div>
+          <div class="page-sub">Cobro rápido · Efectivo · Tarjeta · Bizum</div>
         </div>
         <button class="btn btn-ghost" onclick="posClear()">Vaciar carrito</button>
       </div>
@@ -817,16 +893,16 @@ tbody tr:hover{background:rgba(0,0,0,.02);}
           <div class="card-hd"><div class="card-hd-title">Venta actual</div><span id="pos-count" style="font-size:11px;color:var(--txt3)">0 artículos</span></div>
           <div class="card-body">
             <div id="pos-cart" style="max-height:280px;overflow-y:auto;"></div>
-            <label style="display:flex;flex-direction:column;gap:4px;margin-top:10px;"><span style="font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--txt3);font-weight:600;">Vendido por</span><select id="pos-usuario" style="padding:8px 10px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--txt);font-size:13px;"><option>Louie</option><option>Natalia</option></select></label>
+            <div style="margin-top:10px;font-size:11.5px;color:var(--txt3);">Venta registrada a nombre de <strong class="js-usuario-actual" style="color:var(--txt);"></strong></div>
             <hr style="margin:14px 0;border:none;border-top:1px solid var(--border);">
-            <div style="display:flex;justify-content:space-between;font-size:13px;color:var(--txt2);margin-bottom:4px;"><span>Subtotal</span><span id="pos-sub">0€</span></div>
-            <div style="display:flex;justify-content:space-between;font-size:13px;color:var(--txt2);margin-bottom:8px;"><span>IGIC</span><span id="pos-vat">Exento</span></div>
+            <div style="display:flex;justify-content:space-between;font-size:13px;color:var(--txt2);margin-bottom:4px;"><span>Base imponible</span><span id="pos-sub">0€</span></div>
+            <div style="display:flex;justify-content:space-between;gap:10px;font-size:12px;color:var(--txt2);margin-bottom:8px;"><span>Impuestos incl.</span><span id="pos-vat" style="text-align:right;">0,00€</span></div>
             <div style="display:flex;justify-content:space-between;font-family:var(--font-serif);font-size:22px;font-weight:500;color:var(--txt);margin-bottom:14px;"><span>Total</span><span id="pos-total" style="color:var(--accent)">0€</span></div>
             <div style="display:flex;gap:6px;margin-bottom:8px;">
-              <button class="btn btn-ghost" style="flex:1" onclick="posPay('Tarjeta')">💳 Tarjeta</button>
-              <button class="btn btn-ghost" style="flex:1" onclick="posPay('Efectivo')">💵 Efectivo</button>
+              <button class="btn btn-accent" style="flex:1" onclick="posPay('efectivo')">💵 Efectivo</button>
+              <button class="btn btn-ghost" style="flex:1" onclick="posPay('tarjeta')">💳 Tarjeta</button>
             </div>
-            <button class="btn btn-accent" style="width:100%" onclick="posPay('Apple Pay')">  Apple Pay</button>
+            <button class="btn btn-ghost" style="width:100%" onclick="posPay('bizum')">📱 Bizum</button>
           </div>
         </div>
       </div>
@@ -858,8 +934,9 @@ tbody tr:hover{background:rgba(0,0,0,.02);}
         <button class="btn btn-accent" onclick="openWaitlistForm()">+ Añadir a la lista</button>
       </div>
       <div class="card">
-        <div class="card-hd"><div class="card-hd-title">En espera</div></div>
-        <div class="table-wrap"><table><thead><tr><th>Clienta</th><th>Teléfono</th><th>Servicio</th><th>Fecha deseada</th><th>Hora preferida</th><th>Notas</th><th>Estado</th><th></th></tr></thead><tbody id="waitlist-tbody"><tr><td colspan="8" style="text-align:center;color:var(--muted);padding:24px;">Sin nadie en espera</td></tr></tbody></table></div>
+        <div class="card-hd"><div class="card-hd-title">En espera</div><button class="btn btn-ghost" style="padding:4px 10px;font-size:11px;" id="wl-filtro" onclick="toggleFiltroEspera()">Ver también atendidas</button></div>
+        <div style="font-size:11.5px;color:var(--txt3);padding:0 18px 10px;">La columna «Hueco» busca automáticamente una hora libre que encaje con el servicio (su duración), la fecha y la franja que quiere cada clienta.</div>
+        <div class="table-wrap"><table><thead><tr><th>Clienta</th><th>Servicio</th><th>Fecha deseada</th><th>Franja</th><th>Notas</th><th>Estado</th><th>Hueco</th></tr></thead><tbody id="waitlist-tbody"><tr><td colspan="7" style="text-align:center;color:var(--muted);padding:24px;">Sin nadie en espera</td></tr></tbody></table></div>
       </div>
     </div>
 
@@ -868,22 +945,13 @@ tbody tr:hover{background:rgba(0,0,0,.02);}
       <div class="page-hd">
         <div>
           <h1 class="page-title">Cierre de caja</h1>
-          <div class="page-sub">Efectivo esperado vs. contado al final del día</div>
+          <div class="page-sub">Apertura con fondo · ventas por método · efectivo esperado vs. contado</div>
         </div>
       </div>
-      <div class="card" style="max-width:480px;">
-        <div class="card-hd"><div class="card-hd-title">Cerrar caja de hoy</div></div>
-        <div style="padding:18px;display:flex;flex-direction:column;gap:12px;">
-          <div style="font-size:13px;color:var(--txt2);">Ventas en efectivo hoy (esperado): <strong id="caja-esperado">0€</strong></div>
-          <label style="display:flex;flex-direction:column;gap:4px;"><span style="font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--txt3);font-weight:600;">Usuario</span><select id="caja-usuario" style="padding:8px 10px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--txt);font-size:13px;"><option>Louie</option><option>Natalia</option></select></label>
-          <label style="display:flex;flex-direction:column;gap:4px;"><span style="font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--txt3);font-weight:600;">Efectivo contado</span><input id="caja-contado" type="number" step="0.01" placeholder="0.00" style="padding:8px 10px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--txt);font-size:13px;"></label>
-          <label style="display:flex;flex-direction:column;gap:4px;"><span style="font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--txt3);font-weight:600;">Observaciones</span><textarea id="caja-obs" rows="2" style="padding:8px 10px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--txt);font-size:13px;font-family:inherit;"></textarea></label>
-          <button class="btn btn-accent" onclick="cerrarCaja()">Guardar cierre</button>
-        </div>
-      </div>
+      <div id="caja-host" style="margin-bottom:18px;"></div>
       <div class="card">
         <div class="card-hd"><div class="card-hd-title">Historial de cierres</div></div>
-        <div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Usuario</th><th>Ventas</th><th>Esperado</th><th>Contado</th><th>Diferencia</th></tr></thead><tbody id="caja-tbody"><tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px;">Sin cierres todavía</td></tr></tbody></table></div>
+        <div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Apertura → cierre</th><th>Cerrada por</th><th>Ventas</th><th>Por método</th><th>Efectivo esperado</th><th>Contado</th><th>Diferencia</th><th>Observaciones</th></tr></thead><tbody id="caja-tbody"><tr><td colspan="9" style="text-align:center;color:var(--muted);padding:24px;">Sin cierres todavía</td></tr></tbody></table></div>
       </div>
     </div>
 
@@ -892,8 +960,9 @@ tbody tr:hover{background:rgba(0,0,0,.02);}
       <div class="page-hd">
         <div>
           <h1 class="page-title">Notificaciones</h1>
-          <div class="page-sub">Nuevas citas, cambios y lista de espera</div>
+          <div class="page-sub">Nuevas reservas, cambios, cancelaciones y lista de espera · en tiempo real</div>
         </div>
+        <button class="btn btn-ghost" onclick="marcarTodasLeidas()">Marcar todas como leídas</button>
       </div>
       <div class="card">
         <div class="card-hd"><div class="card-hd-title">Recientes</div></div>
@@ -906,7 +975,7 @@ tbody tr:hover{background:rgba(0,0,0,.02);}
       <div class="page-hd">
         <div>
           <h1 class="page-title">Stock</h1>
-          <div class="page-sub">Inventario · Alertas de stock bajo · Reponer</div>
+          <div class="page-sub">Inventario · Impuesto por producto · Pulsa un artículo para editarlo o añadir unidades</div>
         </div>
         <div style="display:flex;gap:8px;">
           <button class="btn btn-ghost" onclick="exportarStockCSV()">↓ Exportar</button>
@@ -916,7 +985,7 @@ tbody tr:hover{background:rgba(0,0,0,.02);}
       <div class="stats-grid" id="stock-stats"></div>
       <div class="card">
         <div class="card-hd"><div class="card-hd-title">Todos los artículos</div></div>
-        <div class="table-wrap"><table><thead><tr><th></th><th>Artículo</th><th>SKU</th><th>Stock</th><th>Min</th><th>Coste</th><th>Venta</th><th>Estado</th></tr></thead><tbody id="stock-tbody"></tbody></table></div>
+        <div class="table-wrap"><table><thead><tr><th></th><th>Artículo</th><th>SKU</th><th>Stock</th><th>Mín.</th><th>Coste</th><th>Venta</th><th>Impuesto</th><th>Estado</th></tr></thead><tbody id="stock-tbody"></tbody></table></div>
       </div>
     </div>
 
@@ -1125,9 +1194,12 @@ async function login(){
   document.getElementById('login').classList.add('hidden');
   document.getElementById('app').classList.add('visible');
   await loadRealData();
+  await cargarUsuarioActual();
   initApp();
+  suscribirTiempoReal();
 }
 async function logout(){
+  if(_rtCanal){ sb.removeChannel(_rtCanal); _rtCanal=null; }
   await sb.auth.signOut();
   document.getElementById('app').classList.remove('visible');
   document.getElementById('login').classList.remove('hidden');
@@ -1137,10 +1209,10 @@ async function logout(){
 // Los datos de clientas/facturación/citas ficticias que quedan sin tocar son
 // solo demo visual del panel, no vienen de Supabase.
 async function loadRealData(){
-  const [{ data: servicios }, { data: stock }, { data: citas }, { data: pedidos }, { data: clientas }, { data: ventas }, { data: facturas }, { data: gastos }, { data: waitlist }, { data: cierresCaja }, { data: notif }] = await Promise.all([
+  const [{ data: servicios }, { data: stock }, { data: citas }, { data: pedidos }, { data: clientas }, { data: ventas }, { data: facturas }, { data: gastos }, { data: waitlist }, { data: cierresCaja }, { data: notif }, { data: equipo }] = await Promise.all([
     sb.from('servicios').select('*').order('orden', { ascending: true }),
     sb.from('stock').select('*').order('nombre', { ascending: true }),
-    sb.from('citas').select('*').order('creado_en', { ascending: false }).limit(50),
+    sb.from('citas').select('*').order('fecha', { ascending: false, nullsFirst: true }).limit(3000),
     sb.from('pedidos').select('*').order('created_at', { ascending: false }).limit(50),
     sb.from('clientas').select('*').order('creado_en', { ascending: false }),
     sb.from('ventas').select('*'),
@@ -1148,8 +1220,10 @@ async function loadRealData(){
     sb.from('gastos').select('*').order('fecha', { ascending: false }),
     sb.from('lista_espera').select('*').order('created_at', { ascending: false }),
     sb.from('cierres_caja').select('*').order('created_at', { ascending: false }).limit(30),
-    sb.from('notificaciones').select('*').order('created_at', { ascending: false }).limit(30)
+    sb.from('notificaciones').select('*').order('created_at', { ascending: false }).limit(100),
+    sb.from('panel_usuarios').select('*').order('nombre')
   ]);
+  CONFIG.equipo = equipo || [];
   CONFIG.ventasReales = ventas || [];
   CONFIG.facturasReales = facturas || [];
   CONFIG.gastosReales = gastos || [];
@@ -1166,7 +1240,9 @@ async function loadRealData(){
       label: s.categoria || 'Servicio',
       bookable: s.reservable,
       duracionMin: s.duracion_min || 60,
-      color: s.color || '#A9B6A2'
+      color: s.color || '#A9B6A2',
+      categoria: s.categoria || '',
+      descripcion: s.descripcion || ''
     }));
   }
 
@@ -1178,8 +1254,12 @@ async function loadRealData(){
       image: null,
       qty: p.cantidad,
       min: p.minimo,
-      cost: p.coste,
-      price: p.precio
+      cost: Number(p.coste) || 0,
+      price: Number(p.precio) || 0,
+      marca: p.marca || '',
+      tipoImpuesto: p.tipo_impuesto || 'IGIC',
+      pctImpuesto: Number(p.porcentaje_impuesto) || 0,
+      visibleWeb: !!p.visible_web
     }));
   }
 
@@ -1194,7 +1274,12 @@ async function loadRealData(){
       origen: c.origen,
       notas: c.notas,
       servicioId: c.servicio_id,
-      profesional: c.profesional
+      profesional: c.profesional,
+      duracionMin: c.duracion_min,
+      clientaId: c.clienta_id,
+      creadoPor: c.creado_por,
+      consentimiento: c.consentimiento_privacidad,
+      consentimientoFecha: c.consentimiento_fecha
     }));
     // Solo las citas de HOY — antes se mezclaban aquí TODAS las citas de cualquier fecha.
     const hoyStr = new Date().toDateString();
@@ -1254,37 +1339,28 @@ async function loadRealData(){
   }
 
   if (clientas) {
-    const visitasPorEmail = {};
-    const ultimaVisitaPorEmail = {};
-    (citas || []).forEach(c => {
-      if (!c.cliente_email) return;
-      visitasPorEmail[c.cliente_email] = (visitasPorEmail[c.cliente_email] || 0) + 1;
-      const t = new Date(c.fecha || c.creado_en).getTime();
-      if (!ultimaVisitaPorEmail[c.cliente_email] || t > ultimaVisitaPorEmail[c.cliente_email]) {
-        ultimaVisitaPorEmail[c.cliente_email] = t;
-      }
+    const citasMap = (CONFIG.citasWeb || []);
+    CONFIG.clients = clientas.map(c => {
+      const base = { id: c.id, name: c.nombre, email: c.email || null, phone: c.telefono || '—' };
+      const suyas = citasMap.filter(ct => citaEsDeClienta(ct, base));
+      const pasadas = suyas.filter(ct => ct.fecha && new Date(ct.fecha) <= new Date() && !ESTADOS_INACTIVOS.includes(ct.estado));
+      const ultima = pasadas.reduce((m, ct) => Math.max(m, new Date(ct.fecha).getTime()), 0);
+      const email = (c.email || '').toLowerCase();
+      let gastado = 0;
+      (ventas || []).forEach(v => { if (email && (v.cliente_email || '').toLowerCase() === email) gastado += Number(v.total) || 0; });
+      (facturas || []).forEach(f => { if (email && f.estado === 'pagada' && (f.cliente_email || '').toLowerCase() === email) gastado += Number(f.total) || 0; });
+      return {
+        ...base,
+        field: ultima ? new Date(ultima).toLocaleDateString('es-ES') : 'Sin citas registradas',
+        visits: suyas.filter(ct => ct.estado === 'completada').length,
+        spent: gastado,
+        createdAt: c.creado_en || null,
+        fechaNacimiento: c.fecha_nacimiento || null,
+        notas: c.notas || '',
+        consentimiento: c.consentimiento_privacidad_fecha || null,
+        tags: []
+      };
     });
-    const gastoPorEmail = {};
-    (ventas || []).forEach(v => {
-      if (v.cliente_email) gastoPorEmail[v.cliente_email] = (gastoPorEmail[v.cliente_email] || 0) + Number(v.total);
-    });
-    (facturas || []).forEach(f => {
-      if (f.cliente_email && f.estado === 'pagada') {
-        gastoPorEmail[f.cliente_email] = (gastoPorEmail[f.cliente_email] || 0) + Number(f.total);
-      }
-    });
-    CONFIG.clients = clientas.map(c => ({
-      id: c.id,
-      name: c.nombre,
-      email: c.email || null,
-      phone: c.telefono || '—',
-      field: ultimaVisitaPorEmail[c.email] ? new Date(ultimaVisitaPorEmail[c.email]).toLocaleDateString('es-ES') : 'Sin citas registradas',
-      visits: visitasPorEmail[c.email] || 0,
-      spent: gastoPorEmail[c.email] || 0,
-      createdAt: c.creado_en || null,
-      fechaNacimiento: c.fecha_nacimiento || null,
-      tags: []
-    }));
   }
 
   CONFIG.invoices = (facturas || []).map(f => ({
@@ -1402,13 +1478,6 @@ function calcularFinanzasReales(){
   CONFIG.weekRevenueTrend = totalPrevWeek>0 ? Math.round(((totalWeek-totalPrevWeek)/totalPrevWeek)*100) : null;
 }
 
-async function crearClientaReal(nombre, telefono, email, fechaNacimiento){
-  const { error } = await sb.from('clientas').insert({ nombre, telefono: telefono || null, email: email || null, fecha_nacimiento: fechaNacimiento || null });
-  if (error) return { error: error.message };
-  await loadRealData();
-  refreshAllViews();
-  return { ok: true };
-}
 
 function renderPedidos(){
   const tbody = document.getElementById('pedidos-tbody');
@@ -1446,7 +1515,8 @@ function goPage(id,el,isBottom){
     const map={dashboard:0,schedule:1,pipeline:2,salas:3,clients:6,catalog:7,invoices:9,reports:11};
     if(map[id]!=null&&sn[map[id]])sn[map[id]].classList.add('active');
   }
-  const titles={dashboard:'Panel',schedule:CONFIG.labels.schedule,pipeline:CONFIG.labels.pipeline,salas:'Salas',clients:CONFIG.labels.clients,catalog:CONFIG.labels.catalog,invoices:'Facturas',reports:'Informes'};
+  const titles={dashboard:'Panel',schedule:CONFIG.labels.schedule,pipeline:CONFIG.labels.pipeline,salas:'Salas',clients:CONFIG.labels.clients,catalog:CONFIG.labels.catalog,invoices:'Facturas',reports:'Informes',waitlist:'Lista de espera',caja:'Cierre de caja',notificaciones:'Notificaciones',stock:'Stock',pos:'Punto de venta',team:'Equipo',gastos:'Gastos',pedidos:'Pedidos',accounting:'Contabilidad',followups:'Seguimientos',inbox:'Mensajes'};
+  if(!el){ const n=[...document.querySelectorAll('.nav-item')].find(x=>(x.getAttribute('onclick')||'').includes("'"+id+"'")); if(n) n.classList.add('active'); }
   document.getElementById('topbar-title').textContent=titles[id]||id;
   // Auto-close mobile drawer
   document.getElementById('sidebar').classList.remove('open');
@@ -1511,6 +1581,9 @@ function initApp(){
   renderAccounting();
   renderTeam();
   renderInbox();
+  renderWaitlist();
+  renderCaja();
+  renderNotificaciones();
 }
 
 // goPage() solo muestra/oculta páginas, no las vuelve a renderizar — por eso cualquier
@@ -1532,119 +1605,12 @@ function refreshAllViews(){
   renderWaitlist();
   renderCaja();
   renderNotificaciones();
+  renderTeam();
+  if (CURRENT_PAGE === 'pos') posFilter('');
 }
 
-function renderWaitlist(){
-  const rows = CONFIG.waitlist || [];
-  document.getElementById('waitlist-tbody').innerHTML = rows.length ? rows.map(w=>`
-    <tr>
-      <td>${esc(w.cliente_nombre)}</td>
-      <td>${esc(w.cliente_telefono||'-')}</td>
-      <td>${esc((CONFIG.catalog||[]).find(s=>String(s.id)===String(w.servicio_id))?.name||'-')}</td>
-      <td>${w.fecha_deseada?new Date(w.fecha_deseada).toLocaleDateString('es-ES'):'-'}</td>
-      <td>${esc(w.hora_preferida||w.rango_horario||'-')}</td>
-      <td>${esc(w.notas||'-')}</td>
-      <td><span class="tag tag-${w.estado==='atendida'?'ok':'pending'}">${esc(w.estado)}</span></td>
-      <td>${w.estado!=='atendida'?`<button class="btn btn-ghost" style="padding:4px 10px;font-size:10px;" onclick="marcarListaEsperaAtendida('${w.id}')">Marcar atendida</button>`:''}</td>
-    </tr>
-  `).join('') : '<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:24px;">Sin nadie en espera</td></tr>';
-}
-function openWaitlistForm(){
-  const services=(CONFIG.catalog||[]).filter(s=>s.id).map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join('');
-  document.getElementById('modal-title').textContent='Añadir a lista de espera';
-  document.getElementById('modal-body').innerHTML=`
-    <div style="display:flex;flex-direction:column;gap:14px;">
-      <label style="display:flex;flex-direction:column;gap:4px;"><span style="font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--txt3);font-weight:600;">Nombre clienta</span><input id="wf-nombre" style="padding:10px 12px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--txt);font-size:13px;"></label>
-      <label style="display:flex;flex-direction:column;gap:4px;"><span style="font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--txt3);font-weight:600;">Teléfono</span><input id="wf-telefono" style="padding:10px 12px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--txt);font-size:13px;"></label>
-      <label style="display:flex;flex-direction:column;gap:4px;"><span style="font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--txt3);font-weight:600;">Servicio</span><select id="wf-servicio" style="padding:10px 12px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--txt);font-size:13px;">${services}</select></label>
-      <div class="two-col">
-        <label style="display:flex;flex-direction:column;gap:4px;"><span style="font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--txt3);font-weight:600;">Fecha deseada</span><input type="date" id="wf-fecha" style="padding:10px 12px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--txt);font-size:13px;"></label>
-        <label style="display:flex;flex-direction:column;gap:4px;"><span style="font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--txt3);font-weight:600;">Hora preferida</span><input type="time" id="wf-hora" style="padding:10px 12px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--txt);font-size:13px;"></label>
-      </div>
-      <label style="display:flex;flex-direction:column;gap:4px;"><span style="font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--txt3);font-weight:600;">Notas</span><textarea id="wf-notas" rows="2" style="padding:10px 12px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--txt);font-size:13px;font-family:inherit;"></textarea></label>
-    </div>
-    <p id="wf-error" style="color:#b3441e;font-size:12px;margin-top:8px;"></p>
-    <div style="display:flex;gap:8px;margin-top:18px;">
-      <button class="btn btn-ghost" style="flex:1" onclick="closeModal()">Cancelar</button>
-      <button class="btn btn-accent" style="flex:1" onclick="submitWaitlistForm()">Guardar</button>
-    </div>`;
-  document.getElementById('modal-host').classList.add('open');
-}
-async function submitWaitlistForm(){
-  const cliente_nombre=document.getElementById('wf-nombre').value.trim();
-  const cliente_telefono=document.getElementById('wf-telefono').value.trim()||null;
-  const servicio_id=document.getElementById('wf-servicio').value||null;
-  const fecha_deseada=document.getElementById('wf-fecha').value||null;
-  const hora_preferida=document.getElementById('wf-hora').value||null;
-  const notas=document.getElementById('wf-notas').value.trim()||null;
-  const err=document.getElementById('wf-error');
-  if(!cliente_nombre){ err.textContent='Falta el nombre.'; return; }
-  const { error } = await sb.from('lista_espera').insert({ cliente_nombre, cliente_telefono, servicio_id, fecha_deseada, hora_preferida, notas });
-  if(error){ err.textContent='No se pudo guardar: '+error.message; return; }
-  await sb.from('notificaciones').insert({ tipo: 'lista_espera', mensaje: `${cliente_nombre} se apuntó a la lista de espera` });
-  await loadRealData();
-  refreshAllViews();
-  closeModal();
-  toast('✓ Añadida a la lista de espera');
-}
-async function marcarListaEsperaAtendida(id){
-  const { error } = await sb.from('lista_espera').update({ estado: 'atendida' }).eq('id', id);
-  if(error){ toast('No se pudo actualizar: '+error.message); return; }
-  await loadRealData();
-  refreshAllViews();
-}
 
-function renderCaja(){
-  const hoyStr = new Date().toDateString();
-  const efectivoHoy = (CONFIG.ventasReales||[]).filter(v => v.metodo_pago==='efectivo' && new Date(v.created_at).toDateString()===hoyStr).reduce((a,v)=>a+Number(v.total||0),0);
-  const cajaEsperadoEl = document.getElementById('caja-esperado');
-  if (cajaEsperadoEl) cajaEsperadoEl.textContent = fmt(efectivoHoy);
-  const cierres = CONFIG.cierresCaja || [];
-  document.getElementById('caja-tbody').innerHTML = cierres.length ? cierres.map(c=>`
-    <tr>
-      <td>${c.fecha?new Date(c.fecha).toLocaleDateString('es-ES'):'-'}</td>
-      <td>${esc(c.usuario||'-')}</td>
-      <td>${fmt(c.ventas_total||0)}</td>
-      <td>${fmt(c.efectivo_esperado||0)}</td>
-      <td>${fmt(c.efectivo_contado||0)}</td>
-      <td style="color:${Number(c.diferencia)<0?'#b3441e':Number(c.diferencia)>0?'#16a34a':'inherit'}">${fmt(c.diferencia||0)}</td>
-    </tr>
-  `).join('') : '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px;">Sin cierres todavía</td></tr>';
-}
-async function cerrarCaja(){
-  const hoyStr = new Date().toDateString();
-  const ventasHoy = (CONFIG.ventasReales||[]).filter(v => new Date(v.created_at).toDateString()===hoyStr);
-  const ventas_total = ventasHoy.reduce((a,v)=>a+Number(v.total||0),0);
-  const efectivo_esperado = ventasHoy.filter(v=>v.metodo_pago==='efectivo').reduce((a,v)=>a+Number(v.total||0),0);
-  const usuario = document.getElementById('caja-usuario').value;
-  const efectivo_contado = parseFloat(document.getElementById('caja-contado').value.replace(',','.'))||0;
-  const observaciones = document.getElementById('caja-obs').value.trim()||null;
-  const diferencia = Math.round((efectivo_contado - efectivo_esperado)*100)/100;
-  const { error } = await sb.from('cierres_caja').insert({ usuario, ventas_total, efectivo_esperado, efectivo_contado, diferencia, observaciones });
-  if(error){ toast('No se pudo guardar el cierre: '+error.message); return; }
-  await loadRealData();
-  refreshAllViews();
-  toast('✓ Caja cerrada');
-}
 
-function renderNotificaciones(){
-  const rows = CONFIG.notificacionesReales || [];
-  document.getElementById('notif-tbody').innerHTML = rows.length ? rows.map(n=>`
-    <tr style="${n.leida?'opacity:.55;':''}">
-      <td>${n.leida?'':'🔵'}</td>
-      <td>${esc(n.tipo||'-')}</td>
-      <td>${esc(n.mensaje||'-')}</td>
-      <td>${n.created_at?new Date(n.created_at).toLocaleString('es-ES'):'-'}</td>
-      <td>${!n.leida?`<button class="btn btn-ghost" style="padding:4px 10px;font-size:10px;" onclick="marcarNotificacionLeida('${n.id}')">Marcar leída</button>`:''}</td>
-    </tr>
-  `).join('') : '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:24px;">Sin notificaciones</td></tr>';
-}
-async function marcarNotificacionLeida(id){
-  const { error } = await sb.from('notificaciones').update({ leida: true }).eq('id', id);
-  if(error){ toast('No se pudo actualizar: '+error.message); return; }
-  await loadRealData();
-  refreshAllViews();
-}
 
 // Abre WhatsApp de verdad (wa.me) con el texto precargado. Si no hay teléfono,
 // lo pide — nunca finge un envío que no ha pasado.
@@ -1731,51 +1697,6 @@ function renderDashboard(){
     </tr>`).join('');
 }
 
-function renderSchedule(){
-  document.getElementById('schedule-tbody').innerHTML=CONFIG.schedule.map(s=>`
-    <tr onclick="abrirDetalleCita('${s.id}')" style="cursor:pointer">
-      <td><strong>${esc(s.time)}</strong></td>
-      <td>${esc(s.client)}</td>
-      <td>${esc(s.service)}</td>
-      <td>${esc(s.duration)}</td>
-      <td><span class="tag tag-${s.statusClass}">${esc(s.status)}</span></td>
-    </tr>
-  `).join('');
-  document.getElementById('today-count').textContent=CONFIG.schedule.length+' citas';
-
-  // Schedule stat cards
-  const total=CONFIG.schedule.length;
-  const confirmed=CONFIG.schedule.filter(s=>s.statusClass==='ok').length;
-  const pending=CONFIG.schedule.filter(s=>s.statusClass==='warn').length;
-  const revenue=CONFIG.schedule.reduce((a,s)=>a+(s.value||0),0);
-  document.getElementById('sched-stats').innerHTML=[
-    {label:'Citas hoy',value:total,trend:'',trendType:''},
-    {label:'Confirmadas',value:confirmed,trend:(total?Math.round(confirmed/total*100):0)+'%',trendType:'up'},
-    {label:'Pendientes',value:pending,trend:'en espera',trendType:'warn'},
-    {label:'Facturación hoy',value:fmt(revenue),trend:'',trendType:'up'}
-  ].map(s=>`<div class="stat-card"><div class="stat-label">${s.label}</div><div class="stat-val">${s.value}</div><div class="stat-trend ${s.trendType}">${s.trend}</div></div>`).join('');
-
-  // Week calendar
-  const days=['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
-  const today=new Date();
-  const dow=(today.getDay()+6)%7;
-  const monday=new Date(today); monday.setDate(today.getDate()-dow);
-  const sunday=new Date(monday); sunday.setDate(monday.getDate()+6);
-  const fmtD=d=>d.toLocaleDateString('es-ES',{day:'numeric',month:'short'});
-  document.getElementById('sched-week-range').textContent=fmtD(monday)+' — '+fmtD(sunday);
-  const hours=['09:00','10:00','11:00','12:00','14:00','15:00','16:00','17:00','18:00'];
-  const wk=CONFIG.weekSchedule||{};
-  let html='<div class="wc-head"></div>';
-  for(let i=0;i<7;i++){const d=new Date(monday);d.setDate(monday.getDate()+i);html+=`<div class="wc-head ${i===dow?'today':''}">${days[i]} ${d.getDate()}</div>`;}
-  hours.forEach(h=>{
-    html+=`<div class="wc-time-cell">${h}</div>`;
-    for(let d=0;d<7;d++){
-      const evs=(wk[d+'-'+h]||[]);
-      html+=`<div class="wc-cell">${evs.map(e=>`<div class="wc-event ${e.cls||'confirmed'}" style="background:${e.color||'#A9B6A2'}22;border-left:3px solid ${e.color||'#A9B6A2'};" onclick="abrirDetalleCita('${e.id}')">${esc(e.label)}</div>`).join('')}</div>`;
-    }
-  });
-  document.getElementById('week-cal').innerHTML=html;
-}
 
 function renderSalas(){
   const cols={ocupada:'var(--accent)',libre:'#16a34a',sin_uso:'#94a3b8'};
@@ -1804,61 +1725,11 @@ const KANBAN_COLS=[
   {key:'en_cabina',name:'En cabina',color:'#bc916a',next:'completada',nextLabel:'→ Completada'},
   {key:'completada',name:'Completada',color:'#16a34a',next:null,nextLabel:''},
 ];
-function renderKanban(){
-  const hoy=new Date().toISOString().slice(0,10);
-  const citasHoy=(CONFIG.citasWeb||[]).filter(c=>c.fecha && c.fecha.slice(0,10)===hoy);
-  const porColumna={esperando:[],en_cabina:[],completada:[]};
-  citasHoy.forEach(c=>{
-    const col=(c.estado==='en_cabina'||c.estado==='completada')?c.estado:'esperando';
-    porColumna[col].push(c);
-  });
-  document.getElementById('kanban').innerHTML=KANBAN_COLS.map(col=>`
-    <div class="kan-col">
-      <div class="kan-col-hd">
-        <span class="kan-col-name">${col.name}</span>
-        <span class="kan-col-count">${porColumna[col.key].length}</span>
-      </div>
-      <div class="kan-body">
-        ${porColumna[col.key].length?porColumna[col.key].map(c=>`
-          <div class="kan-card" style="border-left-color:${col.color}">
-            <div class="kan-card-title">${esc(c.cliente)}</div>
-            <div class="kan-card-sub">${esc((c.notas||'').replace('Servicio: ','').split(' · ')[0]||'Sin especificar')}</div>
-            <div class="kan-card-foot">
-              <span style="font-size:10px;color:var(--txt3)">${c.fecha?new Date(c.fecha).toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'}):''}</span>
-              ${col.next?`<button class="btn btn-ghost" style="padding:4px 10px;font-size:10px;" onclick="avanzarCita('${c.id}','${col.next}')">${col.nextLabel}</button>`:'<span style="font-size:10px;color:#16a34a;">✓ Hecho</span>'}
-            </div>
-          </div>
-        `).join(''):'<p style="text-align:center;color:var(--txt3);font-size:12px;padding:16px 0;">Sin citas hoy</p>'}
-      </div>
-    </div>
-  `).join('');
-}
-async function avanzarCita(id,nuevoEstado){
-  const { error } = await sb.from('citas').update({ estado: nuevoEstado }).eq('id', id);
-  if(error){ toast('No se pudo actualizar: '+error.message); return; }
-  await loadRealData();
-  renderKanban();
-  toast('✓ Cita actualizada');
-}
 
 let ALL_CLIENTS=[];
 function renderClients(){
   ALL_CLIENTS=CONFIG.clients;
   drawClients(ALL_CLIENTS);
-}
-function drawClients(list){
-  document.getElementById('clients-tbody').innerHTML=list.map(c=>`
-    <tr onclick='showClient(${JSON.stringify(c.name)})' style="cursor:pointer">
-      <td><strong>${esc(c.name)}</strong></td>
-      <td>${esc(c.phone)}</td>
-      <td>${c.fechaNacimiento?new Date(c.fechaNacimiento+'T00:00:00').toLocaleDateString('es-ES',{day:'numeric',month:'short'}):'—'}</td>
-      <td>${esc(c.field)}</td>
-      <td>${c.visits}</td>
-      <td><strong>${fmt(c.spent)}</strong></td>
-      <td>${(c.tags||[]).map(t=>`<span class="tag tag-${t.cls}">${t.text}</span>`).join(' ')}</td>
-    </tr>
-  `).join('');
-  renderBirthdaysThisMonth(list);
 }
 function renderBirthdaysThisMonth(list){
   const mesActual = new Date().getMonth();
@@ -1876,101 +1747,14 @@ function renderBirthdaysThisMonth(list){
     </tr>
   `).join('');
 }
-async function guardarFechaNacimiento(clienteId){
-  const val = document.getElementById('cf-nacimiento').value || null;
-  const { error } = await sb.from('clientas').update({ fecha_nacimiento: val }).eq('id', clienteId);
-  if(error){ toast('No se pudo guardar: '+error.message); return; }
-  toast('Fecha de nacimiento guardada');
-  await loadRealData();
-}
 
-function abrirDetalleCita(citaId){
-  const c=(CONFIG.citasWeb||[]).find(x=>String(x.id)===String(citaId));
-  if(!c){ toast('No se encontró la cita'); return; }
-  const svc=(CONFIG.catalog||[]).find(s=>String(s.id)===String(c.servicioId));
-  document.getElementById('modal-title').textContent='Detalle de la cita';
-  document.getElementById('modal-body').innerHTML=`
-    <div style="display:flex;flex-direction:column;gap:10px;font-size:13px;">
-      <div><strong>Clienta:</strong> ${esc(c.cliente||'-')}</div>
-      <div><strong>Teléfono:</strong> ${esc(c.telefono||'-')}</div>
-      <div><strong>Servicio:</strong> ${esc(svc?.name||(c.notas||'').replace('Servicio: ','').split(' · ')[0]||'-')}</div>
-      <div><strong>Fecha:</strong> ${c.fecha?new Date(c.fecha).toLocaleDateString('es-ES'):'-'}</div>
-      <div><strong>Hora:</strong> ${c.fecha?new Date(c.fecha).toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'}):'-'}</div>
-      <div><strong>Duración:</strong> ${svc?.duracionMin?svc.duracionMin+' min':'-'}</div>
-      <div><strong>Profesional:</strong> ${esc(c.profesional||'Sin asignar')}</div>
-      <div><strong>Estado:</strong> <span class="tag tag-${c.estado==='completada'?'ok':'info'}">${esc(c.estado)}</span></div>
-      <div><strong>Notas:</strong> ${esc(c.notas||'-')}</div>
-    </div>
-    <div style="display:flex;gap:8px;margin-top:18px;">
-      <button class="btn btn-ghost" onclick="showClient('${(c.cliente||'').replace(/'/g,"\\'")}')">Ver ficha completa de la clienta</button>
-    </div>`;
-  document.getElementById('modal-host').classList.add('open');
-}
 
-function showClient(name){
-  const c=ALL_CLIENTS.find(x=>x.name===name);
-  if(!c){toast('Client demo');return;}
-  document.getElementById('modal-title').textContent=c.name;
-  document.getElementById('modal-body').innerHTML=`
-    <div style="display:flex;gap:18px;align-items:center;margin-bottom:18px;">
-      <div style="width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,${CONFIG.colors.accent}33,${CONFIG.colors.accent}11);display:grid;place-items:center;font-family:var(--font-serif);font-size:24px;color:var(--accent);font-weight:600;">${c.name.split(' ').map(w=>w[0]).slice(0,2).join('')}</div>
-      <div>
-        <div style="font-size:13px;color:var(--txt2);">${esc(c.phone)}</div>
-        <div style="font-size:11px;color:var(--txt3);margin-top:2px;">${esc(c.field||'')}</div>
-      </div>
-    </div>
-    <div class="two-col" style="margin-bottom:18px;">
-      <div><div style="font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--txt3);font-weight:600;margin-bottom:4px;">Visitas totales</div><div style="font-family:var(--font-serif);font-size:28px;color:var(--txt);font-weight:500;">${c.visits}</div></div>
-      <div><div style="font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--txt3);font-weight:600;margin-bottom:4px;">Gastado total</div><div style="font-family:var(--font-serif);font-size:28px;color:var(--accent);font-weight:500;">${fmt(c.spent)}</div></div>
-    </div>
-    <label style="display:flex;flex-direction:column;gap:4px;margin-bottom:18px;max-width:200px;">
-      <span style="font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--txt3);font-weight:600;">Fecha de nacimiento</span>
-      <input type="date" id="cf-nacimiento" value="${c.fechaNacimiento||''}" style="padding:8px 10px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--txt);font-size:13px;">
-      <button class="btn btn-ghost" style="padding:4px 10px;font-size:11px;align-self:flex-start;" onclick="guardarFechaNacimiento('${c.id}')">Guardar</button>
-    </label>
-    <div style="font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--txt3);font-weight:600;margin-bottom:8px;">Historial</div>
-    <ul class="timeline">${(()=>{
-      const historial=(CONFIG.citasWeb||[]).filter(ct=>ct.email===c.email).sort((a,b)=>new Date(b.fecha)-new Date(a.fecha));
-      if(!historial.length) return '<li class="timeline-item"><div class="tl-what" style="color:var(--txt3);">Todavía no tiene citas registradas.</div></li>';
-      return historial.map(ct=>`<li class="timeline-item"><div class="tl-when">${ct.fecha?new Date(ct.fecha).toLocaleDateString('es-ES'):'-'}</div><div class="tl-what">${esc((ct.notas||'').replace('Servicio: ','').split(' · ')[0]||'Servicio')}${ct.profesional?' · '+esc(ct.profesional):''} · <span class="tag tag-${ct.estado==='completada'?'ok':'info'}">${esc(ct.estado)}</span></div></li>`).join('');
-    })()}</ul>
-    <div style="font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--txt3);font-weight:600;margin-bottom:8px;margin-top:18px;">Sesiones completadas</div>
-    <div style="font-family:var(--font-serif);font-size:22px;color:var(--txt);font-weight:500;margin-bottom:18px;">${(CONFIG.citasWeb||[]).filter(ct=>ct.email===c.email && ct.estado==='completada').length}</div>
-    <div style="display:flex;gap:8px;margin-top:18px;">
-      <button class="btn btn-ghost" onclick="enviarWhatsApp('${esc(c.phone)}','Hola ${esc(c.name.split(' ')[0])}, te escribimos desde Divas Skin Care 💛')">💬 Mensaje</button>
-      <button class="btn btn-ghost" onclick="openBookingForm()">+ Nueva cita</button>
-      <button class="btn btn-accent" onclick="toast('Crear factura desde ficha: próximamente, usa la página Facturas')">+ Factura</button>
-    </div>`;
-  document.getElementById('modal-host').classList.add('open');
-}
 function closeModal(){document.getElementById('modal-host').classList.remove('open');}
 function filterClients(q){
   q=q.toLowerCase();
   drawClients(ALL_CLIENTS.filter(c=>(c.name+c.phone+c.field).toLowerCase().includes(q)));
 }
 
-function renderCatalog(){
-  document.getElementById('catalog-grid').innerHTML=CONFIG.catalog.map(p=>`
-    <div style="background:#fff;border:1px solid var(--border);border-top:4px solid ${p.color||'#A9B6A2'};border-radius:10px;overflow:hidden;cursor:pointer;transition:transform .12s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''">
-      ${p.image
-        ? `<img src="${p.image}" alt="${p.name}" loading="lazy" style="width:100%;aspect-ratio:1/1;object-fit:cover;display:block;background:#f2f2e8" onerror="this.style.display='none'">`
-        : `<div style="aspect-ratio:1/1;background:linear-gradient(135deg,${CONFIG.colors.accent}22,${CONFIG.colors.accent}08);display:grid;place-items:center;color:${CONFIG.colors.accent};font-family:var(--font-serif);font-size:14px;font-style:italic;">${p.label||'Tratamiento'}</div>`}
-      <div style="padding:14px 16px;">
-        <div style="font-size:13px;font-weight:700;color:var(--txt);margin-bottom:4px;">${p.name}</div>
-        <div style="font-size:11px;color:var(--txt3);margin-bottom:8px;">${p.cat||''}</div>
-        <div style="font-size:14px;font-weight:800;color:var(--accent);margin-bottom:8px;">${p.bookable===false?'<span style="font-size:11px;font-weight:700;color:var(--txt3);">No reservable online</span>':fmt(p.price)}</div>
-        ${p.id ? `<button class="btn btn-ghost" style="padding:4px 10px;font-size:10px;" onclick="event.stopPropagation();toggleServicioReservable('${p.id}',${p.bookable!==false})">${p.bookable!==false?'Desactivar (sigue en historial)':'Reactivar'}</button>` : ''}
-      </div>
-    </div>
-  `).join('');
-}
-async function toggleServicioReservable(servicioId, estaActivo){
-  const { error } = await sb.from('servicios').update({ reservable: !estaActivo }).eq('id', servicioId);
-  if(error){ toast('No se pudo actualizar: '+error.message); return; }
-  toast(estaActivo ? 'Servicio desactivado: ya no aparece en la web, pero las citas antiguas conservan su nombre' : 'Servicio reactivado, ya visible en la web');
-  await loadRealData();
-  refreshAllViews();
-}
 
 function renderInvoices(){
   document.getElementById('inv-tbody').innerHTML=CONFIG.invoices.map((i,idx)=>`
@@ -2136,123 +1920,8 @@ function posSwitchTab(tab){
   posRedrawCart();
 }
 let POS_VISIBLE=[];
-function posFilter(q){
-  q=(q||'').toLowerCase();
-  const source=POS_TAB==='productos'?(CONFIG.stock||[]):CONFIG.catalog;
-  const items=source.filter(c=>!q||c.name.toLowerCase().includes(q));
-  POS_VISIBLE=items;
-  document.getElementById('pos-grid').innerHTML=items.map((p,i)=>{
-    const sinStock=POS_TAB==='productos' && (p.qty||0)<=0;
-    return `
-    <div onclick="${sinStock?'':`posAdd(${i})`}" style="background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;cursor:${sinStock?'not-allowed':'pointer'};opacity:${sinStock?.45:1};transition:all .15s;" ${sinStock?'':`onmouseover="this.style.borderColor='var(--accent)';this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='var(--border)';this.style.transform=''"`}>
-      ${p.image?`<img src="${p.image}" style="width:100%;aspect-ratio:1/1;object-fit:cover;display:block;background:#f2f2e8" loading="lazy">`:`<div style="aspect-ratio:1/1;background:linear-gradient(135deg,${CONFIG.colors.accent}22,${CONFIG.colors.accent}08);display:grid;place-items:center;color:var(--accent);font-family:var(--font-serif);font-size:13px;">${p.label||'Producto'}</div>`}
-      <div style="padding:8px 10px;">
-        <div style="font-size:11px;font-weight:600;color:var(--txt);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${p.name}</div>
-        <div style="font-size:12px;font-weight:700;color:var(--accent);">${fmt(p.price)}</div>
-        ${POS_TAB==='productos'?`<div style="font-size:10px;color:var(--txt3);">${sinStock?'Sin stock':p.qty+' en stock'}</div>`:''}
-      </div>
-    </div>`;
-  }).join('');
-}
-function posAdd(i){
-  const p=POS_VISIBLE[i];
-  const key=POS_TAB+':'+p.name;
-  const existing=POS_CART.find(c=>c.key===key);
-  if(POS_TAB==='productos'){
-    const enCarrito=existing?existing.qty:0;
-    if(enCarrito>=p.qty){ toast('No queda más stock de este producto'); return; }
-  }
-  if(existing){existing.qty++;}
-  else{POS_CART.push({key,type:POS_TAB==='productos'?'producto':'servicio',stockId:p.id||null,name:p.name,price:p.price,qty:1});}
-  posRedrawCart();
-}
 function posRemove(i){POS_CART.splice(i,1);posRedrawCart();}
-function posRedrawCart(){
-  const cart=document.getElementById('pos-cart');
-  if(!POS_CART.length){cart.innerHTML='<div style="text-align:center;padding:30px 10px;color:var(--txt3);font-size:13px;">Carrito vacío · pulsa un artículo para añadirlo</div>';}
-  else{
-    cart.innerHTML=POS_CART.map((c,i)=>`
-      <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border2);">
-        <div style="flex:1;min-width:0;">
-          <div style="font-size:13px;font-weight:600;color:var(--txt);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${c.name}</div>
-          <div style="font-size:11px;color:var(--txt3);">${c.qty} × ${fmt(c.price)}</div>
-        </div>
-        <div style="font-size:13px;font-weight:700;color:var(--accent);margin:0 8px;">${fmt(c.price*c.qty)}</div>
-        <button onclick="posRemove(${i})" style="background:none;border:none;color:var(--txt3);cursor:pointer;font-size:16px;">×</button>
-      </div>`).join('');
-  }
-  const sub=POS_CART.reduce((a,c)=>a+c.price*c.qty,0);
-  const vat=0;
-  document.getElementById('pos-count').textContent=POS_CART.reduce((a,c)=>a+c.qty,0)+' artículos';
-  document.getElementById('pos-sub').textContent=fmt(sub);
-  document.getElementById('pos-vat').textContent=fmt(vat);
-  document.getElementById('pos-total').textContent=fmt(sub+vat);
-}
 function posClear(){POS_CART=[];posRedrawCart();toast('Carrito vaciado');}
-async function posPay(method){
-  if(!POS_CART.length){toast('El carrito está vacío');return;}
-  const sub=POS_CART.reduce((a,c)=>a+c.price*c.qty,0);
-  const vat=0;
-  const total=sub+vat;
-  const items=POS_CART.slice();
-
-  toast('Guardando venta...');
-  const usuario = document.getElementById('pos-usuario')?.value || null;
-  const { data: ventaGuardada, error: ventaError } = await sb.from('ventas').insert({
-    items: items.map(c=>({name:c.name,qty:c.qty,price:c.price,type:c.type})),
-    subtotal: sub,
-    total: total,
-    metodo_pago: method,
-    usuario
-  }).select('id').single();
-
-  if(ventaError){
-    toast('No se pudo guardar la venta: '+ventaError.message);
-    return;
-  }
-
-  // Descontar stock de los artículos que sean productos.
-  for(const c of items){
-    if(c.type==='producto' && c.stockId){
-      const actual=(CONFIG.stock||[]).find(s=>s.id===c.stockId);
-      const nuevaCantidad=Math.max(0,(actual?actual.qty:0)-c.qty);
-      const { error: stockError } = await sb.from('stock').update({ cantidad: nuevaCantidad }).eq('id', c.stockId);
-      if(stockError) console.error('No se pudo descontar stock de '+c.name+':', stockError.message);
-    }
-  }
-
-  await loadRealData();
-  refreshAllViews();
-
-  const num='RCP-'+(ventaGuardada?.id||'').slice(0,8).toUpperCase();
-  ULTIMO_RECIBO_TEXTO='Recibo '+num+' · Divas Skin Care\n'+items.map(c=>c.qty+' × '+c.name+' · '+fmt(c.price*c.qty)).join('\n')+'\nTotal: '+fmt(total);
-  document.getElementById('modal-title').textContent='Recibo '+num;
-  document.getElementById('modal-body').innerHTML=`
-    <div style="text-align:center;margin-bottom:18px;padding-bottom:14px;border-bottom:1px dashed var(--border);">
-      <div style="font-family:var(--font-serif);font-size:22px;color:var(--txt);font-weight:500;">${CONFIG.biz}</div>
-      <div style="font-size:11px;color:var(--txt3);margin-top:4px;letter-spacing:.06em;">Calle Arguijón 1 · La Laguna, Tenerife</div>
-      <div style="font-size:10px;color:var(--txt3);margin-top:2px;">NIF: 42418484K</div>
-    </div>
-    <div style="font-size:11px;color:var(--txt3);display:flex;justify-content:space-between;margin-bottom:12px;">
-      <span>${new Date().toLocaleString('es-ES')}</span>
-      <span>${method}</span>
-    </div>
-    ${items.map(c=>`<div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0;color:var(--txt);"><span>${c.qty} × ${c.name}</span><span style="font-weight:600;">${fmt(c.price*c.qty)}</span></div>`).join('')}
-    <hr style="margin:14px 0 8px;border:none;border-top:1px solid var(--border);">
-    <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--txt2);"><span>Subtotal</span><span>${fmt(sub)}</span></div>
-    <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--txt2);margin-top:4px;"><span>IGIC</span><span>Exento</span></div>
-    <div style="display:flex;justify-content:space-between;font-family:var(--font-serif);font-size:22px;color:var(--accent);font-weight:600;margin-top:10px;padding-top:10px;border-top:1px solid var(--border);"><span>Total</span><span>${fmt(total)}</span></div>
-    <div style="margin-top:20px;text-align:center;font-size:10px;color:var(--txt3);letter-spacing:.18em;text-transform:uppercase;">Gracias · Hasta pronto</div>
-    <div style="display:flex;gap:8px;margin-top:18px;">
-      <button class="btn btn-ghost" style="flex:1" onclick="enviarWhatsApp('',ULTIMO_RECIBO_TEXTO)">💬 Enviar</button>
-      <button class="btn btn-ghost" style="flex:1" onclick="window.print()">🖨 Imprimir</button>
-      <button class="btn btn-accent" style="flex:1" onclick="closeModal()">Hecho</button>
-    </div>`;
-  document.getElementById('modal-host').classList.add('open');
-  POS_CART=[];posRedrawCart();
-  posFilter('');
-  toast('✓ Venta guardada');
-}
 
 // ═══════════════ FOLLOW-UPS ═══════════════
 function renderFollowups(){
@@ -2274,125 +1943,7 @@ function renderFollowups(){
 }
 
 // ═══════════════ STOCK ═══════════════
-function renderStock(){
-  const items=CONFIG.stock||[];
-  const lowCount=items.filter(i=>i.qty<=i.min).length;
-  const total=items.reduce((a,i)=>a+i.qty*i.cost,0);
-  document.getElementById('stock-stats').innerHTML=[
-    {label:'Referencias',value:items.length,trend:'',trendType:''},
-    {label:'Stock bajo',value:lowCount,trend:lowCount>0?'reponer':'todo en orden',trendType:lowCount>0?'warn':'up'},
-    {label:'Valor de inventario',value:fmt(total),trend:'',trendType:''},
-    {label:'Margen medio',value:'52%',trend:'+3 pts',trendType:'up'}
-  ].map(s=>`<div class="stat-card"><div class="stat-label">${s.label}</div><div class="stat-val">${s.value}</div><div class="stat-trend ${s.trendType}">${s.trend}</div></div>`).join('');
-  document.getElementById('stock-tbody').innerHTML=items.map(s=>{
-    const low=s.qty<=s.min;
-    return `<tr>
-      <td>${s.image?`<img src="${s.image}" style="width:38px;height:38px;border-radius:6px;object-fit:cover;background:#f2f2e8" loading="lazy">`:''}</td>
-      <td><strong>${s.name}</strong></td>
-      <td style="font-family:monospace;font-size:11px;color:var(--txt3);">${s.sku||'—'}</td>
-      <td><strong>${s.qty}</strong></td>
-      <td>${s.min}</td>
-      <td>${fmt(s.cost)}</td>
-      <td><strong>${fmt(s.price)}</strong></td>
-      <td>${low?'<span class="tag tag-warn">Reponer</span>':'<span class="tag tag-ok">OK</span>'}</td>
-    </tr>`;
-  }).join('');
-}
-function exportarStockCSV(){
-  const items=CONFIG.stock||[];
-  if(!items.length){ toast('No hay artículos que exportar'); return; }
-  const rows=[['Artículo','SKU','Stock','Mínimo','Coste','Venta']];
-  items.forEach(s=>rows.push([s.name,s.sku||'',s.qty,s.min,s.cost,s.price]));
-  const csv=rows.map(r=>r.map(v=>`"${String(v??'').replace(/"/g,'""')}"`).join(',')).join('\n');
-  const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
-  const url=URL.createObjectURL(blob);
-  const a=document.createElement('a');
-  a.href=url; a.download='stock-divas-skin-care.csv';
-  document.body.appendChild(a); a.click(); a.remove();
-  URL.revokeObjectURL(url);
-  toast('✓ CSV descargado');
-}
-function openArticuloForm(){
-  document.getElementById('modal-title').textContent='Nuevo artículo';
-  document.getElementById('modal-body').innerHTML=`
-    <div style="display:flex;flex-direction:column;gap:14px;">
-      <label style="display:flex;flex-direction:column;gap:4px;"><span style="font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--txt3);font-weight:600;">Nombre</span><input id="af-nombre" placeholder="ej. Aloe Vera 500ml" style="padding:10px 12px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--txt);font-size:13px;"></label>
-      <div class="two-col">
-        <label style="display:flex;flex-direction:column;gap:4px;"><span style="font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--txt3);font-weight:600;">SKU</span><input id="af-sku" placeholder="opcional" style="padding:10px 12px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--txt);font-size:13px;"></label>
-        <label style="display:flex;flex-direction:column;gap:4px;"><span style="font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--txt3);font-weight:600;">Stock inicial</span><input id="af-cantidad" placeholder="0" style="padding:10px 12px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--txt);font-size:13px;"></label>
-      </div>
-      <div class="two-col">
-        <label style="display:flex;flex-direction:column;gap:4px;"><span style="font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--txt3);font-weight:600;">Mínimo (opcional)</span><input id="af-minimo" placeholder="opcional" style="padding:10px 12px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--txt);font-size:13px;"></label>
-        <label style="display:flex;flex-direction:column;gap:4px;"><span style="font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--txt3);font-weight:600;">Coste (EUR)</span><input id="af-coste" placeholder="0" style="padding:10px 12px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--txt);font-size:13px;"></label>
-      </div>
-      <div class="two-col">
-        <label style="display:flex;flex-direction:column;gap:4px;"><span style="font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--txt3);font-weight:600;">Precio de venta (EUR)</span><input id="af-precio" placeholder="0" style="padding:10px 12px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--txt);font-size:13px;"></label>
-        <label style="display:flex;flex-direction:column;gap:4px;"><span style="font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--txt3);font-weight:600;">Impuesto</span><select id="af-impuesto" style="padding:10px 12px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--txt);font-size:13px;"><option value="IGIC">IGIC</option><option value="IVA">IVA</option><option value="EXENTO">Exento</option></select></label>
-      </div>
-    </div>
-    <p id="af-error" style="color:#b3441e;font-size:12px;margin-top:8px;"></p>
-    <div style="display:flex;gap:8px;margin-top:18px;">
-      <button class="btn btn-ghost" style="flex:1" onclick="closeModal()">Cancelar</button>
-      <button class="btn btn-accent" style="flex:1" onclick="submitArticuloForm()">Guardar artículo</button>
-    </div>`;
-  document.getElementById('modal-host').classList.add('open');
-}
-async function submitArticuloForm(){
-  const nombre=document.getElementById('af-nombre').value.trim();
-  const sku=document.getElementById('af-sku').value.trim()||null;
-  const cantidad=parseInt(document.getElementById('af-cantidad').value)||0;
-  const minimoRaw=document.getElementById('af-minimo').value.trim();
-  const minimo=minimoRaw===''?null:parseInt(minimoRaw);
-  const coste=parseFloat(document.getElementById('af-coste').value.replace(',','.'))||0;
-  const precio=parseFloat(document.getElementById('af-precio').value.replace(',','.'))||0;
-  const tipo_impuesto=document.getElementById('af-impuesto').value;
-  const err=document.getElementById('af-error');
-  if(!nombre){ err.textContent='Falta el nombre del artículo.'; return; }
-  err.textContent='Guardando...';
-  const { error } = await sb.from('stock').insert({ nombre, sku, cantidad, minimo, coste, precio, tipo_impuesto });
-  if(error){ err.textContent='No se pudo guardar: '+error.message; return; }
-  await loadRealData();
-  refreshAllViews();
-  closeModal();
-  toast('✓ Artículo añadido');
-}
 
-function openServicioForm(){
-  document.getElementById('modal-title').textContent='Nuevo servicio';
-  document.getElementById('modal-body').innerHTML=`
-    <div style="display:flex;flex-direction:column;gap:14px;">
-      <label style="display:flex;flex-direction:column;gap:4px;"><span style="font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--txt3);font-weight:600;">Nombre</span><input id="sf-nombre" placeholder="ej. Limpieza facial profunda" style="padding:10px 12px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--txt);font-size:13px;"></label>
-      <div class="two-col">
-        <label style="display:flex;flex-direction:column;gap:4px;"><span style="font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--txt3);font-weight:600;">Categoría</span><input id="sf-categoria" placeholder="ej. Faciales" style="padding:10px 12px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--txt);font-size:13px;"></label>
-        <label style="display:flex;flex-direction:column;gap:4px;"><span style="font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--txt3);font-weight:600;">Duración</span><input id="sf-duracion" placeholder="ej. 1h 15min" style="padding:10px 12px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--txt);font-size:13px;"></label>
-      </div>
-      <label style="display:flex;flex-direction:column;gap:4px;"><span style="font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--txt3);font-weight:600;">Precio (EUR)</span><input id="sf-precio" placeholder="0" style="padding:10px 12px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--txt);font-size:13px;"></label>
-      <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--txt2);"><input type="checkbox" id="sf-reservable" checked style="width:16px;height:16px;"> Reservable online</label>
-    </div>
-    <p id="sf-error" style="color:#b3441e;font-size:12px;margin-top:8px;"></p>
-    <div style="display:flex;gap:8px;margin-top:18px;">
-      <button class="btn btn-ghost" style="flex:1" onclick="closeModal()">Cancelar</button>
-      <button class="btn btn-accent" style="flex:1" onclick="submitServicioForm()">Guardar servicio</button>
-    </div>`;
-  document.getElementById('modal-host').classList.add('open');
-}
-async function submitServicioForm(){
-  const nombre=document.getElementById('sf-nombre').value.trim();
-  const categoria=document.getElementById('sf-categoria').value.trim()||null;
-  const duracion=document.getElementById('sf-duracion').value.trim()||null;
-  const precio=parseFloat(document.getElementById('sf-precio').value.replace(',','.'))||0;
-  const reservable=document.getElementById('sf-reservable').checked;
-  const err=document.getElementById('sf-error');
-  if(!nombre){ err.textContent='Falta el nombre del servicio.'; return; }
-  err.textContent='Guardando...';
-  const orden=(CONFIG.catalog||[]).length+1;
-  const { error } = await sb.from('servicios').insert({ nombre, categoria, duracion, precio, reservable, orden });
-  if(error){ err.textContent='No se pudo guardar: '+error.message; return; }
-  await loadRealData();
-  refreshAllViews();
-  closeModal();
-  toast('✓ Servicio añadido');
-}
 
 // ═══════════════ ACCOUNTING ═══════════════
 function renderAccounting(){
@@ -2496,24 +2047,6 @@ async function borrarGastoReal(id){
 }
 
 // ═══════════════ TEAM ═══════════════
-function renderTeam(){
-  const t=CONFIG.team||[];
-  document.getElementById('team-count').textContent=t.length+' activos';
-  document.getElementById('team-grid').innerHTML=t.map(m=>`
-    <div style="padding:14px;border:1px solid var(--border);border-radius:10px;background:var(--surface);">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
-        <div style="width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,${CONFIG.colors.accent}33,${CONFIG.colors.accent}11);display:grid;place-items:center;font-family:var(--font-serif);font-weight:600;color:var(--accent);font-size:16px;">${m.name.split(' ').map(w=>w[0]).slice(0,2).join('')}</div>
-        <div style="flex:1;min-width:0;">
-          <div style="font-size:13px;font-weight:600;color:var(--txt);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${m.name}</div>
-          <div style="font-size:11px;color:var(--txt3);">${m.role}</div>
-        </div>
-      </div>
-      <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--txt3);">
-        <span>Hoy: <strong style="color:var(--txt);">${m.todayBookings} citas</strong></span>
-        <span style="color:#16a34a;font-weight:700;">${fmt(m.todayRevenue)}</span>
-      </div>
-    </div>`).join('');
-}
 
 // ═══════════════ TOAST ═══════════════
 function toast(msg){
@@ -2523,22 +2056,6 @@ function toast(msg){
 }
 
 // ═══════════════ BELL ═══════════════
-function toggleBell(e){e.stopPropagation();
-  const p=document.getElementById('bell-panel');
-  if(!p.dataset.built){
-    const notifs=CONFIG.notifications||[
-      {what:'Nueva cita por WhatsApp desde el agente',when:'hace 2 min'},
-      {what:'Factura INV-0142 pagada',when:'hace 1 hora'},
-      {what:'Alerta de stock bajo · 3 artículos',when:'hoy'}
-    ];
-    p.innerHTML=notifs.map(n=>`<div class="bell-item" onclick="toast('Abierto')"><div>${n.what}</div><div class="bi-when">${n.when}</div></div>`).join('');
-    p.dataset.built='1';
-  }
-  p.classList.toggle('open');
-  if(p.classList.contains('open')){
-    document.addEventListener('click',function h(){p.classList.remove('open');document.removeEventListener('click',h);});
-  }
-}
 
 // ═══════════════ CMD+K ═══════════════
 function openCmdK(){document.getElementById('cmdk-host').classList.add('open');document.getElementById('cmdk-input').focus();renderCmdK();}
@@ -2566,80 +2083,6 @@ function quickActionType(t){
   if(t==='schedule'){openBookingForm();return;}
   if(t==='client'){openClientForm();return;}
   if(t==='invoice'){openInvoiceForm();return;}
-}
-function openBookingForm(){
-  const clients=(CONFIG.clients||[]).map(c=>`<option value="${c.email||''}" data-phone="${c.phone||''}">${c.name}</option>`).join('');
-  const services=(CONFIG.catalog||[]).map(c=>`<option value="${c.id||''}" data-price="${c.price}">${c.name} · ${fmt(c.price)}</option>`).join('');
-  const times=['09:00','09:30','10:00','10:30','11:00','11:30','12:00','14:00','14:30','15:00','15:30','16:00','16:30','17:00','17:30','18:00'];
-  document.getElementById('modal-title').textContent='Nueva cita';
-  document.getElementById('modal-body').innerHTML=`
-    <div style="display:flex;flex-direction:column;gap:14px;">
-      <label style="display:flex;flex-direction:column;gap:4px;"><span style="font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--txt3);font-weight:600;">Clienta</span><select id="bf-client" style="padding:10px 12px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--txt);font-size:13px;">${clients||'<option value="">Sin clientas todavía — añádela primero en Clientas</option>'}</select></label>
-      <label style="display:flex;flex-direction:column;gap:4px;"><span style="font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--txt3);font-weight:600;">${CONFIG.labels.catalog||'Tratamiento'}</span><select id="bf-svc" style="padding:10px 12px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--txt);font-size:13px;">${services}</select></label>
-      <div class="two-col">
-        <label style="display:flex;flex-direction:column;gap:4px;"><span style="font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--txt3);font-weight:600;">Fecha</span><input type="date" id="bf-date" value="${new Date().toISOString().slice(0,10)}" style="padding:10px 12px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--txt);font-size:13px;"></label>
-        <label style="display:flex;flex-direction:column;gap:4px;"><span style="font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--txt3);font-weight:600;">Hora</span><select id="bf-time" style="padding:10px 12px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--txt);font-size:13px;">${times.map(t=>`<option>${t}</option>`).join('')}</select></label>
-      </div>
-      <label style="display:flex;flex-direction:column;gap:4px;"><span style="font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--txt3);font-weight:600;">Profesional</span><select id="bf-prof" style="padding:10px 12px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--txt);font-size:13px;"><option value="">Sin asignar</option><option>Louie</option><option>Natalia</option></select></label>
-      <label style="display:flex;flex-direction:column;gap:4px;"><span style="font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--txt3);font-weight:600;">Notas</span><textarea id="bf-notas" rows="2" placeholder="VIP · prefiere silla 2 · alergia a cacahuetes..." style="padding:10px 12px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--txt);font-size:13px;resize:vertical;"></textarea></label>
-    </div>
-    <p id="bf-error" style="color:#b3441e;font-size:12px;margin-top:8px;"></p>
-    <div style="display:flex;gap:8px;margin-top:18px;">
-      <button class="btn btn-ghost" style="flex:1" onclick="closeModal()">Cancelar</button>
-      <button class="btn btn-accent" style="flex:1" onclick="submitBookingForm()">Confirmar</button>
-    </div>`;
-  document.getElementById('modal-host').classList.add('open');
-}
-async function submitBookingForm(){
-  const clientSel=document.getElementById('bf-client');
-  const svcSel=document.getElementById('bf-svc');
-  const clientName=clientSel.options[clientSel.selectedIndex]?.textContent||'';
-  const clientEmail=clientSel.value||null;
-  const clientPhone=clientSel.options[clientSel.selectedIndex]?.dataset.phone||null;
-  const servicioId=svcSel.value||null;
-  const fecha=document.getElementById('bf-date').value;
-  const hora=document.getElementById('bf-time').value;
-  const profesional=document.getElementById('bf-prof').value || null;
-  const notas=document.getElementById('bf-notas').value.trim();
-  const err=document.getElementById('bf-error');
-  if(!clientName){ err.textContent='Elige una clienta (dala de alta primero en Clientas si no existe).'; return; }
-  if(!servicioId){ err.textContent='No hay servicios cargados.'; return; }
-
-  // Comprueba que el rango completo (inicio + duración del servicio) no se solape
-  // con ninguna cita ya existente ese día — misma regla que en la web pública.
-  const svc = (CONFIG.catalog||[]).find(s => String(s.id) === String(servicioId));
-  const duracionMin = svc?.duracionMin || 60;
-  const [hh, mm] = hora.split(':').map(Number);
-  const inicioMin = hh*60 + mm;
-  const finMin = inicioMin + duracionMin;
-  const mismoDia = (CONFIG.citasWeb||[]).filter(c => c.fecha && new Date(c.fecha).toDateString() === new Date(fecha+'T00:00:00').toDateString() && c.estado !== 'cancelada' && c.estado !== 'rechazada');
-  const solapa = mismoDia.some(c => {
-    const d = new Date(c.fecha);
-    const cIni = d.getHours()*60 + d.getMinutes();
-    const otroSvc = (CONFIG.catalog||[]).find(s => String(s.id) === String(c.servicioId));
-    const cFin = cIni + (otroSvc?.duracionMin || 60);
-    return inicioMin < cFin && finMin > cIni;
-  });
-  if (solapa) { err.textContent = 'Esa hora se solapa con otra cita ya existente (teniendo en cuenta la duración del servicio). Elige otra hora.'; return; }
-
-  err.textContent='Guardando...';
-  const { error } = await sb.from('citas').insert({
-    cliente_nombre: clientName,
-    cliente_telefono: clientPhone,
-    cliente_email: clientEmail,
-    fecha: new Date(fecha+'T'+hora+':00').toISOString(),
-    servicio_id: servicioId,
-    estado: 'confirmada',
-    notas: notas || null,
-    origen: 'panel',
-    profesional: profesional,
-  });
-  if(error){ err.textContent='No se pudo guardar: '+error.message; return; }
-  await sb.from('notificaciones').insert({ tipo: 'nueva_cita', mensaje: `Nueva cita creada desde el panel: ${clientName}` });
-  await loadRealData();
-  refreshAllViews();
-  closeModal();
-  toast('✓ Cita guardada');
 }
 function openClientForm(){
   document.getElementById('modal-title').textContent='Nueva clienta';
@@ -2713,6 +2156,1172 @@ async function submitInvoiceForm(){
   toast('✓ Factura creada');
 }
 
+
+// ═════════════════════════════════════════════════════════════════════
+// CRM v2 (brief reunión 23/09/2026) — calendario día/semana/mes, citas
+// editables con duración real, ficha de clienta con historial/sesiones,
+// servicios editables (precio/duración/color/activo), lista de espera con
+// huecos compatibles, stock con impuesto, TPV, caja y notificaciones.
+// ═════════════════════════════════════════════════════════════════════
+
+const PROFESIONALES = ['Louie','Natalia'];
+const ESTADOS_INACTIVOS = ['cancelada','rechazada','no_show'];
+const ESTADOS_CITA = {
+  pendiente_deposito:  { t:'Pendiente de depósito', c:'pending' },
+  pendiente_confirmar: { t:'Por confirmar',         c:'pending' },
+  pendiente:           { t:'Pendiente',             c:'pending' },
+  confirmada:          { t:'Confirmada',            c:'info' },
+  en_cabina:           { t:'En cabina',             c:'accent' },
+  completada:          { t:'Completada',            c:'ok' },
+  cancelada:           { t:'Cancelada',             c:'danger' },
+  rechazada:           { t:'Rechazada',             c:'danger' },
+  no_show:             { t:'No vino',               c:'danger' }
+};
+// Mismo horario que la web pública (0=domingo). Minutos desde medianoche.
+const HORARIO_CENTRO = {
+  1: [[9*60,15*60],[16*60,19*60]], 2: [[9*60,15*60],[16*60,19*60]], 3: [[9*60,15*60],[16*60,19*60]],
+  4: [[9*60,15*60],[16*60,19*60]], 5: [[9*60,15*60],[16*60,19*60]], 6: [[10*60,13*60]], 0: []
+};
+const PALETA_SERVICIOS = ['#A9B6A2','#8FA07E','#9CAF88','#BC916A','#C7A17A','#D9A6A6','#E8B4C8','#C58FB0','#9FB7D9','#7C8F94','#B0B0A0','#E0C07A'];
+const IMPUESTOS = { IGIC:[0,3,7,9.5,15], IVA:[0,4,10,21], EXENTO:[0] };
+const METODOS_PAGO = { efectivo:'Efectivo', tarjeta:'Tarjeta', bizum:'Bizum' };
+
+let CURRENT_USER = { nombre:'', rol:'', email:'', id:null };
+
+// ─── utilidades ───
+function fmt2(n){ return Number(n||0).toLocaleString('es-ES',{minimumFractionDigits:2,maximumFractionDigits:2})+'€'; }
+function tel9(t){ return String(t||'').replace(/\D/g,'').slice(-9); }
+function dayKey(d){ d=new Date(d); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function minToHHMM(m){ return String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0'); }
+function hhmmToMin(s){ const [h,m]=String(s||'0:0').split(':').map(Number); return h*60+(m||0); }
+function minDelDia(d){ d=new Date(d); return d.getHours()*60+d.getMinutes(); }
+function fmtDuracion(min){ min=Number(min)||0; const h=Math.floor(min/60), m=min%60; return h&&m?`${h}h ${m}min`:h?`${h}h`:`${m} min`; }
+function servicioDe(id){ return (CONFIG.catalog||[]).find(s=>String(s.id)===String(id)); }
+function duracionCita(c){ return Number(c.duracionMin)||servicioDe(c.servicioId)?.duracionMin||60; }
+function nombreServicioCita(c){ return servicioDe(c.servicioId)?.name || (c.notas||'').replace(/^Servicio( solicitado)?: /,'').split(' · ')[0] || 'Sin especificar'; }
+function colorCita(c){ return servicioDe(c.servicioId)?.color || '#A9B6A2'; }
+function estadoTag(e){ const x=ESTADOS_CITA[e]||{t:e||'-',c:'info'}; return `<span class="tag tag-${x.c}">${esc(x.t)}</span>`; }
+function citaActiva(c){ return c.fecha && !ESTADOS_INACTIVOS.includes(c.estado); }
+function esErrorSolape(msg){ return /SOLAPE/.test(msg||''); }
+function textoError(msg){
+  if(esErrorSolape(msg)) return 'Esa franja ya está ocupada por otra cita (teniendo en cuenta la duración). Elige otra hora.';
+  if(/STOCK/.test(msg||'')) return (msg||'').replace(/^.*STOCK: /,'');
+  return msg||'Error desconocido';
+}
+const LBL='font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--txt3);font-weight:600;';
+const INP='padding:10px 12px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--txt);font-size:13px;font-family:inherit;';
+function campo(label, html){ return `<label style="display:flex;flex-direction:column;gap:4px;"><span style="${LBL}">${label}</span>${html}</label>`; }
+function abrirModal(titulo, html){
+  document.getElementById('modal-title').textContent=titulo;
+  document.getElementById('modal-body').innerHTML=html;
+  document.getElementById('modal-host').classList.add('open');
+}
+async function recargarTodo(){ await loadRealData(); refreshAllViews(); }
+
+// Una cita pertenece a una clienta por su vínculo directo o, si no lo tiene,
+// por email o por teléfono comparados por separado (nunca un campo combinado).
+function citaEsDeClienta(ct, c){
+  if(ct.clientaId) return String(ct.clientaId)===String(c.id);
+  const e1=(ct.email||'').trim().toLowerCase(), e2=(c.email||'').trim().toLowerCase();
+  if(e1 && e2 && e1===e2) return true;
+  const t1=tel9(ct.telefono), t2=tel9(c.phone);
+  return t1.length===9 && t1===t2;
+}
+function citasDeClienta(c){ return (CONFIG.citasWeb||[]).filter(ct=>citaEsDeClienta(ct,c)); }
+function clientaDeCita(ct){
+  if(ct.clientaId){ const x=(CONFIG.clients||[]).find(c=>String(c.id)===String(ct.clientaId)); if(x) return x; }
+  return (CONFIG.clients||[]).find(c=>citaEsDeClienta({...ct,clientaId:null},c));
+}
+
+// ¿Choca [inicio, inicio+dur) con alguna cita activa? (misma regla que la BD)
+function citaQueSolapa(inicio, dur, ignorarId){
+  const ini=new Date(inicio).getTime(), fin=ini+dur*60000;
+  return (CONFIG.citasWeb||[]).find(c=>{
+    if(!citaActiva(c) || String(c.id)===String(ignorarId)) return false;
+    const cIni=new Date(c.fecha).getTime(), cFin=cIni+duracionCita(c)*60000;
+    return ini<cFin && fin>cIni;
+  });
+}
+// Horas de inicio libres en un día para un servicio de `dur` minutos.
+function huecosLibres(dia, dur, opts={}){
+  const d=new Date(dia); d.setHours(0,0,0,0);
+  const franjas=HORARIO_CENTRO[d.getDay()]||[];
+  const ahora=new Date();
+  const out=[];
+  franjas.forEach(([a,b])=>{
+    for(let m=a; m+dur<=b; m+=15){
+      if(opts.desde!=null && m<opts.desde) continue;
+      if(opts.hasta!=null && m>=opts.hasta) continue;
+      const inicio=new Date(d); inicio.setMinutes(m);
+      if(inicio<=ahora) continue;
+      if(!citaQueSolapa(inicio, dur, opts.ignorarId)) out.push(m);
+    }
+  });
+  return out;
+}
+
+// ═══════════════ USUARIO ACTUAL ═══════════════
+const ROLES={propietaria:'Propietaria',equipo:'Equipo',soporte:'Soporte Airmate'};
+async function cargarUsuarioActual(){
+  const { data:{ user } } = await sb.auth.getUser();
+  if(!user) return;
+  CURRENT_USER={ nombre:user.email.split('@')[0], rol:'equipo', email:user.email, id:user.id };
+  const { data } = await sb.from('panel_usuarios').select('nombre,rol').eq('user_id',user.id).maybeSingle();
+  if(data){ CURRENT_USER.nombre=data.nombre; CURRENT_USER.rol=data.rol; }
+  const n=document.querySelector('.sidebar-user-name'); if(n) n.textContent=CURRENT_USER.nombre;
+  const r=document.querySelector('.sidebar-user-role'); if(r) r.textContent=ROLES[CURRENT_USER.rol]||CURRENT_USER.rol;
+  const g=document.querySelector('#page-dashboard .page-title em'); if(g) g.textContent=CURRENT_USER.nombre.split(' (')[0];
+  document.querySelectorAll('.js-usuario-actual').forEach(el=>el.textContent=CURRENT_USER.nombre);
+}
+
+// ═══════════════ TIEMPO REAL ═══════════════
+let _rtCanal=null, _rtTimer=null;
+function suscribirTiempoReal(){
+  if(_rtCanal) return;
+  _rtCanal=sb.channel('divas-panel')
+    .on('postgres_changes',{event:'INSERT',schema:'public',table:'notificaciones'},p=>{
+      toast('🔔 '+(p.new?.mensaje||'Nueva notificación'));
+      programarRecarga();
+    })
+    .on('postgres_changes',{event:'*',schema:'public',table:'citas'},()=>programarRecarga())
+    .subscribe();
+}
+function programarRecarga(){ clearTimeout(_rtTimer); _rtTimer=setTimeout(recargarTodo,600); }
+
+// ═══════════════ CALENDARIO (día / semana / mes) ═══════════════
+let CAL={ vista:'semana', ref:new Date(), prof:'' };
+const CAL_INI=9*60, CAL_FIN=20*60, CAL_PX=1.25; // px por minuto
+function calSetVista(v){ CAL.vista=v; renderCalendario(); }
+function calSetProf(p){ CAL.prof=p; renderCalendario(); }
+function calHoy(){ CAL.ref=new Date(); renderCalendario(); }
+function calMover(n){
+  const d=new Date(CAL.ref);
+  if(CAL.vista==='dia') d.setDate(d.getDate()+n);
+  else if(CAL.vista==='semana') d.setDate(d.getDate()+7*n);
+  else { d.setDate(1); d.setMonth(d.getMonth()+n); }
+  CAL.ref=d; renderCalendario();
+}
+function calIrADia(key){ CAL.ref=new Date(key+'T12:00:00'); CAL.vista='dia'; renderCalendario(); }
+function inicioSemana(d){ const x=new Date(d); x.setHours(0,0,0,0); x.setDate(x.getDate()-((x.getDay()+6)%7)); return x; }
+function citasCalendarioDia(d){
+  const k=dayKey(d);
+  return (CONFIG.citasWeb||[]).filter(c=>citaActiva(c) && dayKey(c.fecha)===k &&
+    (!CAL.prof || (CAL.prof==='__sin' ? !c.profesional : c.profesional===CAL.prof)))
+    .sort((a,b)=>new Date(a.fecha)-new Date(b.fecha));
+}
+function renderCalendario(){
+  const host=document.getElementById('cal-host'); if(!host) return;
+  ['dia','semana','mes'].forEach(v=>{ const b=document.getElementById('cal-v-'+v); if(b) b.classList.toggle('cal-on',CAL.vista===v); });
+  const lbl=document.getElementById('cal-label');
+  const hoy=new Date();
+  if(CAL.vista==='mes'){
+    lbl.textContent=CAL.ref.toLocaleDateString('es-ES',{month:'long',year:'numeric'});
+    host.innerHTML=calMesHTML();
+  } else {
+    let dias=[];
+    if(CAL.vista==='dia'){ const d=new Date(CAL.ref); d.setHours(0,0,0,0); dias=[d]; lbl.textContent=d.toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long'}); }
+    else { const l=inicioSemana(CAL.ref); for(let i=0;i<7;i++){ const d=new Date(l); d.setDate(l.getDate()+i); dias.push(d); }
+      lbl.textContent=dias[0].toLocaleDateString('es-ES',{day:'numeric',month:'short'})+' — '+dias[6].toLocaleDateString('es-ES',{day:'numeric',month:'short',year:'numeric'}); }
+    host.innerHTML=calRejillaHTML(dias, hoy);
+  }
+  // Leyenda de colores con los servicios visibles
+  const vis={};
+  host.querySelectorAll('[data-svc]').forEach(el=>{ vis[el.dataset.svc]=1; });
+  const ley=document.getElementById('cal-legend');
+  if(ley) ley.innerHTML=Object.keys(vis).map(id=>{ const s=servicioDe(id); return s?`<span class="cal-ley"><i style="background:${s.color}"></i>${esc(s.name)}</span>`:''; }).join('');
+}
+function calRejillaHTML(dias, hoy){
+  const alto=(CAL_FIN-CAL_INI)*CAL_PX;
+  let head='<div class="cal-hcell"></div>', cols='';
+  let horas='';
+  for(let m=CAL_INI;m<=CAL_FIN;m+=60) horas+=`<div class="cal-hora" style="top:${(m-CAL_INI)*CAL_PX}px">${minToHHMM(m)}</div>`;
+  dias.forEach(d=>{
+    const k=dayKey(d), esHoy=k===dayKey(hoy);
+    const citas=citasCalendarioDia(d);
+    head+=`<div class="cal-hcell ${esHoy?'cal-today':''}" onclick="calIrADia('${k}')" title="Ver día">${d.toLocaleDateString('es-ES',{weekday:'short'})} <b>${d.getDate()}</b><span class="cal-hcount">${citas.length?citas.length+' cita'+(citas.length>1?'s':''):''}</span></div>`;
+    // Zonas cerradas (fuera del horario de apertura)
+    let cerr='';
+    const fr=HORARIO_CENTRO[d.getDay()]||[];
+    let cursor=CAL_INI;
+    fr.concat([[CAL_FIN,CAL_FIN]]).forEach(([a,b])=>{ if(a>cursor) cerr+=`<div class="cal-cerrado" style="top:${(cursor-CAL_INI)*CAL_PX}px;height:${(Math.min(a,CAL_FIN)-cursor)*CAL_PX}px"></div>`; cursor=Math.max(cursor,b); });
+    // Carriles por si hay citas antiguas solapadas
+    const carriles=[]; const pos=citas.map(c=>{ const ini=minDelDia(c.fecha), fin=ini+duracionCita(c); let l=carriles.findIndex(f=>f<=ini); if(l<0){ l=carriles.length; carriles.push(fin);} else carriles[l]=fin; return {c,ini,fin,l}; });
+    const nL=Math.max(1,carriles.length);
+    const evs=pos.map(({c,ini,fin,l})=>{
+      const top=(Math.max(ini,CAL_INI)-CAL_INI)*CAL_PX, h=Math.max((Math.min(fin,CAL_FIN)-Math.max(ini,CAL_INI))*CAL_PX,24);
+      const col=colorCita(c);
+      const pend=/^pendiente/.test(c.estado);
+      return `<div class="cal-ev ${pend?'cal-ev-pend':''}" data-svc="${esc(c.servicioId||'')}" style="top:${top}px;height:${h}px;left:calc(${l*100/nL}% + 2px);width:calc(${100/nL}% - 4px);--c:${col}" onclick="event.stopPropagation();abrirDetalleCita('${c.id}')" title="${esc(c.cliente)} · ${esc(nombreServicioCita(c))}">
+        <div class="cal-ev-t">${minToHHMM(ini)}–${minToHHMM(fin)}${pend?' · <em>pendiente</em>':''}</div>
+        <div class="cal-ev-n">${esc(c.cliente||'-')}</div>
+        ${h>44?`<div class="cal-ev-s">${esc(nombreServicioCita(c))}</div>`:''}
+        ${h>60&&c.profesional?`<div class="cal-ev-p">👤 ${esc(c.profesional)}</div>`:''}
+      </div>`;
+    }).join('');
+    const ahora=(esHoy && minDelDia(hoy)>=CAL_INI && minDelDia(hoy)<=CAL_FIN)?`<div class="cal-now" style="top:${(minDelDia(hoy)-CAL_INI)*CAL_PX}px"></div>`:'';
+    cols+=`<div class="cal-col" style="height:${alto}px" onclick="calClickHueco(event,'${k}')">${cerr}${evs}${ahora}</div>`;
+  });
+  return `<div class="cal-scroll"><div class="cal-grid" style="min-width:${dias.length>1?820:0}px;grid-template-columns:56px repeat(${dias.length},minmax(0,1fr))">
+    ${head}<div class="cal-horas" style="height:${alto}px">${horas}</div>${cols}</div></div>`;
+}
+function calClickHueco(e, key){
+  const r=e.currentTarget.getBoundingClientRect();
+  const m=Math.floor((CAL_INI+(e.clientY-r.top)/CAL_PX)/15)*15;
+  openBookingForm({ fecha:key, hora:minToHHMM(m) });
+}
+function calMesHTML(){
+  const ref=new Date(CAL.ref.getFullYear(), CAL.ref.getMonth(), 1);
+  const ini=inicioSemana(ref);
+  const hoyK=dayKey(new Date());
+  let html=['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'].map(d=>`<div class="cal-mhead">${d}</div>`).join('');
+  for(let i=0;i<42;i++){
+    const d=new Date(ini); d.setDate(ini.getDate()+i);
+    if(i>=35 && d.getMonth()!==ref.getMonth()) break;
+    const k=dayKey(d), citas=citasCalendarioDia(d);
+    html+=`<div class="cal-mcell ${d.getMonth()!==ref.getMonth()?'cal-fuera':''} ${k===hoyK?'cal-today':''}" onclick="calIrADia('${k}')">
+      <div class="cal-mnum">${d.getDate()}</div>
+      ${citas.slice(0,3).map(c=>`<div class="cal-chip" data-svc="${esc(c.servicioId||'')}" style="--c:${colorCita(c)}" onclick="event.stopPropagation();abrirDetalleCita('${c.id}')">${new Date(c.fecha).toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'})} ${esc((c.cliente||'').split(' ')[0])}</div>`).join('')}
+      ${citas.length>3?`<div class="cal-mas">+${citas.length-3} más</div>`:''}
+    </div>`;
+  }
+  return `<div class="cal-mes">${html}</div>`;
+}
+
+function renderSchedule(){
+  const hoyK=dayKey(new Date());
+  const hoy=(CONFIG.citasWeb||[]).filter(c=>c.fecha && dayKey(c.fecha)===hoyK).sort((a,b)=>new Date(a.fecha)-new Date(b.fecha));
+  document.getElementById('schedule-tbody').innerHTML=hoy.length?hoy.map(c=>`
+    <tr onclick="abrirDetalleCita('${c.id}')" style="cursor:pointer;${ESTADOS_INACTIVOS.includes(c.estado)?'opacity:.5;':''}">
+      <td><strong>${new Date(c.fecha).toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'})}</strong></td>
+      <td>${esc(c.cliente)}</td>
+      <td><span class="svc-dot" style="background:${colorCita(c)}"></span>${esc(nombreServicioCita(c))}</td>
+      <td>${duracionCita(c)} min</td>
+      <td>${esc(c.profesional||'—')}</td>
+      <td>${estadoTag(c.estado)}</td>
+    </tr>`).join(''):'<tr><td colspan="6" style="text-align:center;color:var(--txt3);padding:20px;">Sin citas hoy</td></tr>';
+  const activas=hoy.filter(citaActiva);
+  document.getElementById('today-count').textContent=activas.length+' citas';
+  const conf=activas.filter(c=>['confirmada','en_cabina','completada'].includes(c.estado)).length;
+  const pend=activas.filter(c=>/^pendiente/.test(c.estado)).length;
+  const minutos=activas.reduce((a,c)=>a+duracionCita(c),0);
+  const espera=(CONFIG.waitlist||[]).filter(w=>w.estado==='pendiente'||w.estado==='contactada').length;
+  document.getElementById('sched-stats').innerHTML=[
+    {label:'Citas hoy',value:activas.length,trend:fmtDuracion(minutos)+' de cabina',trendType:''},
+    {label:'Confirmadas',value:conf,trend:(activas.length?Math.round(conf/activas.length*100):0)+'%',trendType:'up'},
+    {label:'Por confirmar',value:pend,trend:pend?'revisar':'al día',trendType:pend?'warn':'up'},
+    {label:'Lista de espera',value:espera,trend:'pendientes',trendType:espera?'warn':''}
+  ].map(s=>`<div class="stat-card"><div class="stat-label">${s.label}</div><div class="stat-val">${s.value}</div><div class="stat-trend ${s.trendType}">${s.trend}</div></div>`).join('');
+  renderCalendario();
+}
+
+function renderKanban(){
+  const hoyK=dayKey(new Date());
+  const citasHoy=(CONFIG.citasWeb||[]).filter(c=>citaActiva(c) && dayKey(c.fecha)===hoyK);
+  const porColumna={esperando:[],en_cabina:[],completada:[]};
+  citasHoy.forEach(c=>{ porColumna[(c.estado==='en_cabina'||c.estado==='completada')?c.estado:'esperando'].push(c); });
+  document.getElementById('kanban').innerHTML=KANBAN_COLS.map(col=>`
+    <div class="kan-col">
+      <div class="kan-col-hd"><span class="kan-col-name">${col.name}</span><span class="kan-col-count">${porColumna[col.key].length}</span></div>
+      <div class="kan-body">
+        ${porColumna[col.key].length?porColumna[col.key].map(c=>`
+          <div class="kan-card" style="border-left-color:${colorCita(c)}" onclick="abrirDetalleCita('${c.id}')">
+            <div class="kan-card-title">${esc(c.cliente)}</div>
+            <div class="kan-card-sub">${esc(nombreServicioCita(c))}${c.profesional?' · '+esc(c.profesional):''}</div>
+            <div class="kan-card-foot">
+              <span style="font-size:10px;color:var(--txt3)">${new Date(c.fecha).toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'})} · ${duracionCita(c)} min</span>
+              ${col.next?`<button class="btn btn-ghost" style="padding:4px 10px;font-size:10px;" onclick="event.stopPropagation();cambiarEstadoCita('${c.id}','${col.next}')">${col.nextLabel}</button>`:'<span style="font-size:10px;color:#16a34a;">✓ Hecho</span>'}
+            </div>
+          </div>`).join(''):'<p style="text-align:center;color:var(--txt3);font-size:12px;padding:16px 0;">Sin citas hoy</p>'}
+      </div>
+    </div>`).join('');
+}
+
+// ═══════════════ DETALLE / EDICIÓN DE CITA ═══════════════
+function abrirDetalleCita(citaId){
+  const c=(CONFIG.citasWeb||[]).find(x=>String(x.id)===String(citaId));
+  if(!c){ toast('No se encontró la cita'); return; }
+  const svc=servicioDe(c.servicioId);
+  const cl=clientaDeCita(c);
+  const ini=c.fecha?new Date(c.fecha):null;
+  const fin=ini?new Date(ini.getTime()+duracionCita(c)*60000):null;
+  const fila=(k,v)=>`<div style="display:flex;gap:10px;padding:7px 0;border-bottom:1px solid var(--border2);"><span style="width:110px;flex:0 0 auto;color:var(--txt3);font-size:12px;">${k}</span><span style="font-size:13px;color:var(--txt);">${v}</span></div>`;
+  const activa=!ESTADOS_INACTIVOS.includes(c.estado);
+  abrirModal('Detalle de la cita', `
+    <div style="border-left:4px solid ${colorCita(c)};padding-left:12px;margin-bottom:14px;">
+      <div style="font-family:var(--font-serif);font-size:20px;color:var(--txt);">${esc(c.cliente||'-')}</div>
+      <div style="font-size:12px;color:var(--txt3);">${esc(nombreServicioCita(c))}${svc&&svc.bookable===false?' · <em>servicio desactivado</em>':''}</div>
+    </div>
+    ${fila('Teléfono', c.telefono?`${esc(c.telefono)} <a href="#" onclick="enviarWhatsApp('${esc(c.telefono)}','Hola ${esc((c.cliente||'').split(' ')[0])}, te escribimos desde Divas Skin Care 💛');return false;" style="color:var(--accent);font-size:12px;margin-left:6px;">WhatsApp</a>`:'-')}
+    ${c.email?fila('Email', esc(c.email)):''}
+    ${fila('Fecha', ini?ini.toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long',year:'numeric'}):'<em>Sin fecha asignada</em>')}
+    ${fila('Hora', ini?`${minToHHMM(minDelDia(ini))} – ${minToHHMM(minDelDia(fin))}`:'-')}
+    ${fila('Duración', duracionCita(c)+' min')}
+    ${fila('Profesional', esc(c.profesional||'Sin asignar'))}
+    ${fila('Estado', estadoTag(c.estado))}
+    ${fila('Origen', esc(c.origen==='web'?'Reserva web':c.origen==='stripe'?'Pago online (Stripe)':'Panel')+(c.creadoPor&&c.creadoPor!=='web'?' · creada por '+esc(c.creadoPor):''))}
+    ${c.consentimiento?fila('Privacidad', '✓ Aceptada '+(c.consentimientoFecha?new Date(c.consentimientoFecha).toLocaleString('es-ES'):'')):''}
+    ${c.notas?fila('Notas', esc(c.notas)):''}
+    ${activa?`<div style="margin-top:16px;">
+      <div style="${LBL}margin-bottom:6px;">Cambiar estado</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;">
+        ${['confirmada','en_cabina','completada','no_show'].filter(e=>e!==c.estado).map(e=>`<button class="btn btn-ghost" style="padding:5px 10px;font-size:11px;" onclick="cambiarEstadoCita('${c.id}','${e}')">${ESTADOS_CITA[e].t}</button>`).join('')}
+      </div>
+    </div>`:''}
+    <div style="display:flex;gap:8px;margin-top:18px;flex-wrap:wrap;">
+      ${cl?`<button class="btn btn-ghost" onclick="showClientById('${cl.id}')">Ver ficha de la clienta</button>`:''}
+      ${activa?`<button class="btn btn-ghost" onclick="openBookingForm({citaId:'${c.id}'})">✎ Modificar cita</button>`:''}
+      ${activa?`<button class="btn btn-ghost" id="btn-cancelar-cita" style="color:#b3441e;" onclick="pedirConfirmacionCancelar('${c.id}')">Cancelar cita</button>`:''}
+      ${!activa&&c.fecha?`<button class="btn btn-ghost" onclick="mostrarCompatiblesHueco('${c.id}')">Ver lista de espera para este hueco</button>`:''}
+    </div>`);
+}
+function pedirConfirmacionCancelar(id){
+  const b=document.getElementById('btn-cancelar-cita');
+  b.textContent='¿Seguro? Pulsa otra vez para cancelar';
+  b.onclick=()=>cambiarEstadoCita(id,'cancelada');
+}
+async function cambiarEstadoCita(id, estado){
+  const { data, error } = await sb.from('citas').update({ estado }).eq('id', id).select('id');
+  if(error || !data?.length){ toast('No se pudo actualizar: '+textoError(error?.message||'sin permiso')); return; }
+  await recargarTodo();
+  toast('✓ Cita: '+(ESTADOS_CITA[estado]?.t||estado));
+  if(estado==='cancelada') mostrarCompatiblesHueco(id);
+  else if(document.getElementById('modal-host').classList.contains('open') && document.getElementById('modal-title').textContent==='Detalle de la cita') abrirDetalleCita(id);
+}
+
+// Hueco liberado → clientas de la lista de espera que encajan
+function compatiblesConHueco(inicio, durMin){
+  const k=dayKey(inicio), ini=minDelDia(inicio), fin=ini+durMin;
+  return (CONFIG.waitlist||[]).filter(w=>w.estado==='pendiente'||w.estado==='contactada').map(w=>{
+    if(w.fecha_deseada && w.fecha_deseada!==k) return null;
+    const svc=servicioDe(w.servicio_id); const dur=svc?.duracionMin||60;
+    const r=rangoEspera(w);
+    const huecos=huecosLibres(inicio, dur, {desde:Math.max(r.desde,ini), hasta:Math.min(r.hasta,fin)});
+    return huecos.length?{w,svc,hora:huecos.sort((a,b)=>Math.abs(a-r.pref)-Math.abs(b-r.pref))[0]}:null;
+  }).filter(Boolean);
+}
+function mostrarCompatiblesHueco(citaId){
+  const c=(CONFIG.citasWeb||[]).find(x=>String(x.id)===String(citaId));
+  if(!c||!c.fecha){ closeModal(); return; }
+  const lista=compatiblesConHueco(new Date(c.fecha), duracionCita(c));
+  const ini=new Date(c.fecha);
+  abrirModal('Hueco liberado', `
+    <p style="font-size:13px;color:var(--txt2);margin-bottom:14px;">Se ha liberado <strong>${ini.toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long'})}, ${minToHHMM(minDelDia(ini))}–${minToHHMM(minDelDia(ini)+duracionCita(c))}</strong>.</p>
+    <div style="${LBL}margin-bottom:8px;">En lista de espera y encajan en este hueco</div>
+    ${lista.length?lista.map(({w,svc,hora})=>`
+      <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border2);">
+        <div style="flex:1;min-width:0;"><strong>${esc(w.cliente_nombre)}</strong><div style="font-size:11px;color:var(--txt3);">${esc(svc?.name||'-')} · a las ${minToHHMM(hora)}${w.notas?' · '+esc(w.notas):''}</div></div>
+        ${w.cliente_telefono?`<button class="btn btn-ghost" style="padding:4px 10px;font-size:11px;" onclick="avisarEspera('${w.id}','${dayKey(ini)}','${minToHHMM(hora)}')">💬 Avisar</button>`:''}
+        <button class="btn btn-accent" style="padding:4px 10px;font-size:11px;" onclick="darCitaDesdeEspera('${w.id}','${dayKey(ini)}','${minToHHMM(hora)}')">Dar cita</button>
+      </div>`).join(''):'<p style="font-size:13px;color:var(--txt3);">Nadie en la lista de espera encaja en este hueco.</p>'}
+    <div style="margin-top:16px;"><button class="btn btn-ghost" onclick="closeModal()">Cerrar</button></div>`);
+}
+
+// ═══════════════ NUEVA / MODIFICAR CITA ═══════════════
+// opts: { fecha, hora, clientaId, servicioId, citaId (editar), listaEsperaId, nombre, telefono }
+let BF={};
+function openBookingForm(opts={}){
+  BF={...opts};
+  const edit=opts.citaId?(CONFIG.citasWeb||[]).find(c=>String(c.id)===String(opts.citaId)):null;
+  if(edit){
+    const cl=clientaDeCita(edit);
+    BF.clientaId=cl?.id||''; BF.servicioId=edit.servicioId; BF.profesional=edit.profesional||'';
+    if(edit.fecha){ BF.fecha=dayKey(edit.fecha); BF.hora=minToHHMM(minDelDia(edit.fecha)); }
+    BF.notas=edit.notas||''; BF.nombre=edit.cliente; BF.telefono=edit.telefono;
+  }
+  const clientas=(CONFIG.clients||[]).slice().sort((a,b)=>a.name.localeCompare(b.name,'es'));
+  const selCl=BF.clientaId?String(BF.clientaId):(BF.nombre&&!edit?'__nueva':'');
+  const svcs=(CONFIG.catalog||[]).filter(s=>s.id && (s.bookable!==false || String(s.id)===String(BF.servicioId)));
+  abrirModal(edit?'Modificar cita':'Nueva cita', `
+    <div style="display:flex;flex-direction:column;gap:14px;">
+      ${edit?`<div style="font-size:13px;color:var(--txt2);">Clienta: <strong>${esc(edit.cliente)}</strong></div>`:campo('Clienta',`<select id="bf-client" style="${INP}" onchange="bfToggleNueva()">
+        <option value="">— Elige una clienta —</option>
+        <option value="__nueva" ${selCl==='__nueva'?'selected':''}>+ Clienta nueva</option>
+        ${clientas.map(c=>`<option value="${c.id}" ${String(c.id)===selCl?'selected':''}>${esc(c.name)}${c.phone&&c.phone!=='—'?' · '+esc(c.phone):''}</option>`).join('')}
+      </select>`)}
+      <div id="bf-nueva" class="two-col" style="display:${selCl==='__nueva'?'grid':'none'};">
+        ${campo('Nombre',`<input id="bf-nombre" value="${esc(BF.nombre||'')}" style="${INP}">`)}
+        ${campo('Teléfono',`<input id="bf-tel" value="${esc(BF.telefono||'')}" style="${INP}">`)}
+        ${campo('Fecha de nacimiento',`<input type="date" id="bf-nac" style="${INP}">`)}
+      </div>
+      ${campo(CONFIG.labels.catalog||'Tratamiento',`<select id="bf-svc" style="${INP}" onchange="bfPintarHoras()">
+        ${svcs.map(s=>`<option value="${s.id}" ${String(s.id)===String(BF.servicioId)?'selected':''}>${esc(s.name)} · ${s.duracionMin} min · ${fmt(s.price)}${s.bookable===false?' (desactivado)':''}</option>`).join('')}
+      </select>`)}
+      <div class="two-col">
+        ${campo('Fecha',`<input type="date" id="bf-date" value="${BF.fecha||dayKey(new Date())}" style="${INP}" onchange="bfPintarHoras()">`)}
+        ${campo('Hora (solo huecos libres)',`<select id="bf-time" style="${INP}"></select>`)}
+      </div>
+      <div id="bf-horas-info" style="font-size:11.5px;color:var(--txt3);margin-top:-8px;"></div>
+      ${campo('Profesional',`<select id="bf-prof" style="${INP}"><option value="">Sin asignar</option>${PROFESIONALES.map(p=>`<option ${p===BF.profesional?'selected':''}>${p}</option>`).join('')}</select>`)}
+      ${campo('Notas',`<textarea id="bf-notas" rows="2" style="${INP}resize:vertical;">${esc(BF.notas||'')}</textarea>`)}
+    </div>
+    <p id="bf-error" style="color:#b3441e;font-size:12px;margin-top:8px;"></p>
+    <div style="display:flex;gap:8px;margin-top:18px;">
+      <button class="btn btn-ghost" style="flex:1" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-accent" style="flex:1" onclick="submitBookingForm()">${edit?'Guardar cambios':'Confirmar cita'}</button>
+    </div>`);
+  bfPintarHoras();
+}
+function bfToggleNueva(){ const v=document.getElementById('bf-client').value; document.getElementById('bf-nueva').style.display=v==='__nueva'?'grid':'none'; }
+function bfPintarHoras(){
+  const svc=servicioDe(document.getElementById('bf-svc').value);
+  const dur=svc?.duracionMin||60;
+  const fecha=document.getElementById('bf-date').value;
+  const sel=document.getElementById('bf-time');
+  const info=document.getElementById('bf-horas-info');
+  if(!fecha){ sel.innerHTML=''; return; }
+  const libres=huecosLibres(new Date(fecha+'T00:00:00'), dur, {ignorarId:BF.citaId});
+  if(BF.hora && fecha===BF.fecha && !libres.includes(hhmmToMin(BF.hora))) {
+    // La hora pedida (clic en calendario / cita existente) no está libre para esta duración
+    info.innerHTML=`⚠ Las ${BF.hora} no están libres para ${dur} min. Elige otra hora${BF.citaId?'':' o <a href="#" onclick="bfAListaEspera();return false;" style="color:var(--accent)">apúntala en la lista de espera</a>'}.`;
+  } else info.textContent=libres.length?`${libres.length} huecos libres para ${dur} min`:'';
+  if(!libres.length){
+    sel.innerHTML='<option value="">Sin huecos este día</option>';
+    info.innerHTML=`No queda ningún hueco de ${dur} min este día.${BF.citaId?'':' <a href="#" onclick="bfAListaEspera();return false;" style="color:var(--accent)">Apuntar en lista de espera →</a>'}`;
+    return;
+  }
+  const pref=BF.hora&&fecha===BF.fecha?hhmmToMin(BF.hora):null;
+  let elegido=libres[0];
+  if(pref!=null) elegido=libres.slice().sort((a,b)=>Math.abs(a-pref)-Math.abs(b-pref))[0];
+  sel.innerHTML=libres.map(m=>`<option value="${minToHHMM(m)}" ${m===elegido?'selected':''}>${minToHHMM(m)} – ${minToHHMM(m+dur)}</option>`).join('');
+}
+function bfAListaEspera(){
+  const clSel=document.getElementById('bf-client');
+  const cl=clSel&&clSel.value&&clSel.value!=='__nueva'?(CONFIG.clients||[]).find(c=>String(c.id)===clSel.value):null;
+  openWaitlistForm({ clientaId:cl?.id, nombre:cl?.name||document.getElementById('bf-nombre')?.value, telefono:cl?.phone||document.getElementById('bf-tel')?.value,
+    servicioId:document.getElementById('bf-svc').value, fecha:document.getElementById('bf-date').value, hora:BF.hora });
+}
+async function submitBookingForm(){
+  const err=document.getElementById('bf-error');
+  const edit=BF.citaId?(CONFIG.citasWeb||[]).find(c=>String(c.id)===String(BF.citaId)):null;
+  const servicioId=document.getElementById('bf-svc').value;
+  const svc=servicioDe(servicioId);
+  const fecha=document.getElementById('bf-date').value;
+  const hora=document.getElementById('bf-time').value;
+  const profesional=document.getElementById('bf-prof').value||null;
+  const notas=document.getElementById('bf-notas').value.trim()||null;
+  if(!svc){ err.textContent='Elige un servicio.'; return; }
+  if(!fecha||!hora){ err.textContent='No hay ninguna hora libre elegida para ese día.'; return; }
+  const inicio=new Date(fecha+'T'+hora+':00');
+  const dur=svc.duracionMin||60;
+  const choca=citaQueSolapa(inicio, dur, BF.citaId);
+  if(choca){ err.textContent=`Se solapa con la cita de ${choca.cliente} (${new Date(choca.fecha).toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'})}). Elige otra hora.`; return; }
+  err.textContent='Guardando...';
+
+  if(edit){
+    const cambios={ fecha:inicio.toISOString(), servicio_id:servicioId, duracion_min:dur, profesional, notas };
+    const { data, error } = await sb.from('citas').update(cambios).eq('id', edit.id).select('id');
+    if(error||!data?.length){ err.textContent='No se pudo guardar: '+textoError(error?.message||'sin permiso'); return; }
+    await recargarTodo(); closeModal(); toast('✓ Cita modificada');
+    return;
+  }
+
+  // Clienta: existente o nueva
+  let clienta=null;
+  const clSel=document.getElementById('bf-client').value;
+  if(clSel==='__nueva'){
+    const nombre=document.getElementById('bf-nombre').value.trim(), tel=document.getElementById('bf-tel').value.trim();
+    if(!nombre){ err.textContent='Escribe el nombre de la clienta nueva.'; return; }
+    const r=await crearClientaReal(nombre, tel, '', document.getElementById('bf-nac').value||null, { sinRecargar:true });
+    if(r.error){ err.textContent='No se pudo crear la clienta: '+r.error; return; }
+    clienta={ id:r.id, name:nombre, phone:tel, email:null };
+  } else {
+    clienta=(CONFIG.clients||[]).find(c=>String(c.id)===clSel);
+    if(!clienta){ err.textContent='Elige una clienta (o «+ Clienta nueva»).'; return; }
+  }
+  const { data, error } = await sb.from('citas').insert({
+    cliente_nombre: clienta.name,
+    cliente_telefono: clienta.phone&&clienta.phone!=='—'?clienta.phone:null,
+    cliente_email: clienta.email||null,
+    clienta_id: clienta.id,
+    fecha: inicio.toISOString(),
+    servicio_id: servicioId,
+    duracion_min: dur,
+    estado: 'confirmada',
+    notas, origen:'panel', profesional,
+    creado_por: CURRENT_USER.nombre||null
+  }).select('id');
+  if(error||!data?.length){ err.textContent='No se pudo guardar: '+textoError(error?.message||'sin permiso'); return; }
+  if(BF.listaEsperaId) await sb.from('lista_espera').update({ estado:'agendada' }).eq('id', BF.listaEsperaId);
+  await recargarTodo(); closeModal(); toast('✓ Cita guardada');
+}
+
+// ═══════════════ CLIENTAS ═══════════════
+async function crearClientaReal(nombre, telefono, email, fechaNacimiento, opts={}){
+  const { data, error } = await sb.from('clientas').insert({ nombre, telefono: telefono || null, email: email || null, fecha_nacimiento: fechaNacimiento || null }).select('id').single();
+  if (error) return { error: error.message };
+  if (!opts.sinRecargar) { await loadRealData(); refreshAllViews(); }
+  return { ok: true, id: data.id };
+}
+function drawClients(list){
+  document.getElementById('clients-tbody').innerHTML=list.map(c=>`
+    <tr onclick="showClientById('${c.id}')" style="cursor:pointer">
+      <td><strong>${esc(c.name)}</strong></td>
+      <td>${esc(c.phone)}</td>
+      <td>${c.fechaNacimiento?new Date(c.fechaNacimiento+'T00:00:00').toLocaleDateString('es-ES',{day:'numeric',month:'short'}):'—'}</td>
+      <td>${esc(c.field)}</td>
+      <td>${c.visits}</td>
+      <td><strong>${fmt(c.spent)}</strong></td>
+      <td>${(c.tags||[]).map(t=>`<span class="tag tag-${t.cls}">${t.text}</span>`).join(' ')}</td>
+    </tr>`).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--txt3);padding:24px;">Todavía no hay clientas. Se crean solas al reservar en la web, o con «+ Nueva clienta».</td></tr>';
+  renderBirthdaysThisMonth(list);
+}
+function showClient(name){ const c=(CONFIG.clients||[]).find(x=>x.name===name); if(c) showClientById(c.id); else toast('No se encontró la ficha'); }
+function showClientById(id){
+  const c=(CONFIG.clients||[]).find(x=>String(x.id)===String(id));
+  if(!c){ toast('No se encontró la ficha'); return; }
+  const citas=citasDeClienta(c).filter(ct=>ct.fecha).sort((a,b)=>new Date(b.fecha)-new Date(a.fecha));
+  const ahora=new Date();
+  const proximas=citas.filter(ct=>citaActiva(ct) && new Date(ct.fecha)>=ahora).reverse();
+  const pasadas=citas.filter(ct=>!(citaActiva(ct) && new Date(ct.fecha)>=ahora));
+  const completadas=citas.filter(ct=>ct.estado==='completada').sort((a,b)=>new Date(a.fecha)-new Date(b.fecha));
+  const porServicio={};
+  completadas.forEach(ct=>{ const k=ct.servicioId||nombreServicioCita(ct); (porServicio[k]=porServicio[k]||[]).push(ct); });
+  const filaCita=ct=>`<tr onclick="abrirDetalleCita('${ct.id}')" style="cursor:pointer;">
+      <td>${new Date(ct.fecha).toLocaleDateString('es-ES')}</td>
+      <td>${new Date(ct.fecha).toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'})}</td>
+      <td><span class="svc-dot" style="background:${colorCita(ct)}"></span>${esc(nombreServicioCita(ct))}</td>
+      <td>${duracionCita(ct)} min</td>
+      <td>${esc(ct.profesional||'—')}</td>
+      <td>${estadoTag(ct.estado)}</td></tr>`;
+  const tabla=(rows,vacio)=>rows.length?`<div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Hora</th><th>Servicio</th><th>Duración</th><th>Profesional</th><th>Estado</th></tr></thead><tbody>${rows.map(filaCita).join('')}</tbody></table></div>`:`<p style="font-size:13px;color:var(--txt3);margin:4px 0 0;">${vacio}</p>`;
+  const tel=c.phone&&c.phone!=='—'?c.phone:'';
+  abrirModal(c.name, `
+    <div style="display:flex;gap:16px;align-items:center;margin-bottom:16px;">
+      <div style="width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,${CONFIG.colors.accent}33,${CONFIG.colors.accent}11);display:grid;place-items:center;font-family:var(--font-serif);font-size:22px;color:var(--accent);font-weight:600;">${esc(c.name.split(' ').map(w=>w[0]).slice(0,2).join(''))}</div>
+      <div style="display:grid;grid-template-columns:repeat(3,auto);gap:22px;">
+        <div><div style="${LBL}">Sesiones</div><div style="font-family:var(--font-serif);font-size:24px;">${completadas.length}</div></div>
+        <div><div style="${LBL}">Gastado</div><div style="font-family:var(--font-serif);font-size:24px;color:var(--accent);">${fmt(c.spent)}</div></div>
+        <div><div style="${LBL}">Próxima cita</div><div style="font-size:13px;margin-top:6px;">${proximas[0]?new Date(proximas[0].fecha).toLocaleString('es-ES',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'—'}</div></div>
+      </div>
+    </div>
+    <div class="ficha-tabs">
+      <button class="ficha-tab cal-on" onclick="fichaTab(this,'ft-datos')">Datos</button>
+      <button class="ficha-tab" onclick="fichaTab(this,'ft-historial')">Historial (${citas.length})</button>
+      <button class="ficha-tab" onclick="fichaTab(this,'ft-sesiones')">Sesiones (${completadas.length})</button>
+    </div>
+    <div id="ft-datos" class="ficha-panel">
+      <div class="two-col" style="gap:12px;">
+        ${campo('Nombre',`<input id="cfe-nombre" value="${esc(c.name)}" style="${INP}">`)}
+        ${campo('Teléfono',`<input id="cfe-tel" value="${esc(tel)}" style="${INP}">`)}
+        ${campo('Email',`<input id="cfe-email" value="${esc(c.email||'')}" style="${INP}">`)}
+        ${campo('Fecha de nacimiento',`<input type="date" id="cfe-nac" value="${c.fechaNacimiento||''}" style="${INP}">`)}
+      </div>
+      <div style="margin-top:12px;">${campo('Notas / información relevante (alergias, tipo de piel…)',`<textarea id="cfe-notas" rows="3" style="${INP}resize:vertical;">${esc(c.notas||'')}</textarea>`)}</div>
+      ${c.consentimiento?`<div style="font-size:11px;color:var(--txt3);margin-top:8px;">✓ Aceptó la política de privacidad el ${new Date(c.consentimiento).toLocaleString('es-ES')}</div>`:''}
+      <button class="btn btn-accent" style="margin-top:12px;" onclick="guardarFichaClienta('${c.id}')">Guardar datos</button>
+      <div style="${LBL}margin:18px 0 6px;">Próximas citas</div>
+      ${tabla(proximas,'No tiene citas próximas.')}
+    </div>
+    <div id="ft-historial" class="ficha-panel" style="display:none;">${tabla(pasadas,'Todavía no tiene citas pasadas.')}</div>
+    <div id="ft-sesiones" class="ficha-panel" style="display:none;">
+      ${Object.keys(porServicio).length?Object.values(porServicio).map(lista=>`
+        <div style="border:1px solid var(--border);border-left:4px solid ${colorCita(lista[0])};border-radius:8px;padding:12px 14px;margin-bottom:10px;">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;"><strong style="font-size:13px;">${esc(nombreServicioCita(lista[0]))}</strong><span style="font-size:12px;color:var(--txt3);">${lista.length} sesión${lista.length>1?'es':''}</span></div>
+          <ol style="margin:8px 0 0 18px;padding:0;font-size:12.5px;color:var(--txt2);line-height:1.7;">
+            ${lista.map(ct=>`<li>${new Date(ct.fecha).toLocaleDateString('es-ES',{day:'numeric',month:'short',year:'numeric'})}${ct.profesional?' · '+esc(ct.profesional):''}${ct.notas&&!/^Servicio/.test(ct.notas)?' · <span style="color:var(--txt3)">'+esc(ct.notas)+'</span>':''}</li>`).join('')}
+          </ol>
+        </div>`).join(''):'<p style="font-size:13px;color:var(--txt3);">Aún no hay sesiones completadas. Una cita cuenta como sesión cuando se marca como «Completada».</p>'}
+    </div>
+    <div style="display:flex;gap:8px;margin-top:18px;flex-wrap:wrap;">
+      <button class="btn btn-ghost" onclick="enviarWhatsApp('${esc(tel)}','Hola ${esc(c.name.split(' ')[0])}, te escribimos desde Divas Skin Care 💛')">💬 WhatsApp</button>
+      <button class="btn btn-ghost" onclick="openWaitlistForm({clientaId:'${c.id}'})">+ Lista de espera</button>
+      <button class="btn btn-accent" onclick="openBookingForm({clientaId:'${c.id}'})">+ Nueva cita</button>
+    </div>`);
+}
+function fichaTab(btn,id){
+  btn.parentElement.querySelectorAll('.ficha-tab').forEach(b=>b.classList.remove('cal-on')); btn.classList.add('cal-on');
+  document.querySelectorAll('.ficha-panel').forEach(p=>p.style.display=p.id===id?'':'none');
+}
+async function guardarFichaClienta(id){
+  const nombre=document.getElementById('cfe-nombre').value.trim();
+  if(!nombre){ toast('El nombre no puede quedar vacío'); return; }
+  const cambios={ nombre, telefono:document.getElementById('cfe-tel').value.trim()||null, email:document.getElementById('cfe-email').value.trim()||null,
+    fecha_nacimiento:document.getElementById('cfe-nac').value||null, notas:document.getElementById('cfe-notas').value.trim()||null };
+  const { data, error } = await sb.from('clientas').update(cambios).eq('id', id).select('id');
+  if(error||!data?.length){ toast('No se pudo guardar: '+(error?.message||'sin permiso')); return; }
+  await recargarTodo(); showClientById(id); toast('✓ Ficha guardada');
+}
+async function guardarFechaNacimiento(clienteId){ return guardarFichaClienta(clienteId); }
+
+// ═══════════════ SERVICIOS (catálogo editable) ═══════════════
+function renderCatalog(){
+  const lista=(CONFIG.catalog||[]).slice().sort((a,b)=>(a.bookable===false)-(b.bookable===false));
+  document.getElementById('catalog-grid').innerHTML=lista.map(p=>`
+    <div class="svc-admin ${p.bookable===false?'svc-off':''}" style="--c:${p.color||'#A9B6A2'}">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
+        <div style="font-size:13px;font-weight:700;color:var(--txt);">${esc(p.name)}</div>
+        ${p.bookable===false?'<span class="tag tag-danger">Inactivo</span>':'<span class="tag tag-ok">Activo</span>'}
+      </div>
+      <div style="font-size:11px;color:var(--txt3);margin:4px 0 10px;">${esc(p.categoria||'')} · ${p.duracionMin} min</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;">
+        <span style="font-size:15px;font-weight:800;color:var(--accent);">${fmt2(p.price).replace(',00','')}</span>
+        <span style="display:flex;gap:4px;">
+          ${p.id?`<button class="btn btn-ghost" style="padding:4px 10px;font-size:10px;" onclick="openServicioForm('${p.id}')">✎ Editar</button>
+          <button class="btn btn-ghost" style="padding:4px 10px;font-size:10px;" onclick="toggleServicioReservable('${p.id}',${p.bookable!==false})">${p.bookable!==false?'Desactivar':'Reactivar'}</button>`:''}
+        </span>
+      </div>
+    </div>`).join('');
+}
+async function toggleServicioReservable(servicioId, estaActivo){
+  const { data, error } = await sb.from('servicios').update({ reservable: !estaActivo }).eq('id', servicioId).select('id');
+  if(error||!data?.length){ toast('No se pudo actualizar: '+(error?.message||'sin permiso')); return; }
+  toast(estaActivo ? 'Servicio desactivado: ya no se puede reservar en la web; las citas antiguas lo conservan' : 'Servicio reactivado, vuelve a estar en la web');
+  await recargarTodo();
+}
+function openServicioForm(id){
+  const s=id?servicioDe(id):null;
+  const color=s?.color||PALETA_SERVICIOS[0];
+  const cats=[...new Set((CONFIG.catalog||[]).map(x=>x.categoria).filter(Boolean))];
+  abrirModal(s?'Editar servicio':'Nuevo servicio', `
+    <div style="display:flex;flex-direction:column;gap:14px;">
+      ${campo('Nombre',`<input id="sf-nombre" value="${esc(s?.name||'')}" placeholder="ej. Limpieza facial profunda" style="${INP}">`)}
+      <div class="two-col">
+        ${campo('Categoría',`<input id="sf-categoria" list="sf-cats" value="${esc(s?.categoria||'')}" style="${INP}"><datalist id="sf-cats">${cats.map(c=>`<option value="${esc(c)}">`).join('')}</datalist>`)}
+        ${campo('Duración (minutos)',`<input id="sf-duracion" type="number" min="5" step="5" value="${s?.duracionMin||60}" style="${INP}">`)}
+      </div>
+      ${campo('Precio (€)',`<input id="sf-precio" type="number" min="0" step="0.01" value="${s?.price??''}" style="${INP}">`)}
+      <div>
+        <div style="${LBL}margin-bottom:6px;">Color en calendario y reservas</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
+          ${PALETA_SERVICIOS.map(c=>`<button type="button" class="swatch ${c.toLowerCase()===color.toLowerCase()?'swatch-on':''}" style="background:${c}" onclick="elegirColorServicio('${c}')"></button>`).join('')}
+          <input type="color" id="sf-color" value="${color}" onchange="elegirColorServicio(this.value)" style="width:34px;height:28px;border:none;background:none;padding:0;cursor:pointer;" title="Otro color">
+        </div>
+      </div>
+      ${campo('Descripción (se muestra en la web)',`<textarea id="sf-desc" rows="3" style="${INP}resize:vertical;">${esc(s?.descripcion||'')}</textarea>`)}
+      <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--txt2);"><input type="checkbox" id="sf-reservable" ${s?.bookable===false?'':'checked'} style="width:16px;height:16px;"> Activo (se puede reservar en la web y en el panel)</label>
+      ${s?'<p style="font-size:11px;color:var(--txt3);margin:0;">Cambiar la duración afecta a las citas nuevas; las ya reservadas conservan la suya.</p>':''}
+    </div>
+    <p id="sf-error" style="color:#b3441e;font-size:12px;margin-top:8px;"></p>
+    <div style="display:flex;gap:8px;margin-top:18px;">
+      <button class="btn btn-ghost" style="flex:1" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-accent" style="flex:1" onclick="submitServicioForm(${s?`'${s.id}'`:''})">Guardar servicio</button>
+    </div>`);
+}
+function elegirColorServicio(c){
+  document.getElementById('sf-color').value=c;
+  document.querySelectorAll('.swatch').forEach(b=>b.classList.toggle('swatch-on', b.style.background && rgbAHex(b.style.background)===c.toLowerCase()));
+}
+function rgbAHex(rgb){ const m=rgb.match(/\d+/g); return m?'#'+m.slice(0,3).map(x=>(+x).toString(16).padStart(2,'0')).join(''):rgb; }
+async function submitServicioForm(id){
+  const nombre=document.getElementById('sf-nombre').value.trim();
+  const categoria=document.getElementById('sf-categoria').value.trim()||null;
+  const dur=parseInt(document.getElementById('sf-duracion').value,10);
+  const precio=parseFloat(String(document.getElementById('sf-precio').value).replace(',','.'));
+  const err=document.getElementById('sf-error');
+  if(!nombre){ err.textContent='Falta el nombre del servicio.'; return; }
+  if(!(dur>0)){ err.textContent='La duración tiene que ser un número de minutos.'; return; }
+  if(!(precio>=0)){ err.textContent='Falta el precio.'; return; }
+  const fila={ nombre, categoria, duracion_min:dur, duracion:fmtDuracion(dur), precio,
+    color:document.getElementById('sf-color').value, descripcion:document.getElementById('sf-desc').value.trim()||null,
+    reservable:document.getElementById('sf-reservable').checked };
+  err.textContent='Guardando...';
+  const q=id?sb.from('servicios').update(fila).eq('id',id):sb.from('servicios').insert({ ...fila, orden:(CONFIG.catalog||[]).length+1 });
+  const { data, error } = await q.select('id');
+  if(error||!data?.length){ err.textContent='No se pudo guardar: '+(error?.message||'sin permiso'); return; }
+  await recargarTodo(); closeModal(); toast(id?'✓ Servicio actualizado (también en la web)':'✓ Servicio creado');
+}
+
+// ═══════════════ LISTA DE ESPERA ═══════════════
+const RANGOS={ manana:['Mañana',9*60,15*60], tarde:['Tarde',16*60,19*60], todo:['Todo el día',9*60,19*60] };
+function rangoEspera(w){
+  const pref=w.hora_preferida?hhmmToMin(w.hora_preferida):null;
+  let desde=9*60, hasta=19*60;
+  if(w.hora_desde) desde=hhmmToMin(w.hora_desde);
+  if(w.hora_hasta) hasta=hhmmToMin(w.hora_hasta);
+  if(!w.hora_desde && !w.hora_hasta && RANGOS[w.rango_horario]){ desde=RANGOS[w.rango_horario][1]; hasta=RANGOS[w.rango_horario][2]; }
+  return { desde, hasta, pref: pref ?? desde };
+}
+function huecosParaEspera(w){
+  const svc=servicioDe(w.servicio_id); const dur=svc?.duracionMin||60;
+  const r=rangoEspera(w);
+  const dias=[];
+  if(w.fecha_deseada) dias.push(new Date(w.fecha_deseada+'T00:00:00'));
+  else for(let i=0;i<14;i++){ const d=new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate()+i); dias.push(d); }
+  for(const d of dias){
+    const h=huecosLibres(d, dur, {desde:r.desde, hasta:r.hasta});
+    if(h.length) return { dia:dayKey(d), hora:h.sort((a,b)=>Math.abs(a-r.pref)-Math.abs(b-r.pref))[0] };
+  }
+  return null;
+}
+let WL_FILTRO='activas';
+function renderWaitlist(){
+  const todas=CONFIG.waitlist||[];
+  const rows=todas.filter(w=>WL_FILTRO==='todas'||w.estado==='pendiente'||w.estado==='contactada');
+  const fb=document.getElementById('wl-filtro'); if(fb) fb.textContent=WL_FILTRO==='todas'?'Ver solo activas':'Ver también atendidas';
+  document.getElementById('waitlist-tbody').innerHTML = rows.length ? rows.map(w=>{
+    const svc=servicioDe(w.servicio_id);
+    const activa=w.estado==='pendiente'||w.estado==='contactada';
+    const h=activa?huecosParaEspera(w):null;
+    const r=rangoEspera(w);
+    const franja=w.hora_preferida?`${w.hora_preferida.slice(0,5)} (pref.)`:'';
+    const rango=(w.hora_desde||w.hora_hasta)?`${(w.hora_desde||'').slice(0,5)}–${(w.hora_hasta||'').slice(0,5)}`:(RANGOS[w.rango_horario]?.[0]||'');
+    return `<tr>
+      <td><strong>${esc(w.cliente_nombre)}</strong><div style="font-size:11px;color:var(--txt3);">${esc(w.cliente_telefono||'')}</div></td>
+      <td><span class="svc-dot" style="background:${svc?.color||'#ccc'}"></span>${esc(svc?.name||'-')}</td>
+      <td>${w.fecha_deseada?new Date(w.fecha_deseada+'T00:00:00').toLocaleDateString('es-ES',{weekday:'short',day:'numeric',month:'short'}):'Cualquier día'}</td>
+      <td>${esc([franja,rango].filter(Boolean).join(' · ')||'Cualquier hora')}</td>
+      <td style="max-width:180px;font-size:12px;">${esc(w.notas||'')}</td>
+      <td><select onchange="cambiarEstadoEspera('${w.id}',this.value)" style="${INP}padding:4px 6px;font-size:11px;">${['pendiente','contactada','agendada','descartada','atendida'].map(e=>`<option ${e===w.estado?'selected':''}>${e}</option>`).join('')}</select></td>
+      <td>${h?`<div style="font-size:11.5px;color:#16a34a;font-weight:700;margin-bottom:4px;">✓ Libre ${new Date(h.dia+'T00:00:00').toLocaleDateString('es-ES',{weekday:'short',day:'numeric'})} ${minToHHMM(h.hora)}</div>
+        <div style="display:flex;gap:4px;">${w.cliente_telefono?`<button class="btn btn-ghost" style="padding:3px 8px;font-size:10px;" onclick="avisarEspera('${w.id}','${h.dia}','${minToHHMM(h.hora)}')">💬 Avisar</button>`:''}<button class="btn btn-accent" style="padding:3px 8px;font-size:10px;" onclick="darCitaDesdeEspera('${w.id}','${h.dia}','${minToHHMM(h.hora)}')">Dar cita</button></div>`
+        :activa?'<span style="font-size:11px;color:var(--txt3);">Sin hueco todavía</span>':''}</td>
+    </tr>`; }).join('') : '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:24px;">Sin nadie en espera</td></tr>';
+}
+function toggleFiltroEspera(){ WL_FILTRO=WL_FILTRO==='todas'?'activas':'todas'; renderWaitlist(); }
+function openWaitlistForm(opts={}){
+  const cl=opts.clientaId?(CONFIG.clients||[]).find(c=>String(c.id)===String(opts.clientaId)):null;
+  const clientas=(CONFIG.clients||[]).slice().sort((a,b)=>a.name.localeCompare(b.name,'es'));
+  const services=(CONFIG.catalog||[]).filter(s=>s.id && s.bookable!==false).map(s=>`<option value="${s.id}" ${String(s.id)===String(opts.servicioId)?'selected':''}>${esc(s.name)} · ${s.duracionMin} min</option>`).join('');
+  abrirModal('Añadir a lista de espera', `
+    <div style="display:flex;flex-direction:column;gap:14px;">
+      ${campo('Clienta',`<select id="wf-clienta" style="${INP}" onchange="wfClienta()"><option value="">— Escribir a mano —</option>${clientas.map(c=>`<option value="${c.id}" ${cl&&c.id===cl.id?'selected':''}>${esc(c.name)}</option>`).join('')}</select>`)}
+      <div class="two-col">
+        ${campo('Nombre',`<input id="wf-nombre" value="${esc(cl?.name||opts.nombre||'')}" style="${INP}">`)}
+        ${campo('Teléfono',`<input id="wf-telefono" value="${esc((cl?.phone&&cl.phone!=='—'?cl.phone:'')||opts.telefono||'')}" style="${INP}">`)}
+      </div>
+      ${campo('Servicio que quiere',`<select id="wf-servicio" style="${INP}">${services}</select>`)}
+      <div class="two-col">
+        ${campo('Fecha deseada (vacío = cualquier día)',`<input type="date" id="wf-fecha" value="${opts.fecha||''}" style="${INP}">`)}
+        ${campo('Hora preferida',`<input type="time" id="wf-hora" value="${opts.hora||''}" step="900" style="${INP}">`)}
+      </div>
+      ${campo('Franja horaria',`<select id="wf-rango" style="${INP}" onchange="document.getElementById('wf-custom').style.display=this.value==='custom'?'grid':'none'">
+        <option value="todo">Todo el día</option><option value="manana">Mañana (9:00–15:00)</option><option value="tarde">Tarde (16:00–19:00)</option><option value="custom">Personalizada…</option></select>`)}
+      <div id="wf-custom" class="two-col" style="display:none;">
+        ${campo('Desde',`<input type="time" id="wf-desde" step="900" style="${INP}">`)}
+        ${campo('Hasta',`<input type="time" id="wf-hasta" step="900" style="${INP}">`)}
+      </div>
+      ${campo('Notas',`<textarea id="wf-notas" rows="2" style="${INP}"></textarea>`)}
+    </div>
+    <p id="wf-error" style="color:#b3441e;font-size:12px;margin-top:8px;"></p>
+    <div style="display:flex;gap:8px;margin-top:18px;">
+      <button class="btn btn-ghost" style="flex:1" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-accent" style="flex:1" onclick="submitWaitlistForm()">Guardar</button>
+    </div>`);
+}
+function wfClienta(){
+  const c=(CONFIG.clients||[]).find(x=>String(x.id)===document.getElementById('wf-clienta').value);
+  if(c){ document.getElementById('wf-nombre').value=c.name; document.getElementById('wf-telefono').value=c.phone&&c.phone!=='—'?c.phone:''; }
+}
+async function submitWaitlistForm(){
+  const rango=document.getElementById('wf-rango').value;
+  const fila={
+    clienta_id: document.getElementById('wf-clienta').value||null,
+    cliente_nombre: document.getElementById('wf-nombre').value.trim(),
+    cliente_telefono: document.getElementById('wf-telefono').value.trim()||null,
+    servicio_id: document.getElementById('wf-servicio').value||null,
+    fecha_deseada: document.getElementById('wf-fecha').value||null,
+    hora_preferida: document.getElementById('wf-hora').value||null,
+    rango_horario: rango==='custom'?null:rango,
+    hora_desde: rango==='custom'?(document.getElementById('wf-desde').value||null):null,
+    hora_hasta: rango==='custom'?(document.getElementById('wf-hasta').value||null):null,
+    notas: document.getElementById('wf-notas').value.trim()||null,
+    creado_por: CURRENT_USER.nombre||null
+  };
+  const err=document.getElementById('wf-error');
+  if(!fila.cliente_nombre){ err.textContent='Falta el nombre.'; return; }
+  if(!fila.servicio_id){ err.textContent='Elige el servicio.'; return; }
+  const { data, error } = await sb.from('lista_espera').insert(fila).select('id');
+  if(error||!data?.length){ err.textContent='No se pudo guardar: '+(error?.message||'sin permiso'); return; }
+  await recargarTodo(); closeModal(); toast('✓ Añadida a la lista de espera');
+}
+async function cambiarEstadoEspera(id, estado){
+  const { data, error } = await sb.from('lista_espera').update({ estado }).eq('id', id).select('id');
+  if(error||!data?.length){ toast('No se pudo actualizar: '+(error?.message||'sin permiso')); return; }
+  await recargarTodo();
+}
+async function marcarListaEsperaAtendida(id){ return cambiarEstadoEspera(id,'atendida'); }
+function avisarEspera(id, dia, hora){
+  const w=(CONFIG.waitlist||[]).find(x=>String(x.id)===String(id)); if(!w) return;
+  const svc=servicioDe(w.servicio_id);
+  const cuando=new Date(dia+'T00:00:00').toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long'});
+  enviarWhatsApp(w.cliente_telefono, `Hola ${(w.cliente_nombre||'').split(' ')[0]}, ¡se ha liberado una hora para ${svc?.name||'tu tratamiento'}! ${cuando} a las ${hora}. ¿Te la reservamos? 💛 Divas Skin Care`);
+  if(w.estado==='pendiente') cambiarEstadoEspera(id,'contactada');
+}
+function darCitaDesdeEspera(id, dia, hora){
+  const w=(CONFIG.waitlist||[]).find(x=>String(x.id)===String(id)); if(!w) return;
+  let clientaId=w.clienta_id;
+  if(!clientaId){ const c=(CONFIG.clients||[]).find(c=>{ const t=tel9(w.cliente_telefono); return t.length===9&&tel9(c.phone)===t; }); clientaId=c?.id; }
+  openBookingForm({ fecha:dia, hora, servicioId:w.servicio_id, clientaId, nombre:clientaId?null:w.cliente_nombre, telefono:w.cliente_telefono, listaEsperaId:w.id });
+}
+
+// ═══════════════ STOCK ═══════════════
+function renderStock(){
+  const items=CONFIG.stock||[];
+  const bajos=items.filter(i=>i.min!=null && i.qty<=i.min).length;
+  const total=items.reduce((a,i)=>a+(i.qty||0)*(i.cost||0),0);
+  const conMargen=items.filter(i=>i.price>0 && i.cost>0);
+  const margen=conMargen.length?Math.round(conMargen.reduce((a,i)=>a+(i.price-i.cost)/i.price,0)/conMargen.length*100):null;
+  document.getElementById('stock-stats').innerHTML=[
+    {label:'Referencias',value:items.length,trend:items.filter(i=>(i.qty||0)<=0).length+' sin stock',trendType:''},
+    {label:'Stock bajo',value:bajos,trend:bajos>0?'reponer':'todo en orden',trendType:bajos>0?'warn':'up'},
+    {label:'Valor de inventario',value:fmt(total),trend:'a precio de coste',trendType:''},
+    {label:'Margen medio',value:margen!=null?margen+'%':'—',trend:conMargen.length+' con coste',trendType:''}
+  ].map(s=>`<div class="stat-card"><div class="stat-label">${s.label}</div><div class="stat-val">${s.value}</div><div class="stat-trend ${s.trendType}">${s.trend}</div></div>`).join('');
+  document.getElementById('stock-tbody').innerHTML=items.map(s=>{
+    const low=s.min!=null && s.qty<=s.min;
+    return `<tr onclick="openArticuloForm('${s.id}')" style="cursor:pointer;">
+      <td>${s.image?`<img src="${s.image}" style="width:38px;height:38px;border-radius:6px;object-fit:cover;background:#f2f2e8" loading="lazy">`:''}</td>
+      <td><strong>${esc(s.name)}</strong>${s.marca?`<div style="font-size:10px;color:var(--txt3);">${esc(s.marca)}</div>`:''}</td>
+      <td style="font-family:monospace;font-size:11px;color:var(--txt3);">${esc(s.sku||'—')}</td>
+      <td><strong>${s.qty}</strong></td>
+      <td>${s.min??'—'}</td>
+      <td>${fmt2(s.cost)}</td>
+      <td><strong>${fmt2(s.price)}</strong></td>
+      <td style="font-size:11px;">${s.tipoImpuesto==='EXENTO'?'Exento':esc(s.tipoImpuesto)+' '+String(s.pctImpuesto).replace('.',',')+'%'}</td>
+      <td>${(s.qty||0)<=0?'<span class="tag tag-danger">Sin stock</span>':low?'<span class="tag tag-pending">Reponer</span>':'<span class="tag tag-ok">OK</span>'}</td>
+    </tr>`;
+  }).join('');
+}
+function exportarStockCSV(){
+  const items=CONFIG.stock||[];
+  if(!items.length){ toast('No hay artículos que exportar'); return; }
+  const rows=[['Artículo','Marca','SKU','Stock','Mínimo','Coste','Venta','Impuesto','%']];
+  items.forEach(s=>rows.push([s.name,s.marca||'',s.sku||'',s.qty,s.min??'',s.cost,s.price,s.tipoImpuesto,s.pctImpuesto]));
+  const csv=rows.map(r=>r.map(v=>`"${String(v??'').replace(/"/g,'""')}"`).join(',')).join('\n');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'})); a.download='stock-divas-skin-care.csv';
+  document.body.appendChild(a); a.click(); a.remove();
+  toast('✓ CSV descargado');
+}
+function opcionesPct(tipo, actual){ return (IMPUESTOS[tipo]||[0]).map(p=>`<option value="${p}" ${Number(p)===Number(actual)?'selected':''}>${String(p).replace('.',',')}%</option>`).join(''); }
+function openArticuloForm(id){
+  const s=id?(CONFIG.stock||[]).find(x=>String(x.id)===String(id)):null;
+  const tipo=s?.tipoImpuesto||'IGIC';
+  abrirModal(s?'Editar artículo':'Nuevo artículo', `
+    <div style="display:flex;flex-direction:column;gap:14px;">
+      ${campo('Nombre',`<input id="af-nombre" value="${esc(s?.name||'')}" placeholder="ej. Aloe Vera 500ml" style="${INP}">`)}
+      <div class="two-col">
+        ${campo('Marca',`<input id="af-marca" value="${esc(s?.marca||'')}" style="${INP}">`)}
+        ${campo('SKU',`<input id="af-sku" value="${esc(s?.sku||'')}" placeholder="opcional" style="${INP}">`)}
+      </div>
+      <div class="two-col">
+        ${campo(s?'Stock actual':'Stock inicial',`<input id="af-cantidad" type="number" min="0" step="1" value="${s?.qty??0}" style="${INP}">`)}
+        ${s?campo('Añadir unidades recibidas',`<input id="af-sumar" type="number" min="0" step="1" placeholder="0" style="${INP}">`):campo('Mínimo (opcional)',`<input id="af-minimo" type="number" min="0" placeholder="sin mínimo" style="${INP}">`)}
+      </div>
+      ${s?campo('Mínimo (opcional, para avisar de reponer)',`<input id="af-minimo" type="number" min="0" value="${s.min??''}" placeholder="sin mínimo" style="${INP}">`):''}
+      <div class="two-col">
+        ${campo('Coste (€)',`<input id="af-coste" type="number" min="0" step="0.01" value="${s?.cost??''}" style="${INP}">`)}
+        ${campo('Precio de venta (€, impuesto incluido)',`<input id="af-precio" type="number" min="0" step="0.01" value="${s?.price??''}" style="${INP}">`)}
+      </div>
+      <div class="two-col">
+        ${campo('Impuesto',`<select id="af-impuesto" style="${INP}" onchange="document.getElementById('af-pct').innerHTML=opcionesPct(this.value,this.value==='IGIC'?7:this.value==='IVA'?21:0)">${['IGIC','IVA','EXENTO'].map(t=>`<option value="${t}" ${t===tipo?'selected':''}>${t==='EXENTO'?'Exento':t}</option>`).join('')}</select>`)}
+        ${campo('Tipo (%)',`<select id="af-pct" style="${INP}">${opcionesPct(tipo, s?.pctImpuesto??0)}</select>`)}
+      </div>
+      <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--txt2);"><input type="checkbox" id="af-web" ${s?.visibleWeb?'checked':''} style="width:16px;height:16px;"> Publicar en la tienda web (cuando se active)</label>
+    </div>
+    <p id="af-error" style="color:#b3441e;font-size:12px;margin-top:8px;"></p>
+    <div style="display:flex;gap:8px;margin-top:18px;">
+      <button class="btn btn-ghost" style="flex:1" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-accent" style="flex:1" onclick="submitArticuloForm(${s?`'${s.id}'`:''})">Guardar artículo</button>
+    </div>`);
+}
+async function submitArticuloForm(id){
+  const num=(elId)=>{ const v=String(document.getElementById(elId)?.value??'').trim().replace(',','.'); return v===''?null:Number(v); };
+  const nombre=document.getElementById('af-nombre').value.trim();
+  const err=document.getElementById('af-error');
+  if(!nombre){ err.textContent='Falta el nombre del artículo.'; return; }
+  const cantidad=(num('af-cantidad')||0)+(num('af-sumar')||0);
+  const tipo=document.getElementById('af-impuesto').value;
+  const fila={ nombre, marca:document.getElementById('af-marca').value.trim()||null, sku:document.getElementById('af-sku').value.trim()||null,
+    cantidad, minimo:num('af-minimo'), coste:num('af-coste')||0, precio:num('af-precio')||0,
+    tipo_impuesto:tipo, porcentaje_impuesto:tipo==='EXENTO'?0:(num('af-pct')||0), visible_web:document.getElementById('af-web').checked };
+  err.textContent='Guardando...';
+  const q=id?sb.from('stock').update(fila).eq('id',id):sb.from('stock').insert(fila);
+  const { data, error } = await q.select('id');
+  if(error||!data?.length){ err.textContent='No se pudo guardar: '+(error?.message||'sin permiso'); return; }
+  await recargarTodo(); closeModal(); toast(id?'✓ Artículo actualizado':'✓ Artículo añadido');
+}
+
+// ═══════════════ TPV ═══════════════
+function posFilter(q){
+  q=(q||'').toLowerCase();
+  const source=POS_TAB==='productos'?(CONFIG.stock||[]):(CONFIG.catalog||[]).filter(s=>s.bookable!==false);
+  const items=source.filter(c=>!q||(c.name+' '+(c.marca||'')).toLowerCase().includes(q));
+  POS_VISIBLE=items;
+  document.getElementById('pos-grid').innerHTML=items.map((p,i)=>{
+    const sinStock=POS_TAB==='productos' && (p.qty||0)<=0;
+    return `<div onclick="${sinStock?'':`posAdd(${i})`}" class="pos-item ${sinStock?'pos-off':''}" style="${POS_TAB==='servicios'?`border-top:3px solid ${p.color||'#A9B6A2'};`:''}">
+      ${p.image?`<img src="${p.image}" style="width:100%;aspect-ratio:1/1;object-fit:cover;display:block;background:#f2f2e8" loading="lazy">`:''}
+      <div style="padding:8px 10px;">
+        <div style="font-size:11px;font-weight:600;color:var(--txt);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${esc(p.name)}">${esc(p.name)}</div>
+        <div style="font-size:12px;font-weight:700;color:var(--accent);">${fmt2(p.price)}</div>
+        ${POS_TAB==='productos'?`<div style="font-size:10px;color:var(--txt3);">${sinStock?'Sin stock':p.qty+' en stock'} · ${p.tipoImpuesto==='EXENTO'?'Exento':p.tipoImpuesto+' '+String(p.pctImpuesto).replace('.',',')+'%'}</div>`:`<div style="font-size:10px;color:var(--txt3);">${p.duracionMin} min</div>`}
+      </div>
+    </div>`;
+  }).join('');
+}
+function posAdd(i){
+  const p=POS_VISIBLE[i];
+  const key=POS_TAB+':'+p.id;
+  const existing=POS_CART.find(c=>c.key===key);
+  if(POS_TAB==='productos' && (existing?existing.qty:0)>=p.qty){ toast('No queda más stock de este producto'); return; }
+  if(existing) existing.qty++;
+  else POS_CART.push({ key, type:POS_TAB==='productos'?'producto':'servicio', stockId:POS_TAB==='productos'?p.id:null, servicioId:POS_TAB==='servicios'?p.id:null,
+    name:p.name, price:Number(p.price)||0, qty:1, maxQty:POS_TAB==='productos'?p.qty:null,
+    tipoImpuesto:POS_TAB==='productos'?(p.tipoImpuesto||'IGIC'):'IGIC', pctImpuesto:POS_TAB==='productos'?Number(p.pctImpuesto)||0:0 });
+  posRedrawCart();
+}
+function posCambiarQty(i, d){
+  const c=POS_CART[i]; if(!c) return;
+  const n=c.qty+d;
+  if(n<=0){ POS_CART.splice(i,1); }
+  else if(c.maxQty!=null && n>c.maxQty){ toast('No queda más stock de este producto'); return; }
+  else c.qty=n;
+  posRedrawCart();
+}
+function posCambiarPrecio(i, v){ const c=POS_CART[i]; if(!c) return; const n=parseFloat(String(v).replace(',','.')); if(n>=0){ c.price=n; posRedrawCart(true); } }
+function posTotales(){
+  let total=0, base=0; const porTipo={};
+  POS_CART.forEach(c=>{
+    const linea=Math.round(c.price*c.qty*100)/100;
+    const b=Math.round(linea/(1+c.pctImpuesto/100)*100)/100;
+    total+=linea; base+=b;
+    if(c.pctImpuesto>0){ const k=c.tipoImpuesto+' '+String(c.pctImpuesto).replace('.',',')+'%'; porTipo[k]=(porTipo[k]||0)+(linea-b); }
+  });
+  return { total:Math.round(total*100)/100, base:Math.round(base*100)/100, impuestos:Math.round((total-base)*100)/100, porTipo };
+}
+function posRedrawCart(soloTotales){
+  const cart=document.getElementById('pos-cart');
+  if(!soloTotales){
+    cart.innerHTML=!POS_CART.length?'<div style="text-align:center;padding:30px 10px;color:var(--txt3);font-size:13px;">Carrito vacío · pulsa un artículo para añadirlo</div>'
+    :POS_CART.map((c,i)=>`
+      <div style="display:flex;align-items:center;gap:6px;padding:8px 0;border-bottom:1px solid var(--border2);">
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:12.5px;font-weight:600;color:var(--txt);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(c.name)}</div>
+          <div style="font-size:10.5px;color:var(--txt3);">${c.pctImpuesto>0?c.tipoImpuesto+' '+String(c.pctImpuesto).replace('.',',')+'% incl.':c.tipoImpuesto==='EXENTO'?'Exento':c.tipoImpuesto+' 0%'}</div>
+        </div>
+        <button class="pos-q" onclick="posCambiarQty(${i},-1)">−</button><span style="min-width:16px;text-align:center;font-size:13px;">${c.qty}</span><button class="pos-q" onclick="posCambiarQty(${i},1)">+</button>
+        <input value="${c.price}" onchange="posCambiarPrecio(${i},this.value)" title="Precio unitario" style="width:58px;${INP}padding:4px 6px;font-size:12px;text-align:right;">
+      </div>`).join('');
+  }
+  const t=posTotales();
+  document.getElementById('pos-count').textContent=POS_CART.reduce((a,c)=>a+c.qty,0)+' artículos';
+  document.getElementById('pos-sub').textContent=fmt2(t.base);
+  document.getElementById('pos-vat').textContent=Object.keys(t.porTipo).length?Object.entries(t.porTipo).map(([k,v])=>`${k}: ${fmt2(v)}`).join(' · '):'0,00€ (exento)';
+  document.getElementById('pos-total').textContent=fmt2(t.total);
+}
+async function posPay(method){
+  if(!POS_CART.length){ toast('El carrito está vacío'); return; }
+  const items=POS_CART.map(c=>({ type:c.type, stock_id:c.stockId, servicio_id:c.servicioId, name:c.name, qty:c.qty, price:c.price, tipo_impuesto:c.tipoImpuesto, porcentaje_impuesto:c.pctImpuesto }));
+  const t=posTotales();
+  const usuario=CURRENT_USER.nombre||null;
+  toast('Guardando venta...');
+  const { data:ventaId, error } = await sb.rpc('registrar_venta', { p_items:items, p_metodo:method, p_usuario:usuario, p_cliente_email:null });
+  if(error||!ventaId){ toast('No se pudo guardar la venta: '+textoError(error?.message)); await recargarTodo(); return; }
+  await recargarTodo();
+  const num='RCP-'+String(ventaId).slice(0,8).toUpperCase();
+  ULTIMO_RECIBO_TEXTO='Recibo '+num+' · Divas Skin Care\n'+items.map(c=>c.qty+' × '+c.name+' · '+fmt2(c.price*c.qty)).join('\n')+'\nTotal: '+fmt2(t.total)+' ('+METODOS_PAGO[method]+')';
+  abrirModal('Recibo '+num, `
+    <div style="text-align:center;margin-bottom:18px;padding-bottom:14px;border-bottom:1px dashed var(--border);">
+      <div style="font-family:var(--font-serif);font-size:22px;color:var(--txt);font-weight:500;">${CONFIG.biz}</div>
+      <div style="font-size:11px;color:var(--txt3);margin-top:4px;letter-spacing:.06em;">Calle Arguijón 1 · La Laguna, Tenerife</div>
+      <div style="font-size:10px;color:var(--txt3);margin-top:2px;">NIF: 42418484K</div>
+    </div>
+    <div style="font-size:11px;color:var(--txt3);display:flex;justify-content:space-between;margin-bottom:12px;">
+      <span>${new Date().toLocaleString('es-ES')}</span><span>${METODOS_PAGO[method]} · atendida por ${esc(usuario||'-')}</span>
+    </div>
+    ${items.map(c=>`<div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0;color:var(--txt);"><span>${c.qty} × ${esc(c.name)}</span><span style="font-weight:600;">${fmt2(c.price*c.qty)}</span></div>`).join('')}
+    <hr style="margin:14px 0 8px;border:none;border-top:1px solid var(--border);">
+    <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--txt2);"><span>Base imponible</span><span>${fmt2(t.base)}</span></div>
+    ${Object.keys(t.porTipo).length?Object.entries(t.porTipo).map(([k,v])=>`<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--txt2);margin-top:4px;"><span>${k}</span><span>${fmt2(v)}</span></div>`).join(''):'<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--txt2);margin-top:4px;"><span>Impuestos</span><span>Exento</span></div>'}
+    <div style="display:flex;justify-content:space-between;font-family:var(--font-serif);font-size:22px;color:var(--accent);font-weight:600;margin-top:10px;padding-top:10px;border-top:1px solid var(--border);"><span>Total</span><span>${fmt2(t.total)}</span></div>
+    <div style="margin-top:20px;text-align:center;font-size:10px;color:var(--txt3);letter-spacing:.18em;text-transform:uppercase;">Gracias · Hasta pronto</div>
+    <div style="display:flex;gap:8px;margin-top:18px;">
+      <button class="btn btn-ghost" style="flex:1" onclick="enviarWhatsApp('',ULTIMO_RECIBO_TEXTO)">💬 Enviar</button>
+      <button class="btn btn-ghost" style="flex:1" onclick="window.print()">🖨 Imprimir</button>
+      <button class="btn btn-accent" style="flex:1" onclick="closeModal()">Hecho</button>
+    </div>`);
+  POS_CART=[]; posRedrawCart(); posFilter('');
+  toast('✓ Venta guardada');
+}
+
+// ═══════════════ CAJA ═══════════════
+function cajaAbierta(){ return (CONFIG.cierresCaja||[]).find(c=>c.estado==='abierta'); }
+// Ventas del turno: desde la apertura (o desde el último cierre de hoy / inicio del día)
+function ventasDelTurno(){
+  const hoy0=new Date(); hoy0.setHours(0,0,0,0);
+  const ab=cajaAbierta();
+  let desde=hoy0;
+  const cierresHoy=(CONFIG.cierresCaja||[]).filter(c=>c.estado!=='abierta' && c.hora_cierre && new Date(c.hora_cierre)>=hoy0);
+  cierresHoy.forEach(c=>{ const t=new Date(c.hora_cierre); if(t>desde) desde=t; });
+  if(ab?.hora_apertura && new Date(ab.hora_apertura)<desde) desde=new Date(ab.hora_apertura);
+  return { desde, ventas:(CONFIG.ventasReales||[]).filter(v=>new Date(v.created_at)>=desde).sort((a,b)=>new Date(b.created_at)-new Date(a.created_at)) };
+}
+function resumenMetodos(ventas){
+  const r={};
+  ventas.forEach(v=>{ const m=String(v.metodo_pago||'otros').toLowerCase().replace('apple pay','tarjeta'); r[m]=(r[m]||0)+Number(v.total||0); });
+  return r;
+}
+function renderCaja(){
+  const host=document.getElementById('caja-host'); if(!host) return;
+  const ab=cajaAbierta();
+  const { desde, ventas }=ventasDelTurno();
+  const met=resumenMetodos(ventas);
+  const total=ventas.reduce((a,v)=>a+Number(v.total||0),0);
+  const fondo=Number(ab?.fondo_inicial||0);
+  const esperado=Math.round((fondo+(met.efectivo||0))*100)/100;
+  host.innerHTML=`
+    <div class="two-col" style="align-items:start;">
+      <div class="card" style="margin-bottom:0;">
+        <div class="card-hd"><div class="card-hd-title">${ab?'Caja abierta':'Caja cerrada'}</div><span class="tag tag-${ab?'ok':'info'}">${ab?'Abierta desde '+new Date(ab.hora_apertura).toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'})+' · '+esc(ab.usuario_apertura||''):'Sin abrir'}</span></div>
+        <div style="padding:18px;display:flex;flex-direction:column;gap:12px;">
+          ${!ab?`
+            <p style="font-size:13px;color:var(--txt2);margin:0;">Abre la caja al empezar el día indicando el efectivo que hay en el cajón (fondo de cambio).</p>
+            ${campo('Fondo inicial en efectivo (€)',`<input id="caja-fondo" type="number" step="0.01" min="0" placeholder="0,00" style="${INP}">`)}
+            <button class="btn btn-accent" onclick="abrirCaja()">Abrir caja como <span class="js-usuario-actual">${esc(CURRENT_USER.nombre)}</span></button>
+            <p style="font-size:11px;color:var(--txt3);margin:0;">También puedes cerrar sin haberla abierto: se toma fondo 0 y las ventas de hoy.</p>`:''}
+          <div style="${LBL}margin-top:4px;">Cierre</div>
+          <div class="caja-linea"><span>Fondo inicial</span><strong>${fmt2(fondo)}</strong></div>
+          <div class="caja-linea"><span>Ventas en efectivo</span><strong>${fmt2(met.efectivo||0)}</strong></div>
+          <div class="caja-linea caja-total"><span>Efectivo esperado en cajón</span><strong id="caja-esperado">${fmt2(esperado)}</strong></div>
+          ${campo('Efectivo contado (€)',`<input id="caja-contado" type="number" step="0.01" placeholder="0,00" oninput="cajaDiferencia(${esperado})" style="${INP}font-size:16px;">`)}
+          <div class="caja-linea"><span>Diferencia</span><strong id="caja-dif">—</strong></div>
+          ${campo('Observaciones',`<textarea id="caja-obs" rows="2" style="${INP}"></textarea>`)}
+          <button class="btn btn-accent" onclick="cerrarCaja()">Cerrar caja como <span class="js-usuario-actual">${esc(CURRENT_USER.nombre)}</span></button>
+        </div>
+      </div>
+      <div class="card" style="margin-bottom:0;">
+        <div class="card-hd"><div class="card-hd-title">Ventas del turno</div><span style="font-size:11px;color:var(--txt3);">desde ${desde.toLocaleString('es-ES',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</span></div>
+        <div style="padding:14px 18px;">
+          <div class="caja-linea"><span>Nº de ventas</span><strong>${ventas.length}</strong></div>
+          ${Object.keys(METODOS_PAGO).concat(Object.keys(met).filter(k=>!METODOS_PAGO[k])).map(k=>`<div class="caja-linea"><span>${METODOS_PAGO[k]||k}</span><strong>${fmt2(met[k]||0)}</strong></div>`).join('')}
+          <div class="caja-linea caja-total"><span>Total vendido</span><strong>${fmt2(total)}</strong></div>
+        </div>
+        <div class="table-wrap" style="max-height:300px;overflow:auto;"><table><thead><tr><th>Hora</th><th>Usuario</th><th>Método</th><th>Total</th></tr></thead><tbody>
+          ${ventas.length?ventas.map(v=>`<tr><td>${new Date(v.created_at).toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'})}</td><td>${esc(v.usuario||'—')}</td><td>${esc(METODOS_PAGO[String(v.metodo_pago).toLowerCase()]||v.metodo_pago)}</td><td><strong>${fmt2(v.total)}</strong></td></tr>`).join(''):'<tr><td colspan="4" style="text-align:center;color:var(--txt3);padding:18px;">Sin ventas en este turno</td></tr>'}
+        </tbody></table></div>
+      </div>
+    </div>`;
+  const cierres=(CONFIG.cierresCaja||[]).filter(c=>c.estado!=='abierta');
+  document.getElementById('caja-tbody').innerHTML = cierres.length ? cierres.map(c=>`
+    <tr>
+      <td>${c.fecha?new Date(c.fecha+'T00:00:00').toLocaleDateString('es-ES'):'-'}</td>
+      <td style="font-size:11.5px;">${c.hora_apertura?new Date(c.hora_apertura).toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'}):'—'} → ${c.hora_cierre?new Date(c.hora_cierre).toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'}):'—'}</td>
+      <td>${esc(c.usuario||'-')}</td>
+      <td>${c.num_ventas??'—'} · ${fmt2(c.ventas_total||0)}</td>
+      <td style="font-size:11.5px;">${Object.entries(c.otros_metodos||{}).map(([k,v])=>`${METODOS_PAGO[k]||k}: ${fmt2(v)}`).join('<br>')||'—'}</td>
+      <td>${fmt2(c.efectivo_esperado||0)}</td>
+      <td>${fmt2(c.efectivo_contado||0)}</td>
+      <td style="font-weight:700;color:${Number(c.diferencia)<0?'#b3441e':Number(c.diferencia)>0?'#16a34a':'inherit'}">${Number(c.diferencia)>0?'+':''}${fmt2(c.diferencia||0)}</td>
+      <td style="font-size:11.5px;max-width:160px;">${esc(c.observaciones||'')}</td>
+    </tr>`).join('') : '<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:24px;">Sin cierres todavía</td></tr>';
+}
+function cajaDiferencia(esperado){
+  const v=parseFloat(String(document.getElementById('caja-contado').value).replace(',','.'));
+  const el=document.getElementById('caja-dif');
+  if(isNaN(v)){ el.textContent='—'; el.style.color=''; return; }
+  const d=Math.round((v-esperado)*100)/100;
+  el.textContent=(d>0?'+':'')+fmt2(d); el.style.color=d<0?'#b3441e':d>0?'#16a34a':'';
+}
+async function abrirCaja(){
+  if(cajaAbierta()){ toast('Ya hay una caja abierta'); return; }
+  const fondo=parseFloat(String(document.getElementById('caja-fondo').value||'0').replace(',','.'))||0;
+  const { data, error } = await sb.from('cierres_caja').insert({ estado:'abierta', fecha:dayKey(new Date()), usuario_apertura:CURRENT_USER.nombre||null, hora_apertura:new Date().toISOString(), fondo_inicial:fondo }).select('id');
+  if(error||!data?.length){ toast('No se pudo abrir la caja: '+(error?.message||'sin permiso')); return; }
+  await recargarTodo(); toast('✓ Caja abierta');
+}
+async function cerrarCaja(){
+  const raw=String(document.getElementById('caja-contado').value).trim();
+  if(raw===''){ toast('Introduce el efectivo contado'); return; }
+  const contado=parseFloat(raw.replace(',','.'))||0;
+  const ab=cajaAbierta();
+  const { ventas }=ventasDelTurno();
+  const met=resumenMetodos(ventas);
+  const fondo=Number(ab?.fondo_inicial||0);
+  const esperado=Math.round((fondo+(met.efectivo||0))*100)/100;
+  const fila={ estado:'cerrada', usuario:CURRENT_USER.nombre||null, hora_cierre:new Date().toISOString(),
+    ventas_total:Math.round(ventas.reduce((a,v)=>a+Number(v.total||0),0)*100)/100, num_ventas:ventas.length,
+    efectivo_esperado:esperado, efectivo_contado:contado, diferencia:Math.round((contado-esperado)*100)/100,
+    otros_metodos:met, observaciones:document.getElementById('caja-obs').value.trim()||null };
+  const q=ab?sb.from('cierres_caja').update(fila).eq('id',ab.id):sb.from('cierres_caja').insert({ ...fila, fecha:dayKey(new Date()), fondo_inicial:0 });
+  const { data, error } = await q.select('id');
+  if(error||!data?.length){ toast('No se pudo guardar el cierre: '+(error?.message||'sin permiso')); return; }
+  await recargarTodo(); toast('✓ Caja cerrada · diferencia '+fmt2(fila.diferencia));
+}
+
+// ═══════════════ NOTIFICACIONES ═══════════════
+const TIPOS_NOTIF={ nueva_cita:['📅','Nueva reserva'], cita_modificada:['✎','Cita modificada'], cita_cancelada:['✕','Cita cancelada'], deposito_pagado:['💳','Depósito pagado'], lista_espera:['⏳','Lista de espera'] };
+function renderNotificaciones(){
+  const rows=CONFIG.notificacionesReales||[];
+  const sinLeer=rows.filter(n=>!n.leida).length;
+  const badge=document.getElementById('bell-count');
+  if(badge){ badge.textContent=sinLeer; badge.style.display=sinLeer?'':'none'; }
+  const nb=document.getElementById('nav-notif-count');
+  if(nb){ nb.textContent=sinLeer; nb.style.display=sinLeer?'':'none'; }
+  document.getElementById('notif-tbody').innerHTML = rows.length ? rows.map(n=>{
+    const t=TIPOS_NOTIF[n.tipo]||['•',n.tipo||'-'];
+    return `<tr style="cursor:pointer;${n.leida?'opacity:.55;':''}" onclick="abrirNotificacion('${n.id}')">
+      <td>${n.leida?'':'<span class="notif-dot"></span>'}</td>
+      <td style="white-space:nowrap;">${t[0]} ${esc(t[1])}</td>
+      <td>${esc(n.mensaje||'-')}</td>
+      <td style="white-space:nowrap;font-size:11.5px;">${n.created_at?new Date(n.created_at).toLocaleString('es-ES',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'-'}</td>
+      <td>${!n.leida?`<button class="btn btn-ghost" style="padding:4px 10px;font-size:10px;" onclick="event.stopPropagation();marcarNotificacionLeida('${n.id}')">Marcar leída</button>`:''}</td>
+    </tr>`; }).join('') : '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:24px;">Sin notificaciones</td></tr>';
+  const bp=document.getElementById('bell-panel');
+  if(bp) bp.innerHTML=(rows.slice(0,8).map(n=>`<div class="bell-item" style="${n.leida?'opacity:.55':''}" onclick="abrirNotificacion('${n.id}')"><div>${(TIPOS_NOTIF[n.tipo]||['•'])[0]} ${esc(n.mensaje||'')}</div><div class="bi-when">${new Date(n.created_at).toLocaleString('es-ES',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</div></div>`).join('')||'<div class="bell-item">Sin notificaciones</div>')
+    +`<div class="bell-item" style="text-align:center;font-weight:700;color:var(--accent);" onclick="goPage('notificaciones')">Ver todas →</div>`;
+}
+async function abrirNotificacion(id){
+  const n=(CONFIG.notificacionesReales||[]).find(x=>String(x.id)===String(id)); if(!n) return;
+  if(!n.leida) await marcarNotificacionLeida(id);
+  if(n.cita_id && (CONFIG.citasWeb||[]).some(c=>String(c.id)===String(n.cita_id))){
+    if(n.tipo==='cita_cancelada') mostrarCompatiblesHueco(n.cita_id); else abrirDetalleCita(n.cita_id);
+  } else if(n.tipo==='lista_espera') goPage('waitlist');
+}
+async function marcarNotificacionLeida(id){
+  const { data, error } = await sb.from('notificaciones').update({ leida: true }).eq('id', id).select('id');
+  if(error||!data?.length){ toast('No se pudo actualizar: '+(error?.message||'sin permiso')); return; }
+  await recargarTodo();
+}
+async function marcarTodasLeidas(){
+  const { error } = await sb.from('notificaciones').update({ leida:true }).eq('leida', false);
+  if(error){ toast('No se pudo actualizar: '+error.message); return; }
+  await recargarTodo(); toast('✓ Todas marcadas como leídas');
+}
+function toggleBell(e){
+  e.stopPropagation();
+  const p=document.getElementById('bell-panel');
+  renderNotificaciones();
+  p.classList.toggle('open');
+  if(p.classList.contains('open')) document.addEventListener('click',function h(){ p.classList.remove('open'); document.removeEventListener('click',h); });
+}
+
+// ═══════════════ EQUIPO ═══════════════
+function renderTeam(){
+  const t=CONFIG.equipo||[];
+  const hoyK=dayKey(new Date());
+  document.getElementById('team-count').textContent=t.length+' usuarios';
+  document.getElementById('team-grid').innerHTML=t.length?t.map(m=>{
+    const citasHoy=(CONFIG.citasWeb||[]).filter(c=>citaActiva(c)&&dayKey(c.fecha)===hoyK&&c.profesional===m.nombre).length;
+    const ventasHoy=(CONFIG.ventasReales||[]).filter(v=>dayKey(v.created_at)===hoyK&&v.usuario===m.nombre).reduce((a,v)=>a+Number(v.total||0),0);
+    return `<div style="padding:14px;border:1px solid var(--border);border-radius:10px;background:var(--surface);">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+        <div style="width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,${CONFIG.colors.accent}33,${CONFIG.colors.accent}11);display:grid;place-items:center;font-family:var(--font-serif);font-weight:600;color:var(--accent);font-size:16px;">${esc(m.nombre.split(' ').map(w=>w[0]).slice(0,2).join(''))}</div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:13px;font-weight:600;color:var(--txt);">${esc(m.nombre)}${m.user_id===CURRENT_USER.id?' <span style="font-size:10px;color:var(--txt3);">(tú)</span>':''}</div>
+          <div style="font-size:11px;color:var(--txt3);">${esc(ROLES[m.rol]||m.rol)} · ${esc(m.email||'')}</div>
+        </div>
+        ${m.user_id===CURRENT_USER.id||CURRENT_USER.rol==='propietaria'||CURRENT_USER.rol==='soporte'?`<button class="btn btn-ghost" style="padding:4px 8px;font-size:10px;" onclick="renombrarUsuario('${m.user_id}')">✎</button>`:''}
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--txt3);">
+        <span>Hoy: <strong style="color:var(--txt);">${citasHoy} citas</strong></span>
+        <span>Ventas hoy: <strong style="color:#16a34a;">${fmt2(ventasHoy)}</strong></span>
+      </div>
+    </div>`; }).join(''):'<p style="color:var(--txt3);font-size:13px;">Sin usuarios registrados.</p>';
+}
+function renombrarUsuario(uid){
+  const m=(CONFIG.equipo||[]).find(x=>x.user_id===uid); if(!m) return;
+  abrirModal('Nombre de usuario', `${campo('Nombre que aparece en ventas, citas y caja',`<input id="ru-nombre" value="${esc(m.nombre)}" style="${INP}">`)}
+    <div style="display:flex;gap:8px;margin-top:18px;"><button class="btn btn-ghost" style="flex:1" onclick="closeModal()">Cancelar</button><button class="btn btn-accent" style="flex:1" onclick="guardarNombreUsuario('${uid}')">Guardar</button></div>`);
+}
+async function guardarNombreUsuario(uid){
+  const nombre=document.getElementById('ru-nombre').value.trim(); if(!nombre) return;
+  const { data, error } = await sb.from('panel_usuarios').update({ nombre }).eq('user_id', uid).select('user_id');
+  if(error||!data?.length){ toast('No se pudo guardar: '+(error?.message||'sin permiso')); return; }
+  await cargarUsuarioActual(); await recargarTodo(); closeModal(); toast('✓ Nombre actualizado');
+}
+
+async function avanzarCita(id,estado){ return cambiarEstadoCita(id,estado); }
 </script>
 </body>
 </html>
