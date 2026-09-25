@@ -465,7 +465,7 @@ footer{background:var(--primary-dk);color:var(--cream);padding:0 0 34px;}
         </div>
       </div>
       <div class="svc-card">
-        <div class="svc-img"><img src="img/real-radiofrecuencia-corporal.jpeg" alt="Radiofrecuencia + Presoterapia"></div>
+        <div class="svc-img"><video autoplay muted loop playsinline poster="img/svc-rf-presoterapia-poster.jpg" style="object-position:center 50%"><source src="img/svc-rf-presoterapia.mp4" type="video/mp4"></video></div>
         <div class="svc-body">
           <div class="svc-cat">Reductor corporal</div>
           <h3>Radiofrecuencia + Presoterapia</h3>
@@ -474,7 +474,7 @@ footer{background:var(--primary-dk);color:var(--cream);padding:0 0 34px;}
         </div>
       </div>
       <div class="svc-card">
-        <div class="svc-img"><img src="img/real-cavitacion-corporal.jpeg" alt="Cavitación corporal en cabina" style="object-position:30% 40%;"></div>
+        <div class="svc-img"><video autoplay muted loop playsinline poster="img/svc-cavitacion-presoterapia-poster.jpg" style="object-position:center 50%"><source src="img/svc-cavitacion-presoterapia.mp4" type="video/mp4"></video></div>
         <div class="svc-body">
           <div class="svc-cat">Reductor corporal</div>
           <h3>Cavitación corporal + Presoterapia</h3>
@@ -510,7 +510,7 @@ footer{background:var(--primary-dk);color:var(--cream);padding:0 0 34px;}
         </div>
       </div>
       <div class="svc-card">
-        <div class="svc-img"><img src="img/real-vacum-therapy.jpeg" alt="Vacum Therapy + Presoterapia"></div>
+        <div class="svc-img"><video autoplay muted loop playsinline poster="img/svc-vacuum-presoterapia-poster.jpg" style="object-position:center 50%"><source src="img/svc-vacuum-presoterapia.mp4" type="video/mp4"></video></div>
         <div class="svc-body">
           <div class="svc-cat">Reductor corporal</div>
           <h3>Vacum Therapy + Presoterapia</h3>
@@ -717,7 +717,7 @@ footer{background:var(--primary-dk);color:var(--cream);padding:0 0 34px;}
         </div>
       </div>
       <div class="svc-card">
-        <div class="svc-img"><img src="img/real-laser-antiacne.jpeg" alt="Láser Antiacné / Antimanchas / Rejuvenecimiento"></div>
+        <div class="svc-img"><img src="img/real-laser-ipl-facial.jpeg" alt="Láser facial IPL en Divas Skin Care" loading="lazy"></div>
         <div class="svc-body">
           <div class="svc-cat">Tratamiento Personalizado</div>
           <h3>Láser Antiacné / Antimanchas / Rejuvenecimiento</h3>
@@ -1649,7 +1649,7 @@ function abrirDetalleServicio(card, bookBtn){
   document.getElementById('sd-media').innerHTML = media;
   document.getElementById('sd-cat').textContent = cat;
   document.getElementById('sd-title').textContent = titulo;
-  const svcDb = bookBtn ? SERVICIOS_DB[bookBtn.dataset.servicioId] : null;
+  const svcDb = (bookBtn && SERVICIOS_DB[bookBtn.dataset.servicioId]) || Object.values(SERVICIOS_DB).find(x => normCat(x.nombre) === normCat(titulo)) || null;
   document.getElementById('sd-desc').textContent = svcDb?.descripcion || `Tratamiento realizado por profesionales de Divas Skin Care, con productos y protocolos propios del centro. Consúltanos cualquier duda antes de reservar por WhatsApp.`;
   document.getElementById('sd-dur').textContent = dur ? `Duración: ${dur}` : '';
   document.getElementById('sd-price').textContent = precioTxt || '';
