@@ -286,7 +286,7 @@ tbody tr:hover{background:rgba(0,0,0,.02);}
 .insight-body{font-size:12px;color:var(--txt2);line-height:1.55;}
 
 /* ═══ AI BUBBLE ═══ */
-#ai-fab{position:fixed;bottom:24px;right:24px;width:54px;height:54px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#e3cd94);color:#fff;z-index:9000;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 8px 24px rgba(0,0,0,.18);transition:transform .15s;}
+#ai-fab{display:none!important;position:fixed;bottom:24px;right:24px;width:54px;height:54px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#e3cd94);color:#fff;z-index:9000;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 8px 24px rgba(0,0,0,.18);transition:transform .15s;}
 #ai-fab:hover{transform:scale(1.08);}
 #ai-fab svg{width:24px;height:24px;}
 #ai-panel{position:fixed;bottom:90px;right:24px;width:380px;max-height:540px;background:#0a0806;border:1px solid rgba(255,255,255,.1);border-radius:18px;z-index:9001;display:none;flex-direction:column;overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,.4);}
@@ -534,7 +534,7 @@ tbody tr:hover{background:rgba(0,0,0,.02);}
       </div>
       <div class="nav-item" onclick="goPage('salas',this)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="8" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/></svg>
-        Salas
+        Cabina
       </div>
       <div class="nav-item" onclick="goPage('inbox',this)" style="display:none">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>
@@ -655,7 +655,7 @@ tbody tr:hover{background:rgba(0,0,0,.02);}
       </div>
 
       <div class="card" style="margin-top:18px;">
-        <div class="card-hd"><div class="card-hd-title">✦ Business Insights</div><span style="font-size:10px;color:var(--txt3);letter-spacing:.2em;text-transform:uppercase">Análisis automático</span></div>
+        <div class="card-hd"><div class="card-hd-title">✦ Qué hay que atender</div><span style="font-size:10px;color:var(--txt3);letter-spacing:.2em;text-transform:uppercase">Pulsa para ir</span></div>
         <div class="card-body"><div class="insights-grid" id="dash-insights"></div></div>
       </div>
 
@@ -717,9 +717,9 @@ tbody tr:hover{background:rgba(0,0,0,.02);}
       <div class="page-hd">
         <div>
           <h1 class="page-title">En cabina</h1>
-          <div class="page-sub">Flujo arrastrar y soltar</div>
+          <div class="page-sub">Citas de hoy · Esperando → En cabina → Completada</div>
         </div>
-        <button class="btn btn-accent" onclick="toast('Nueva entrada en cabina (próximamente)')">+ Nueva entrada</button>
+        <button class="btn btn-accent" onclick="openBookingForm({fecha:dayKey(new Date())})">+ Nueva cita hoy</button>
       </div>
       <div class="kanban" id="kanban"></div>
     </div>
@@ -728,14 +728,9 @@ tbody tr:hover{background:rgba(0,0,0,.02);}
     <div id="page-salas" class="page">
       <div class="page-hd">
         <div>
-          <h1 class="page-title">Salas</h1>
-          <div class="page-sub">Ocupación en tiempo real</div>
+          <h1 class="page-title">Cabina</h1>
+          <div class="page-sub">Quién está ahora, cuándo termina y qué viene después</div>
         </div>
-      </div>
-      <div class="salas-legend" style="display:flex;gap:18px;margin-bottom:18px;flex-wrap:wrap">
-        <span style="display:flex;align-items:center;gap:7px;font-size:12px;color:var(--txt2)"><span style="width:10px;height:10px;border-radius:3px;background:#16a34a;display:inline-block"></span>Libre</span>
-        <span style="display:flex;align-items:center;gap:7px;font-size:12px;color:var(--txt2)"><span style="width:10px;height:10px;border-radius:3px;background:var(--accent);display:inline-block"></span>Ocupada</span>
-        <span style="display:flex;align-items:center;gap:7px;font-size:12px;color:var(--txt2)"><span style="width:10px;height:10px;border-radius:3px;background:#94a3b8;display:inline-block"></span>Sin usar hoy</span>
       </div>
       <div id="salas-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px"></div>
     </div>
@@ -801,15 +796,15 @@ tbody tr:hover{background:rgba(0,0,0,.02);}
           <div class="page-sub">Resumen financiero · IGIC · Exportar</div>
         </div>
         <div style="display:flex;gap:8px;">
-          <select class="topbar-btn" style="padding:8px 14px;"><option>Este mes</option><option>Últimos 30 días</option><option>Trimestre</option><option>Año</option></select>
-          <button class="btn btn-accent" onclick="toast('Exportar PDF: próximamente')">↓ Exportar PDF</button>
+          <select class="topbar-btn sel-periodo" style="padding:8px 14px;" onchange="setPeriodo(this.value)"><option value="mes">Este mes</option><option value="30d">Últimos 30 días</option><option value="trimestre">Trimestre</option><option value="anio">Año</option></select>
+          <button class="btn btn-accent" onclick="exportarInforme()">↓ Descargar Excel</button>
         </div>
       </div>
       <div class="stats-grid" id="reports-stats"></div>
 
       <div class="two-col">
         <div class="card" style="margin-bottom:0;">
-          <div class="card-hd"><div class="card-hd-title">Facturación por mes</div><span style="font-size:11px;color:#16a34a;font-weight:700">+18%</span></div>
+          <div class="card-hd"><div class="card-hd-title">Facturación por mes</div><span style="font-size:11px;color:#16a34a;font-weight:700"></span></div>
           <div class="card-body"><div class="bar-chart" id="report-chart-months"></div></div>
         </div>
         <div class="card" style="margin-bottom:0;">
@@ -913,14 +908,14 @@ tbody tr:hover{background:rgba(0,0,0,.02);}
       <div class="page-hd">
         <div>
           <h1 class="page-title">Seguimientos</h1>
-          <div class="page-sub">Clientas a contactar · sugerido por IA</div>
+          <div class="page-sub">A quién escribir hoy · cumpleaños, no-shows, reservas sin confirmar y clientas a las que les toca volver</div>
         </div>
-        <button class="btn btn-accent" onclick="toast('Generación automática con IA: próximamente')">✨ Generar todos con IA</button>
+        
       </div>
       <div class="stats-grid" id="fu-stats"></div>
       <div class="card">
-        <div class="card-hd"><div class="card-hd-title">Seguimientos sugeridos</div><span style="font-size:10px;color:var(--txt3);letter-spacing:.18em;text-transform:uppercase">Priorizado automáticamente</span></div>
-        <div class="table-wrap"><table><thead><tr><th>Clienta</th><th>Último contacto</th><th>Motivo</th><th>Acción sugerida</th><th></th></tr></thead><tbody id="fu-tbody"></tbody></table></div>
+        <div class="card-hd"><div class="card-hd-title">Por contactar</div><span style="font-size:10px;color:var(--txt3);letter-spacing:.18em;text-transform:uppercase">Al pulsar WhatsApp se marca como hecho durante 14 días</span></div>
+        <div class="table-wrap"><table><thead><tr><th>Clienta</th><th>Prioridad</th><th>Motivo</th><th>Qué hacer</th><th></th></tr></thead><tbody id="fu-tbody"></tbody></table></div>
       </div>
     </div>
 
@@ -1027,8 +1022,8 @@ tbody tr:hover{background:rgba(0,0,0,.02);}
           <div class="page-sub">Pérdidas y ganancias · Flujo de caja · Cumplimiento fiscal</div>
         </div>
         <div style="display:flex;gap:8px;">
-          <select class="topbar-btn" style="padding:8px 14px;"><option>Este mes</option><option>Trimestre</option><option>Año</option></select>
-          <button class="btn btn-accent" onclick="toast('Informe fiscal: próximamente')">↓ Informe fiscal</button>
+          <select class="topbar-btn sel-periodo" style="padding:8px 14px;" onchange="setPeriodo(this.value)"><option value="mes">Este mes</option><option value="30d">Últimos 30 días</option><option value="trimestre">Trimestre</option><option value="anio">Año</option></select>
+          <button class="btn btn-accent" onclick="exportarInforme()">↓ Descargar para el gestor</button>
         </div>
       </div>
       <div class="stats-grid" id="acc-stats"></div>
@@ -1059,7 +1054,7 @@ tbody tr:hover{background:rgba(0,0,0,.02);}
           <h1 class="page-title">Equipo</h1>
           <div class="page-sub">Personal · Roles · Permisos</div>
         </div>
-        <button class="btn btn-accent" onclick="toast('Invitar miembro: próximamente')">+ Invitar miembro</button>
+        <button class="btn btn-accent" onclick="infoNuevoMiembro()">+ Dar acceso a alguien</button>
       </div>
       <div class="card">
         <div class="card-hd"><div class="card-hd-title">Miembros</div><span style="font-size:11px;color:var(--txt3)" id="team-count">0 activos</span></div>
@@ -1209,7 +1204,7 @@ async function logout(){
 // Los datos de clientas/facturación/citas ficticias que quedan sin tocar son
 // solo demo visual del panel, no vienen de Supabase.
 async function loadRealData(){
-  const [{ data: servicios }, { data: stock }, { data: citas }, { data: pedidos }, { data: clientas }, { data: ventas }, { data: facturas }, { data: gastos }, { data: waitlist }, { data: cierresCaja }, { data: notif }, { data: equipo }] = await Promise.all([
+  const [{ data: servicios }, { data: stock }, { data: citas }, { data: pedidos }, { data: clientas }, { data: ventas }, { data: facturas }, { data: gastos }, { data: waitlist }, { data: cierresCaja }, { data: notif }, { data: equipo }, { data: seguimientos }] = await Promise.all([
     sb.from('servicios').select('*').order('orden', { ascending: true }),
     sb.from('stock').select('*').order('nombre', { ascending: true }),
     sb.from('citas').select('*').order('fecha', { ascending: false, nullsFirst: true }).limit(3000),
@@ -1221,8 +1216,10 @@ async function loadRealData(){
     sb.from('lista_espera').select('*').order('created_at', { ascending: false }),
     sb.from('cierres_caja').select('*').order('created_at', { ascending: false }).limit(30),
     sb.from('notificaciones').select('*').order('created_at', { ascending: false }).limit(100),
-    sb.from('panel_usuarios').select('*').order('nombre')
+    sb.from('panel_usuarios').select('*').order('nombre'),
+    sb.from('seguimientos_hechos').select('*').order('created_at', { ascending: false }).limit(500)
   ]);
+  CONFIG.seguimientos = seguimientos || [];
   CONFIG.equipo = equipo || [];
   CONFIG.ventasReales = ventas || [];
   CONFIG.facturasReales = facturas || [];
@@ -1329,6 +1326,7 @@ async function loadRealData(){
     const stockById = {};
     (stock || []).forEach(p => { stockById[p.id] = p.nombre; });
     CONFIG.pedidosWeb = pedidos.map(p => ({
+      id: p.id,
       cliente: p.cliente_nombre,
       telefono: p.cliente_telefono,
       email: p.cliente_email,
@@ -1479,50 +1477,8 @@ function calcularFinanzasReales(){
 }
 
 
-function renderPedidos(){
-  const tbody = document.getElementById('pedidos-tbody');
-  if (!tbody) return;
-  const pedidos = CONFIG.pedidosWeb || [];
-  if (!pedidos.length) {
-    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:24px;">Sin pedidos todavía</td></tr>';
-    return;
-  }
-  tbody.innerHTML = pedidos.map(p => `
-    <tr>
-      <td>${p.fecha ? new Date(p.fecha).toLocaleString('es-ES',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : '-'}</td>
-      <td>${esc(p.cliente || '-')}</td>
-      <td>${esc(p.email || p.telefono || '-')}</td>
-      <td>${esc(p.producto)}</td>
-      <td><span class="tag tag-info">${p.estado === 'pendiente_preparar' ? 'Pendiente de preparar' : esc(p.estado)}</span></td>
-    </tr>
-  `).join('');
-}
 
 // ═══════════════ NAV ═══════════════
-function goPage(id,el,isBottom){
-  CURRENT_PAGE=id;
-  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-  document.getElementById('page-'+id).classList.add('active');
-  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
-  document.querySelectorAll('.bnav-btn').forEach(n=>n.classList.remove('active'));
-  if(el)el.classList.add('active');
-  // Sync bottom nav active
-  const bn=document.getElementById('bnav-'+id);
-  if(bn) bn.classList.add('active');
-  // Sync sidebar active
-  if(!isBottom){
-    const sn=document.querySelectorAll('.nav-item');
-    const map={dashboard:0,schedule:1,pipeline:2,salas:3,clients:6,catalog:7,invoices:9,reports:11};
-    if(map[id]!=null&&sn[map[id]])sn[map[id]].classList.add('active');
-  }
-  const titles={dashboard:'Panel',schedule:CONFIG.labels.schedule,pipeline:CONFIG.labels.pipeline,salas:'Salas',clients:CONFIG.labels.clients,catalog:CONFIG.labels.catalog,invoices:'Facturas',reports:'Informes',waitlist:'Lista de espera',caja:'Cierre de caja',notificaciones:'Notificaciones',stock:'Stock',pos:'Punto de venta',team:'Equipo',gastos:'Gastos',pedidos:'Pedidos',accounting:'Contabilidad',followups:'Seguimientos',inbox:'Mensajes'};
-  if(!el){ const n=[...document.querySelectorAll('.nav-item')].find(x=>(x.getAttribute('onclick')||'').includes("'"+id+"'")); if(n) n.classList.add('active'); }
-  document.getElementById('topbar-title').textContent=titles[id]||id;
-  // Auto-close mobile drawer
-  document.getElementById('sidebar').classList.remove('open');
-  document.getElementById('mob-overlay').classList.remove('open');
-  window.scrollTo({top:0,behavior:'smooth'});
-}
 
 function toggleSidebar(){
   const sb=document.getElementById('sidebar');
@@ -1606,6 +1562,8 @@ function refreshAllViews(){
   renderCaja();
   renderNotificaciones();
   renderTeam();
+  renderSalas();
+  renderFollowups();
   if (CURRENT_PAGE === 'pos') posFilter('');
 }
 
@@ -1644,81 +1602,8 @@ function sparkline(values, color){
   return `<svg class="sparkline" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" style="stroke:${color||'var(--accent)'}"><path d="${d}"/><circle cx="${last[0]}" cy="${last[1]}" r="2" style="fill:${color||'var(--accent)'}"/></svg>`;
 }
 
-function renderDashboard(){
-  const stats=CONFIG.stats;
-  document.getElementById('dash-stats').innerHTML=stats.map((s,i)=>{
-    const spark=s.spark||[3,5,4,6,5,8,7,9];
-    return `
-    <div class="stat-card">
-      <div class="stat-label">${s.label}</div>
-      <div class="stat-val">${s.value}</div>
-      <div class="stat-trend ${s.trendType||''}">${s.trend||''}</div>
-      ${sparkline(spark)}
-    </div>`;
-  }).join('');
-  document.getElementById('dash-insights').innerHTML=CONFIG.insights.map(i=>`
-    <div class="insight" onclick="goPage('${i.go}',document.querySelectorAll('.nav-item')[${i.navIdx||0}])">
-      <div class="insight-hd">
-        <div class="insight-icon" style="background:${i.color}15;color:${i.color};border:1px solid ${i.color}40">${i.icon}</div>
-        <div class="insight-title">${i.title}</div>
-      </div>
-      <div class="insight-body">${i.body}</div>
-    </div>
-  `).join('');
-
-  // Weekly revenue chart on dashboard
-  const wk=CONFIG.weekRevenue||[0,0,0,0,0,0,0];
-  const max=Math.max(...wk)||1;
-  const days=['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
-  document.getElementById('dash-chart').innerHTML=`<div class="bar-chart">${wk.map((v,i)=>`<div class="bar" style="height:${(v/max)*100}%" title="${days[i]}: ${fmt(v)}"><span class="bar-label">${days[i]}</span></div>`).join('')}</div>`;
-  const trendEl=document.getElementById('dash-revenue-trend');
-  if(trendEl){
-    const t=CONFIG.weekRevenueTrend;
-    if(t===null||t===undefined){ trendEl.textContent='—'; trendEl.style.color='var(--txt3)'; }
-    else{ trendEl.textContent=(t>=0?'+':'')+t+'%'; trendEl.style.color=t>=0?'#16a34a':'#ef4444'; }
-  }
-
-  // Activity timeline
-  const tl=CONFIG.activity||[];
-  document.getElementById('dash-timeline').innerHTML=tl.map(a=>`
-    <li class="timeline-item">
-      <div class="tl-when">${a.when}</div>
-      <div class="tl-what">${a.what}</div>
-      ${a.meta?`<div class="tl-meta">${a.meta}</div>`:''}
-    </li>`).join('');
-
-  // Today's upcoming (first 4 from schedule)
-  document.getElementById('dash-today-tbody').innerHTML=CONFIG.schedule.slice(0,4).map(s=>`
-    <tr onclick="showClient('${(s.client||'').replace(/'/g,"\\'")}')" style="cursor:pointer">
-      <td><strong>${esc(s.time)}</strong></td>
-      <td>${esc(s.client)}</td>
-      <td>${esc(s.service)}</td>
-      <td><span class="tag tag-${s.statusClass}">${esc(s.status)}</span></td>
-    </tr>`).join('');
-}
 
 
-function renderSalas(){
-  const cols={ocupada:'var(--accent)',libre:'#16a34a',sin_uso:'#94a3b8'};
-  const labels={ocupada:'Ocupada',libre:'Libre',sin_uso:'Sin usar hoy'};
-  document.getElementById('salas-grid').innerHTML=(CONFIG.salas||[]).map(s=>`
-    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--rad);padding:18px;border-top:4px solid ${cols[s.status]};box-shadow:var(--shadow)">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
-        <div style="font-weight:700;font-size:14.5px">${s.name}</div>
-        <span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:${cols[s.status]};background:${cols[s.status]}18;padding:3px 9px;border-radius:20px">${labels[s.status]}</span>
-      </div>
-      ${s.status==='ocupada'?`
-        <div style="font-size:13px;color:var(--txt);font-weight:600">${s.client}</div>
-        <div style="font-size:12px;color:var(--txt2);margin-top:2px">${s.service}</div>
-        <div style="font-size:11.5px;color:var(--txt3);margin-top:8px">Libre a las ${s.freeAt}</div>
-      `:s.status==='libre'?`
-        <div style="font-size:12.5px;color:var(--txt3);margin-top:2px">Disponible ahora</div>
-      `:`
-        <div style="font-size:12.5px;color:var(--txt3);margin-top:2px">Sin reservas hoy</div>
-      `}
-    </div>
-  `).join('');
-}
 
 const KANBAN_COLS=[
   {key:'esperando',name:'Esperando',color:'#94a3b8',next:'en_cabina',nextLabel:'→ En cabina'},
@@ -1812,43 +1697,6 @@ function showInvoice(idx){
   document.getElementById('modal-host').classList.add('open');
 }
 
-function renderReports(){
-  document.getElementById('reports-stats').innerHTML=CONFIG.reportStats.map(s=>`
-    <div class="stat-card">
-      <div class="stat-label">${s.label}</div>
-      <div class="stat-val">${s.value}</div>
-      <div class="stat-trend ${s.trendType||''}">${s.trend||''}</div>
-      ${sparkline(s.spark||[3,5,4,6,5,8,7,9])}
-    </div>
-  `).join('');
-  // Bar chart 12 months
-  const mo=CONFIG.monthsRevenue||Array(12).fill(0);
-  const labels=['E','F','M','A','M','J','J','A','S','O','N','D'];
-  const mx=Math.max(...mo)||1;
-  document.getElementById('report-chart-months').innerHTML=mo.map((v,i)=>`<div class="bar" style="height:${(v/mx)*100}%" title="${labels[i]}: ${fmt(v)}"><span class="bar-label">${labels[i]}</span></div>`).join('');
-  // Top services
-  const top=CONFIG.topServices||[];
-  if(!top.length){
-    document.getElementById('report-top-services').innerHTML='<p style="text-align:center;color:var(--txt3);font-size:13px;padding:20px 0;">Todavía no hay ventas registradas.</p>';
-  } else {
-  const topMax=Math.max(...top.map(t=>t.count))||1;
-  document.getElementById('report-top-services').innerHTML=top.map(t=>`
-    <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border2);">
-      <div style="flex:1;min-width:0;">
-        <div style="font-size:13px;font-weight:600;color:var(--txt);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${t.name}</div>
-        <div style="height:3px;background:var(--border2);border-radius:2px;margin-top:4px;overflow:hidden;"><div style="height:100%;background:var(--accent);width:${(t.count/topMax)*100}%"></div></div>
-      </div>
-      <div style="text-align:right;margin-left:14px;">
-        <div style="font-size:13px;font-weight:700;color:var(--accent);">${fmt(t.total)}</div>
-        <div style="font-size:10px;color:var(--txt3);">${t.count} vendidos</div>
-      </div>
-    </div>`).join('');
-  }
-  // IGIC: régimen exento, no se repercute ni se recauda IGIC en ninguna venta.
-  document.getElementById('vat-collected').textContent='Exento';
-  document.getElementById('vat-paid').textContent='Exento';
-  document.getElementById('vat-net').textContent='0€';
-}
 
 // ═══════════════ AI INBOX ═══════════════
 let CUR_THREAD=null;
@@ -1924,85 +1772,13 @@ function posRemove(i){POS_CART.splice(i,1);posRedrawCart();}
 function posClear(){POS_CART=[];posRedrawCart();toast('Carrito vaciado');}
 
 // ═══════════════ FOLLOW-UPS ═══════════════
-function renderFollowups(){
-  const fu=CONFIG.followups||[];
-  document.getElementById('fu-stats').innerHTML=[
-    {label:'Para hoy',value:fu.filter(f=>f.priority==='high').length,trend:'alta prioridad',trendType:'warn'},
-    {label:'Esta semana',value:fu.length,trend:'',trendType:''},
-    {label:'Respuesta media',value:'3 min',trend:'vía agente IA',trendType:'up'},
-    {label:'Conversión',value:'42%',trend:'+8 pts',trendType:'up'}
-  ].map(s=>`<div class="stat-card"><div class="stat-label">${s.label}</div><div class="stat-val">${s.value}</div><div class="stat-trend ${s.trendType}">${s.trend}</div></div>`).join('');
-  document.getElementById('fu-tbody').innerHTML=fu.map(f=>`
-    <tr>
-      <td><strong>${f.client}</strong></td>
-      <td>${f.last}</td>
-      <td>${f.reason}</td>
-      <td><span style="font-size:12px;color:var(--accent);font-style:italic;">${f.action}</span></td>
-      <td><button class="btn btn-ghost" style="padding:6px 12px;font-size:11px;" onclick="enviarWhatsApp(buscarTelefonoPorNombre('${f.client}'), 'Hola ${(f.client||'').split(' ')[0]}, ${(f.action||'').toLowerCase()}')">💬 Enviar</button></td>
-    </tr>`).join('');
-}
 
 // ═══════════════ STOCK ═══════════════
 
 
 // ═══════════════ ACCOUNTING ═══════════════
-function renderAccounting(){
-  const a=CONFIG.accounting||{};
-  const rev=Number(a.revenue)||0, exp=Number(a.expenses)||0, cash=Number(a.cash)||0;
-  const hasData = rev>0 || exp>0 || cash>0;
-
-  document.getElementById('acc-stats').innerHTML=[
-    {label:'Facturación (mes)',value:fmt(rev)},
-    {label:'Gastos (mes)',value:fmt(exp)},
-    {label:'Beneficio neto',value:fmt(rev-exp)},
-    {label:'Caja',value:fmt(cash)}
-  ].map(s=>`<div class="stat-card"><div class="stat-label">${s.label}</div><div class="stat-val">${s.value}</div></div>`).join('');
-
-  if(!hasData){
-    document.getElementById('pl-tbody').innerHTML=`<tr><td style="padding:24px 0;text-align:center;color:var(--txt3);font-size:13px;">Todavía no hay movimientos registrados. En cuanto haya ventas y gastos reales, aparecerán aquí.</td></tr>`;
-    document.getElementById('cashflow-chart').innerHTML=`<div style="padding:20px;text-align:center;color:var(--txt3);font-size:13px;width:100%;">Sin datos todavía</div>`;
-    document.getElementById('expense-cats').innerHTML=`<div style="padding:20px;text-align:center;color:var(--txt3);font-size:13px;">Sin gastos registrados todavía</div>`;
-    return;
-  }
-
-  document.getElementById('pl-tbody').innerHTML=`
-    <tr style="border-top:1px solid var(--border);"><td style="padding:10px 0;font-weight:700;">Facturación total</td><td style="text-align:right;font-weight:700;color:#16a34a;">${fmt(rev)}</td></tr>
-    <tr style="border-top:1px solid var(--border);"><td style="padding:10px 0;font-weight:700;">Gastos totales</td><td style="text-align:right;font-weight:700;color:#ef4444;">- ${fmt(exp)}</td></tr>
-    <tr><td style="padding:8px 0;color:var(--txt2);">IGIC recaudado</td><td style="text-align:right;">Exento</td></tr>
-    <tr style="border-top:2px solid var(--accent);"><td style="padding:12px 0;font-family:var(--font-serif);font-size:18px;font-weight:600;">Beneficio neto</td><td style="text-align:right;font-family:var(--font-serif);font-size:22px;font-weight:600;color:var(--accent);">${fmt(rev-exp)}</td></tr>`;
-
-  const mo=CONFIG.monthsRevenue||Array(12).fill(0);
-  const labels=['E','F','M','A','M','J','J','A','S','O','N','D'];
-  const mx=Math.max(...mo)||1;
-  document.getElementById('cashflow-chart').innerHTML=mo.map((v,i)=>`<div class="bar" style="height:${(v/mx)*100}%" title="${labels[i]}: ${fmt(v)}"><span class="bar-label">${labels[i]}</span></div>`).join('');
-  const cats=CONFIG.gastosPorCategoria||[];
-  if(!cats.length){
-    document.getElementById('expense-cats').innerHTML=`<div style="padding:20px;text-align:center;color:var(--txt3);font-size:13px;">Sin gastos registrados todavía.</div>`;
-  } else {
-    const catMax=Math.max(...cats.map(c=>c.total))||1;
-    document.getElementById('expense-cats').innerHTML=cats.sort((a,b)=>b.total-a.total).map(c=>`
-      <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border2);">
-        <div style="flex:1;min-width:0;">
-          <div style="font-size:13px;font-weight:600;color:var(--txt);">${c.name}</div>
-          <div style="height:3px;background:var(--border2);border-radius:2px;margin-top:4px;overflow:hidden;"><div style="height:100%;background:#ef4444;width:${(c.total/catMax)*100}%"></div></div>
-        </div>
-        <div style="font-size:13px;font-weight:700;color:#ef4444;margin-left:14px;">${fmt(c.total)}</div>
-      </div>`).join('');
-  }
-}
 
 // ═══════════════ GASTOS ═══════════════
-function renderGastos(){
-  const gastos=CONFIG.gastosReales||[];
-  document.getElementById('gastos-tbody').innerHTML=gastos.length?gastos.map(g=>`
-    <tr>
-      <td>${new Date(g.fecha).toLocaleDateString('es-ES')}</td>
-      <td><strong>${g.concepto}</strong></td>
-      <td>${g.categoria}</td>
-      <td>${fmt(g.monto)}</td>
-      <td><button class="btn btn-ghost" style="padding:4px 10px;font-size:11px;" onclick="borrarGastoReal('${g.id}')">Borrar</button></td>
-    </tr>`).join(''):'<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:24px;">Sin gastos registrados todavía</td></tr>';
-}
 function openGastoForm(){
   document.getElementById('modal-title').textContent='Nuevo gasto';
   document.getElementById('modal-body').innerHTML=`
@@ -2037,14 +1813,6 @@ async function submitGastoForm(){
   closeModal();
   toast('✓ Gasto guardado');
 }
-async function borrarGastoReal(id){
-  if(!window.confirm('¿Borrar este gasto?')) return;
-  const { error } = await sb.from('gastos').delete().eq('id', id);
-  if(error){ toast('No se pudo borrar: '+error.message); return; }
-  await loadRealData();
-  refreshAllViews();
-  toast('✓ Gasto borrado');
-}
 
 // ═══════════════ TEAM ═══════════════
 
@@ -2060,17 +1828,6 @@ function toast(msg){
 // ═══════════════ CMD+K ═══════════════
 function openCmdK(){document.getElementById('cmdk-host').classList.add('open');document.getElementById('cmdk-input').focus();renderCmdK();}
 function closeCmdK(){document.getElementById('cmdk-host').classList.remove('open');document.getElementById('cmdk-input').value='';}
-function renderCmdK(){
-  const q=(document.getElementById('cmdk-input').value||'').toLowerCase();
-  const cli=CONFIG.clients.filter(c=>!q||c.name.toLowerCase().includes(q)).slice(0,4);
-  const cat=CONFIG.catalog.filter(c=>!q||c.name.toLowerCase().includes(q)).slice(0,4);
-  const inv=CONFIG.invoices.filter(i=>!q||i.num.toLowerCase().includes(q)||i.client.toLowerCase().includes(q)).slice(0,3);
-  const sec=(title,arr,build)=>arr.length?`<div class="cmdk-section">${title}</div>`+arr.map(build).join(''):'';
-  document.getElementById('cmdk-results').innerHTML=
-    sec('Clients',cli,c=>`<div class="cmdk-item" onclick="closeCmdK();showClient('${c.name.replace(/'/g,"\\'")}')"><div class="cmdk-item-title">${esc(c.name)}</div><div class="cmdk-item-meta">${esc(c.phone)}</div></div>`)+
-    sec(CONFIG.labels.catalog||'Catalog',cat,c=>`<div class="cmdk-item" onclick="closeCmdK();toast('Open ${c.name}')"><div class="cmdk-item-title">${c.name}</div><div class="cmdk-item-meta">${fmt(c.price)}</div></div>`)+
-    sec('Facturas',inv,i=>`<div class="cmdk-item" onclick="closeCmdK();toast('Open ${esc(i.num)}')"><div class="cmdk-item-title">${esc(i.num)} · ${esc(i.client)}</div><div class="cmdk-item-meta">${fmt(i.total)}</div></div>`);
-}
 document.addEventListener('keydown',e=>{
   if((e.metaKey||e.ctrlKey)&&e.key==='k'){e.preventDefault();openCmdK();}
   if(e.key==='Escape'){closeModal();closeCmdK();document.getElementById('fab-actions').classList.remove('open');}
@@ -3322,6 +3079,405 @@ async function guardarNombreUsuario(uid){
 }
 
 async function avanzarCita(id,estado){ return cambiarEstadoCita(id,estado); }
+
+// ═════════════════════════════════════════════════════════════════════
+// CRM v3 — cada apartado con datos reales y conectado con los demás:
+// Inicio, Cabina, En cabina, Seguimientos, Informes, Contabilidad,
+// Pedidos, Equipo y buscador. (25/09/2026)
+// ═════════════════════════════════════════════════════════════════════
+
+// ─── Periodo compartido por Informes y Contabilidad ───
+let PERIODO='mes';
+const NOMBRE_PERIODO={ mes:'este mes', '30d':'últimos 30 días', trimestre:'este trimestre', anio:'este año' };
+function rangoPeriodo(p){
+  const h=new Date(); let d;
+  if(p==='30d'){ d=new Date(h); d.setDate(h.getDate()-30); }
+  else if(p==='trimestre') d=new Date(h.getFullYear(), Math.floor(h.getMonth()/3)*3, 1);
+  else if(p==='anio') d=new Date(h.getFullYear(), 0, 1);
+  else d=new Date(h.getFullYear(), h.getMonth(), 1);
+  d.setHours(0,0,0,0);
+  return { desde:d, hasta:h };
+}
+function enPeriodo(f){ const r=rangoPeriodo(PERIODO), t=new Date(f); return t>=r.desde && t<=r.hasta; }
+function setPeriodo(p){ PERIODO=p; document.querySelectorAll('.sel-periodo').forEach(s=>s.value=p); renderReports(); renderAccounting(); }
+function ventasPeriodo(){ return (CONFIG.ventasReales||[]).filter(v=>enPeriodo(v.created_at)); }
+function facturasPagadasPeriodo(){ return (CONFIG.facturasReales||[]).filter(f=>f.estado==='pagada' && enPeriodo(f.created_at)); }
+function gastosPeriodo(){ return (CONFIG.gastosReales||[]).filter(g=>enPeriodo(g.fecha+'T12:00:00')); }
+function sumar(arr, k){ return Math.round(arr.reduce((a,x)=>a+(Number(x[k])||0),0)*100)/100; }
+function descargarCSV(nombre, filas){
+  const csv='﻿'+filas.map(r=>r.map(v=>`"${String(v??'').replace(/"/g,'""')}"`).join(';')).join('\n');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'})); a.download=nombre;
+  document.body.appendChild(a); a.click(); a.remove();
+  toast('✓ Descargado '+nombre);
+}
+function hace(fecha){
+  const m=Math.round((Date.now()-new Date(fecha).getTime())/60000);
+  if(m<1) return 'ahora'; if(m<60) return `hace ${m} min`;
+  const h=Math.round(m/60); if(h<24) return `hace ${h} h`;
+  const d=Math.round(h/24); return d===1?'ayer':`hace ${d} días`;
+}
+function ultimosDias(n, fn){ const out=[]; for(let i=n-1;i>=0;i--){ const d=new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate()-i); out.push(fn(dayKey(d))); } return out; }
+
+// ═══════════════ INICIO ═══════════════
+function saludo(){ const h=new Date().getHours(); return h<13?'Buenos días':h<20?'Buenas tardes':'Buenas noches'; }
+function calcularAvisos(){
+  const ahora=new Date(), hoyK=dayKey(ahora);
+  const av=[];
+  const porConfirmar=(CONFIG.citasWeb||[]).filter(c=>citaActiva(c) && /^pendiente/.test(c.estado) && new Date(c.fecha)>=ahora);
+  const sinFecha=(CONFIG.citasWeb||[]).filter(c=>!c.fecha && /^pendiente/.test(c.estado));
+  if(porConfirmar.length) av.push({ icon:'📅', color:'#bc916a', title:`${porConfirmar.length} reserva${porConfirmar.length>1?'s':''} por confirmar`, body:'Reservas web pendientes de confirmar o de pagar el depósito.', go:'schedule' });
+  if(sinFecha.length) av.push({ icon:'💳', color:'#bc916a', title:`${sinFecha.length} pago${sinFecha.length>1?'s':''} online sin hora`, body:'Clientas que pagaron por Stripe y hay que darles fecha y hora.', go:'schedule' });
+  const conHueco=(CONFIG.waitlist||[]).filter(w=>(w.estado==='pendiente'||w.estado==='contactada') && huecosParaEspera(w));
+  if(conHueco.length) av.push({ icon:'⏳', color:'#16a34a', title:`${conHueco.length} de la lista de espera ya tiene${conHueco.length>1?'n':''} hueco`, body:'Hay horas libres que encajan con lo que pidieron.', go:'waitlist' });
+  const sinStock=(CONFIG.stock||[]).filter(s=>(s.qty||0)<=0).length, bajo=(CONFIG.stock||[]).filter(s=>s.min!=null && s.qty>0 && s.qty<=s.min).length;
+  if(sinStock||bajo) av.push({ icon:'📦', color:'#b3441e', title:`${sinStock} sin stock · ${bajo} por reponer`, body:'Revisa el inventario antes de venderlos en el TPV.', go:'stock' });
+  const seg=calcularSeguimientos().filter(s=>s.prio==='alta').length;
+  if(seg) av.push({ icon:'💬', color:'#7c8f94', title:`${seg} seguimiento${seg>1?'s':''} importante${seg>1?'s':''}`, body:'Cumpleaños, no-shows o reservas que conviene atender hoy.', go:'followups' });
+  const ventasHoy=(CONFIG.ventasReales||[]).filter(v=>dayKey(v.created_at)===hoyK).length;
+  const cerradaHoy=(CONFIG.cierresCaja||[]).some(c=>c.estado!=='abierta' && c.hora_cierre && dayKey(c.hora_cierre)===hoyK);
+  if(ventasHoy && !cerradaHoy && ahora.getHours()>=18) av.push({ icon:'💶', color:'#bc916a', title:'Caja de hoy sin cerrar', body:`Hay ${ventasHoy} venta${ventasHoy>1?'s':''} hoy. Cierra la caja al terminar.`, go:'caja' });
+  return av;
+}
+function renderDashboard(){
+  const ahora=new Date(), hoyK=dayKey(ahora);
+  const h1=document.querySelector('#page-dashboard .page-title');
+  if(h1) h1.innerHTML=`${saludo()}, <em style="font-style:italic;color:var(--accent)">${esc((CURRENT_USER.nombre||'Louie').split(' (')[0])}</em>`;
+  const citasHoy=(CONFIG.citasWeb||[]).filter(c=>citaActiva(c) && dayKey(c.fecha)===hoyK).sort((a,b)=>new Date(a.fecha)-new Date(b.fecha));
+  const ventas=CONFIG.ventasReales||[];
+  const facturacionHoy=sumar(ventas.filter(v=>dayKey(v.created_at)===hoyK),'total');
+  const mes=ahora.getMonth(), anio=ahora.getFullYear();
+  const nuevasMes=(CONFIG.clients||[]).filter(c=>c.createdAt && new Date(c.createdAt).getMonth()===mes && new Date(c.createdAt).getFullYear()===anio).length;
+  const hace30=new Date(); hace30.setDate(hace30.getDate()-30);
+  const pasadas30=(CONFIG.citasWeb||[]).filter(c=>c.fecha && new Date(c.fecha)>=hace30 && new Date(c.fecha)<=ahora && ['completada','no_show'].includes(c.estado));
+  const noShows=pasadas30.filter(c=>c.estado==='no_show').length;
+  const citasPorDia=ultimosDias(8,k=>(CONFIG.citasWeb||[]).filter(c=>citaActiva(c)&&dayKey(c.fecha)===k).length);
+  const ventasPorDia=ultimosDias(8,k=>sumar(ventas.filter(v=>dayKey(v.created_at)===k),'total'));
+  const nuevasPorDia=ultimosDias(8,k=>(CONFIG.clients||[]).filter(c=>c.createdAt&&dayKey(c.createdAt)===k).length);
+  document.getElementById('dash-stats').innerHTML=[
+    { label:'Citas hoy', value:citasHoy.length, trend:citasHoy.length?'próxima '+(citasHoy.find(c=>new Date(c.fecha)>=ahora)?new Date(citasHoy.find(c=>new Date(c.fecha)>=ahora).fecha).toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'}):'—'):'agenda libre', spark:citasPorDia },
+    { label:'Facturación hoy', value:fmt2(facturacionHoy), trend:'ventas del TPV', spark:ventasPorDia },
+    { label:'Clientas nuevas (mes)', value:nuevasMes, trend:(CONFIG.clients||[]).length+' en total', spark:nuevasPorDia },
+    { label:'No-shows (30 días)', value:pasadas30.length?Math.round(noShows/pasadas30.length*100)+'%':'—', trend:`${noShows} de ${pasadas30.length} citas`, spark:ultimosDias(8,k=>(CONFIG.citasWeb||[]).filter(c=>c.estado==='no_show'&&c.fecha&&dayKey(c.fecha)===k).length) }
+  ].map(s=>`<div class="stat-card"><div class="stat-label">${s.label}</div><div class="stat-val">${s.value}</div><div class="stat-trend">${s.trend}</div>${sparkline(s.spark)}</div>`).join('');
+
+  const av=calcularAvisos();
+  document.getElementById('dash-insights').innerHTML=av.length?av.map(i=>`
+    <div class="insight" onclick="goPage('${i.go}')">
+      <div class="insight-hd"><div class="insight-icon" style="background:${i.color}15;color:${i.color};border:1px solid ${i.color}40">${i.icon}</div><div class="insight-title">${esc(i.title)}</div></div>
+      <div class="insight-body">${esc(i.body)}</div>
+    </div>`).join(''):'<div class="insight"><div class="insight-hd"><div class="insight-icon" style="background:#16a34a15;color:#16a34a;border:1px solid #16a34a40">✓</div><div class="insight-title">Todo al día</div></div><div class="insight-body">No hay reservas por confirmar, ni stock agotado, ni seguimientos urgentes.</div></div>';
+  const insTitle=document.querySelector('#dash-insights')?.closest('.card')?.querySelector('.card-hd-title');
+  if(insTitle) insTitle.textContent='✦ Qué hay que atender';
+
+  const wk=CONFIG.weekRevenue||[0,0,0,0,0,0,0], max=Math.max(...wk)||1, days=['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
+  document.getElementById('dash-chart').innerHTML=`<div class="bar-chart">${wk.map((v,i)=>`<div class="bar" style="height:${(v/max)*100}%" title="${days[i]}: ${fmt(v)}"><span class="bar-label">${days[i]}</span></div>`).join('')}</div>`;
+  const trendEl=document.getElementById('dash-revenue-trend');
+  if(trendEl){ const t=CONFIG.weekRevenueTrend; if(t==null){ trendEl.textContent='—'; trendEl.style.color='var(--txt3)'; } else { trendEl.textContent=(t>=0?'+':'')+t+'% vs semana pasada'; trendEl.style.color=t>=0?'#16a34a':'#ef4444'; } }
+
+  const notifs=(CONFIG.notificacionesReales||[]).slice(0,8);
+  const actHd=document.getElementById('dash-timeline')?.closest('.card')?.querySelector('.card-hd span');
+  if(actHd) actHd.textContent='Últimos avisos';
+  document.getElementById('dash-timeline').innerHTML=notifs.length?notifs.map(n=>`
+    <li class="timeline-item" style="cursor:pointer" onclick="abrirNotificacion('${n.id}')">
+      <div class="tl-when">${hace(n.created_at)}</div>
+      <div class="tl-what">${(TIPOS_NOTIF[n.tipo]||['•'])[0]} ${esc(n.mensaje||'')}</div>
+    </li>`).join(''):'<li class="timeline-item"><div class="tl-what" style="color:var(--txt3)">Aquí aparecerán las reservas, cambios y cancelaciones en cuanto ocurran.</div></li>';
+
+  document.getElementById('dash-today-tbody').innerHTML=citasHoy.length?citasHoy.filter(c=>new Date(c.fecha).getTime()+duracionCita(c)*60000>=ahora.getTime()).slice(0,6).map(c=>`
+    <tr onclick="abrirDetalleCita('${c.id}')" style="cursor:pointer">
+      <td><strong>${new Date(c.fecha).toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'})}</strong></td>
+      <td>${esc(c.cliente)}</td>
+      <td><span class="svc-dot" style="background:${colorCita(c)}"></span>${esc(nombreServicioCita(c))}</td>
+      <td>${estadoTag(c.estado)}</td>
+    </tr>`).join('')||'<tr><td colspan="4" style="text-align:center;color:var(--txt3);padding:18px;">No quedan más citas hoy</td></tr>'
+    :'<tr><td colspan="4" style="text-align:center;color:var(--txt3);padding:18px;">No hay citas hoy</td></tr>';
+}
+
+// ═══════════════ CABINA (antes "Salas") ═══════════════
+function renderSalas(){
+  const ahora=new Date(), hoyK=dayKey(ahora), mAhora=minDelDia(ahora);
+  const citas=(CONFIG.citasWeb||[]).filter(c=>citaActiva(c)&&dayKey(c.fecha)===hoyK).sort((a,b)=>new Date(a.fecha)-new Date(b.fecha));
+  const actual=citas.find(c=>{ const i=minDelDia(c.fecha); return i<=mAhora && mAhora<i+duracionCita(c); });
+  const siguiente=citas.find(c=>minDelDia(c.fecha)>mAhora);
+  const abierto=(HORARIO_CENTRO[ahora.getDay()]||[]).some(([a,b])=>mAhora>=a&&mAhora<b);
+  const minAbierto=(HORARIO_CENTRO[ahora.getDay()]||[]).reduce((a,[x,y])=>a+(y-x),0);
+  const minOcupados=citas.reduce((a,c)=>a+duracionCita(c),0);
+  const estado=actual?'ocupada':abierto?'libre':'cerrada';
+  const col={ocupada:'var(--accent)',libre:'#16a34a',cerrada:'#94a3b8'}[estado];
+  document.getElementById('salas-grid').innerHTML=`
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--rad);padding:20px;border-top:4px solid ${col};box-shadow:var(--shadow);grid-column:1/-1;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;">
+        <div><div style="font-weight:700;font-size:16px;">Cabina</div><div style="font-size:12px;color:var(--txt3);margin-top:2px;">${citas.length} citas hoy · ocupación ${minAbierto?Math.round(minOcupados/minAbierto*100):0}% del horario</div></div>
+        <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:${col};background:${col}18;padding:4px 11px;border-radius:20px">${{ocupada:'Ocupada',libre:'Libre ahora',cerrada:'Fuera de horario'}[estado]}</span>
+      </div>
+      ${actual?`<div style="margin-top:14px;padding:12px 14px;border-radius:8px;background:color-mix(in srgb,${colorCita(actual)} 15%,var(--surface));border-left:4px solid ${colorCita(actual)};cursor:pointer;" onclick="abrirDetalleCita('${actual.id}')">
+          <div style="font-size:14px;font-weight:700;">${esc(actual.cliente)}</div>
+          <div style="font-size:12px;color:var(--txt2);">${esc(nombreServicioCita(actual))}${actual.profesional?' · '+esc(actual.profesional):''}</div>
+          <div style="font-size:12px;color:var(--txt3);margin-top:6px;">Termina a las ${minToHHMM(minDelDia(actual.fecha)+duracionCita(actual))}</div>
+        </div>`:''}
+      <div style="margin-top:14px;font-size:12.5px;color:var(--txt2);">${siguiente?`Siguiente: <strong>${new Date(siguiente.fecha).toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'})}</strong> · ${esc(siguiente.cliente)} · ${esc(nombreServicioCita(siguiente))}`:'No hay más citas hoy.'}</div>
+    </div>
+    <div class="card" style="grid-column:1/-1;margin:0;">
+      <div class="card-hd"><div class="card-hd-title">Hoy en cabina</div><button class="btn btn-ghost" style="padding:4px 10px;font-size:11px;" onclick="goPage('schedule');calSetVista('dia');calHoy();">Ver en calendario</button></div>
+      <div class="table-wrap"><table><thead><tr><th>Hora</th><th>Clienta</th><th>Tratamiento</th><th>Profesional</th><th>Estado</th></tr></thead><tbody>
+        ${citas.length?citas.map(c=>`<tr onclick="abrirDetalleCita('${c.id}')" style="cursor:pointer;${c===actual?'background:rgba(0,0,0,.03);':''}"><td><strong>${minToHHMM(minDelDia(c.fecha))}–${minToHHMM(minDelDia(c.fecha)+duracionCita(c))}</strong></td><td>${esc(c.cliente)}</td><td><span class="svc-dot" style="background:${colorCita(c)}"></span>${esc(nombreServicioCita(c))}</td><td>${esc(c.profesional||'—')}</td><td>${estadoTag(c.estado)}</td></tr>`).join(''):'<tr><td colspan="5" style="text-align:center;color:var(--txt3);padding:18px;">Sin citas hoy</td></tr>'}
+      </tbody></table></div>
+    </div>`;
+}
+
+// ═══════════════ SEGUIMIENTOS ═══════════════
+function seguimientoHecho(clientaId, clave){
+  const lim=Date.now()-14*864e5;
+  return (CONFIG.seguimientos||[]).some(s=>String(s.clienta_id)===String(clientaId) && s.motivo===clave && new Date(s.created_at).getTime()>lim);
+}
+function calcularSeguimientos(){
+  const out=[], ahora=new Date();
+  const hoy0=new Date(); hoy0.setHours(0,0,0,0);
+  (CONFIG.clients||[]).forEach(c=>{
+    const nombre=(c.name||'').split(' ')[0];
+    const tel=c.phone&&c.phone!=='—'?c.phone:'';
+    const citas=citasDeClienta(c).filter(x=>x.fecha);
+    const futura=citas.some(x=>citaActiva(x)&&new Date(x.fecha)>ahora);
+    const comp=citas.filter(x=>x.estado==='completada').sort((a,b)=>new Date(b.fecha)-new Date(a.fecha));
+    if(c.fechaNacimiento){
+      const n=new Date(c.fechaNacimiento+'T00:00:00'); const cumple=new Date(hoy0.getFullYear(), n.getMonth(), n.getDate());
+      if(cumple<hoy0) cumple.setFullYear(cumple.getFullYear()+1);
+      const dias=Math.round((cumple-hoy0)/864e5);
+      const clave='cumple-'+cumple.getFullYear();
+      if(dias<=7 && !seguimientoHecho(c.id,clave)) out.push({ c, tel, clave, prio:'alta', motivo:dias===0?'🎂 ¡Hoy es su cumpleaños!':`🎂 Cumple en ${dias} día${dias>1?'s':''} (${cumple.toLocaleDateString('es-ES',{day:'numeric',month:'short'})})`, accion:'Felicitarla con una oferta',
+        msg:`¡Feliz cumpleaños, ${nombre}! 🎉 Desde Divas Skin Care queremos regalarte algo especial este mes, ¿te apetece que te contemos la oferta? 💛` });
+    }
+    const ns=citas.find(x=>x.estado==='no_show' && (ahora-new Date(x.fecha))<14*864e5);
+    if(ns && !futura && !seguimientoHecho(c.id,'noshow-'+ns.id)) out.push({ c, tel, clave:'noshow-'+ns.id, prio:'alta', motivo:`No vino a su cita del ${new Date(ns.fecha).toLocaleDateString('es-ES',{day:'numeric',month:'short'})} (${nombreServicioCita(ns)})`, accion:'Reprogramar la cita',
+      msg:`Hola ${nombre}, te echamos de menos en tu cita de ${nombreServicioCita(ns)}. ¿Te buscamos otro hueco que te venga mejor? 💛 Divas Skin Care` });
+    if(!futura && comp[0]){
+      const dias=Math.floor((ahora-new Date(comp[0].fecha))/864e5);
+      const svc=nombreServicioCita(comp[0]);
+      if(dias>=21 && dias<=60 && !seguimientoHecho(c.id,'repetir-'+comp[0].id)) out.push({ c, tel, clave:'repetir-'+comp[0].id, prio:'media', motivo:`Hace ${dias} días de su ${svc} y no tiene cita`, accion:'Proponer la siguiente sesión',
+        msg:`Hola ${nombre}, ¡esperamos que estés genial! Ya toca tu siguiente sesión de ${svc}. ¿Te buscamos hueco esta semana? 💛 Divas Skin Care` });
+      else if(dias>60 && !seguimientoHecho(c.id,'recuperar')) out.push({ c, tel, clave:'recuperar', prio:'baja', motivo:`No viene desde hace ${dias} días`, accion:'Recuperar clienta',
+        msg:`Hola ${nombre}, ¡hace tiempo que no te vemos por Divas! Tenemos novedades que te van a encantar. ¿Te apetece reservar? 💛` });
+    }
+  });
+  (CONFIG.citasWeb||[]).filter(x=>citaActiva(x) && /^pendiente/.test(x.estado) && new Date(x.fecha)>=ahora).forEach(x=>{
+    const c=clientaDeCita(x)||{ id:null, name:x.cliente, phone:x.telefono };
+    const nombre=(x.cliente||'').split(' ')[0];
+    out.push({ c, cita:x, tel:x.telefono||'', clave:'confirmar-'+x.id, prio:'alta', motivo:`Reserva web sin confirmar: ${new Date(x.fecha).toLocaleString('es-ES',{weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})} · ${nombreServicioCita(x)}`, accion:'Confirmar la cita',
+      msg:`Hola ${nombre}, te escribimos de Divas Skin Care para confirmar tu cita de ${nombreServicioCita(x)} el ${new Date(x.fecha).toLocaleString('es-ES',{weekday:'long',day:'numeric',month:'long',hour:'2-digit',minute:'2-digit'})}. ¿Nos confirmas? 💛` });
+  });
+  const orden={alta:0,media:1,baja:2};
+  return out.sort((a,b)=>orden[a.prio]-orden[b.prio]);
+}
+let SEGUIMIENTOS_VISIBLES=[];
+function renderFollowups(){
+  const fu=calcularSeguimientos(); SEGUIMIENTOS_VISIBLES=fu;
+  const hechosSemana=(CONFIG.seguimientos||[]).filter(s=>Date.now()-new Date(s.created_at).getTime()<7*864e5).length;
+  document.getElementById('fu-stats').innerHTML=[
+    {label:'Urgentes',value:fu.filter(f=>f.prio==='alta').length,trend:'confirmar · no-shows · cumpleaños',trendType:'warn'},
+    {label:'Repetir sesión',value:fu.filter(f=>f.prio==='media').length,trend:'21–60 días sin volver',trendType:''},
+    {label:'Recuperar',value:fu.filter(f=>f.prio==='baja').length,trend:'más de 60 días',trendType:''},
+    {label:'Contactadas (7 días)',value:hechosSemana,trend:'marcadas como hechas',trendType:'up'}
+  ].map(s=>`<div class="stat-card"><div class="stat-label">${s.label}</div><div class="stat-val">${s.value}</div><div class="stat-trend ${s.trendType}">${s.trend}</div></div>`).join('');
+  document.getElementById('fu-tbody').innerHTML=fu.length?fu.map((f,i)=>`
+    <tr>
+      <td><strong style="cursor:pointer" onclick="${f.c.id?`showClientById('${f.c.id}')`:f.cita?`abrirDetalleCita('${f.cita.id}')`:''}">${esc(f.c.name)}</strong><div style="font-size:11px;color:var(--txt3);">${esc(f.tel||'sin teléfono')}</div></td>
+      <td><span class="tag tag-${f.prio==='alta'?'danger':f.prio==='media'?'pending':'info'}">${f.prio==='alta'?'Urgente':f.prio==='media'?'Esta semana':'Cuando puedas'}</span></td>
+      <td style="font-size:12.5px;">${esc(f.motivo)}</td>
+      <td><span style="font-size:12px;color:var(--accent);font-style:italic;">${esc(f.accion)}</span></td>
+      <td style="white-space:nowrap;">
+        ${f.tel?`<button class="btn btn-ghost" style="padding:5px 10px;font-size:11px;" onclick="enviarSeguimiento(${i})">💬 WhatsApp</button>`:''}
+        ${f.cita?`<button class="btn btn-ghost" style="padding:5px 10px;font-size:11px;" onclick="abrirDetalleCita('${f.cita.id}')">Ver cita</button>`:`<button class="btn btn-ghost" style="padding:5px 10px;font-size:11px;" onclick="marcarSeguimiento(${i})">✓ Hecho</button>`}
+      </td>
+    </tr>`).join(''):'<tr><td colspan="5" style="text-align:center;color:var(--txt3);padding:24px;">Nada pendiente. Aquí aparecerán cumpleaños, no-shows, reservas sin confirmar y clientas a las que les toca volver.</td></tr>';
+}
+async function enviarSeguimiento(i){
+  const f=SEGUIMIENTOS_VISIBLES[i]; if(!f) return;
+  enviarWhatsApp(f.tel, f.msg);
+  if(!f.cita) await marcarSeguimiento(i, true);
+}
+async function marcarSeguimiento(i, silencioso){
+  const f=SEGUIMIENTOS_VISIBLES[i]; if(!f||!f.c.id) return;
+  const { data, error } = await sb.from('seguimientos_hechos').insert({ clienta_id:f.c.id, motivo:f.clave, usuario:CURRENT_USER.nombre||null }).select('id');
+  if(error||!data?.length){ toast('No se pudo guardar: '+(error?.message||'sin permiso')); return; }
+  await recargarTodo();
+  if(!silencioso) toast('✓ Marcado como hecho');
+}
+
+// ═══════════════ INFORMES ═══════════════
+function renderReports(){
+  const ventas=ventasPeriodo(), facturas=facturasPagadasPeriodo();
+  const total=sumar(ventas,'total')+sumar(facturas,'total');
+  const n=ventas.length+facturas.length;
+  const impuestos=sumar(ventas,'impuestos');
+  const citas=(CONFIG.citasWeb||[]).filter(c=>c.fecha && enPeriodo(c.fecha) && new Date(c.fecha)<=new Date());
+  const hechas=citas.filter(c=>c.estado==='completada').length, noShow=citas.filter(c=>c.estado==='no_show').length;
+  const clientasConCita=new Set(citas.filter(c=>c.estado==='completada').map(c=>clientaDeCita(c)?.id).filter(Boolean));
+  const repiten=[...clientasConCita].filter(id=>{ const c=(CONFIG.clients||[]).find(x=>x.id===id); return c && citasDeClienta(c).filter(x=>x.estado==='completada').length>1; }).length;
+  document.getElementById('reports-stats').innerHTML=[
+    {label:'Facturación · '+NOMBRE_PERIODO[PERIODO],value:fmt2(total),trend:n+' ventas/facturas'},
+    {label:'Ticket medio',value:fmt2(n?total/n:0),trend:''},
+    {label:'Citas realizadas',value:hechas,trend:noShow?noShow+' no-shows':'sin no-shows'},
+    {label:'Clientas que repiten',value:clientasConCita.size?Math.round(repiten/clientasConCita.size*100)+'%':'—',trend:`${repiten} de ${clientasConCita.size}`}
+  ].map(s=>`<div class="stat-card"><div class="stat-label">${s.label}</div><div class="stat-val">${s.value}</div><div class="stat-trend">${s.trend}</div></div>`).join('');
+  const mo=CONFIG.monthsRevenue||Array(12).fill(0), labels=['E','F','M','A','M','J','J','A','S','O','N','D'], mx=Math.max(...mo)||1;
+  document.getElementById('report-chart-months').innerHTML=mo.map((v,i)=>`<div class="bar" style="height:${(v/mx)*100}%" title="${labels[i]}: ${fmt(v)}"><span class="bar-label">${labels[i]}</span></div>`).join('');
+  const mes=new Date().getMonth(), var_=mo[mes-1]>0?Math.round((mo[mes]-mo[mes-1])/mo[mes-1]*100):null;
+  const chartHd=document.getElementById('report-chart-months')?.closest('.card')?.querySelector('.card-hd span');
+  if(chartHd){ chartHd.textContent=var_==null?'':(var_>=0?'+':'')+var_+'% vs mes anterior'; chartHd.style.color=var_!=null&&var_<0?'#ef4444':'#16a34a'; }
+  // Lo más vendido (TPV) + tratamientos más realizados (citas completadas)
+  const porNombre={};
+  ventas.forEach(v=>(v.items||[]).forEach(it=>{ const k=it.name; porNombre[k]=porNombre[k]||{name:k,count:0,total:0}; porNombre[k].count+=Number(it.qty)||0; porNombre[k].total+=(Number(it.price)||0)*(Number(it.qty)||0); }));
+  citas.filter(c=>c.estado==='completada').forEach(c=>{ const k=nombreServicioCita(c); porNombre[k]=porNombre[k]||{name:k,count:0,total:0}; if(!ventas.some(v=>(v.items||[]).some(it=>it.name===k))) porNombre[k].count+=1; });
+  const top=Object.values(porNombre).sort((a,b)=>b.total-a.total||b.count-a.count).slice(0,6);
+  const topMax=Math.max(...top.map(t=>t.count),1);
+  document.getElementById('report-top-services').innerHTML=top.length?top.map(t=>`
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border2);">
+      <div style="flex:1;min-width:0;"><div style="font-size:13px;font-weight:600;color:var(--txt);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(t.name)}</div>
+        <div style="height:3px;background:var(--border2);border-radius:2px;margin-top:4px;overflow:hidden;"><div style="height:100%;background:var(--accent);width:${(t.count/topMax)*100}%"></div></div></div>
+      <div style="text-align:right;margin-left:14px;"><div style="font-size:13px;font-weight:700;color:var(--accent);">${t.total?fmt2(t.total):'—'}</div><div style="font-size:10px;color:var(--txt3);">${t.count} ${t.total?'vendidos':'realizados'}</div></div>
+    </div>`).join(''):`<p style="text-align:center;color:var(--txt3);font-size:13px;padding:20px 0;">Sin ventas ni citas realizadas ${NOMBRE_PERIODO[PERIODO]}.</p>`;
+  document.getElementById('vat-collected').textContent=fmt2(impuestos);
+  document.getElementById('vat-paid').textContent='No registrado';
+  document.getElementById('vat-net').textContent=fmt2(impuestos);
+}
+function exportarInforme(){
+  const r=rangoPeriodo(PERIODO);
+  const filas=[['Fecha','Tipo','Detalle','Método / Estado','Usuario','Base','Impuestos','Total']];
+  ventasPeriodo().forEach(v=>filas.push([new Date(v.created_at).toLocaleString('es-ES'),'Venta TPV',(v.items||[]).map(i=>i.qty+'× '+i.name).join(' | '),v.metodo_pago,v.usuario||'',String(v.base_imponible??v.subtotal??'').replace('.',','),String(v.impuestos??0).replace('.',','),String(v.total).replace('.',',')]));
+  facturasPagadasPeriodo().forEach(f=>filas.push([new Date(f.created_at).toLocaleString('es-ES'),'Factura '+f.numero,f.cliente_nombre,'pagada','','','',String(f.total).replace('.',',')]));
+  gastosPeriodo().forEach(g=>filas.push([new Date(g.fecha+'T12:00:00').toLocaleDateString('es-ES'),'Gasto',g.concepto+' ('+g.categoria+')','','','','','-'+String(g.monto).replace('.',',')]));
+  if(filas.length===1){ toast('No hay movimientos '+NOMBRE_PERIODO[PERIODO]); return; }
+  descargarCSV(`divas-movimientos-${dayKey(r.desde)}-a-${dayKey(r.hasta)}.csv`, filas);
+}
+
+// ═══════════════ CONTABILIDAD ═══════════════
+function renderAccounting(){
+  const ventas=ventasPeriodo(), facturas=facturasPagadasPeriodo(), gastos=gastosPeriodo();
+  const ingresos=sumar(ventas,'total')+sumar(facturas,'total');
+  const gastado=sumar(gastos,'monto');
+  const porMetodo={}; ventas.forEach(v=>{ const m=String(v.metodo_pago||'otros').toLowerCase(); porMetodo[m]=(porMetodo[m]||0)+Number(v.total||0); });
+  if(facturas.length) porMetodo['facturas']=sumar(facturas,'total');
+  const porCat={}; gastos.forEach(g=>{ porCat[g.categoria]=(porCat[g.categoria]||0)+Number(g.monto||0); });
+  document.getElementById('acc-stats').innerHTML=[
+    {label:'Ingresos · '+NOMBRE_PERIODO[PERIODO],value:fmt2(ingresos)},
+    {label:'Gastos',value:fmt2(gastado)},
+    {label:'Beneficio',value:fmt2(ingresos-gastado)},
+    {label:'Cobrado en efectivo',value:fmt2(porMetodo.efectivo||0)}
+  ].map(s=>`<div class="stat-card"><div class="stat-label">${s.label}</div><div class="stat-val" style="${s.label==='Beneficio'&&ingresos-gastado<0?'color:#ef4444':''}">${s.value}</div></div>`).join('');
+  const fila=(k,v,st='')=>`<tr style="${st}"><td style="padding:8px 0;">${k}</td><td style="text-align:right;">${v}</td></tr>`;
+  document.getElementById('pl-tbody').innerHTML=(ingresos||gastado)?
+    fila('<strong>Ingresos</strong>',`<strong style="color:#16a34a">${fmt2(ingresos)}</strong>`,'border-top:1px solid var(--border);')
+    +Object.entries(porMetodo).map(([k,v])=>fila(`<span style="color:var(--txt2);padding-left:12px;">${METODOS_PAGO[k]||(k==='facturas'?'Facturas pagadas':k)}</span>`,fmt2(v))).join('')
+    +fila('<strong>Gastos</strong>',`<strong style="color:#ef4444">- ${fmt2(gastado)}</strong>`,'border-top:1px solid var(--border);')
+    +Object.entries(porCat).map(([k,v])=>fila(`<span style="color:var(--txt2);padding-left:12px;">${esc(k)}</span>`,'- '+fmt2(v))).join('')
+    +fila('<strong>Beneficio</strong>',`<strong>${fmt2(ingresos-gastado)}</strong>`,'border-top:2px solid var(--border);')
+    +fila('<span style="color:var(--txt3)">Impuestos repercutidos en ventas</span>',fmt2(sumar(ventas,'impuestos')))
+    :`<tr><td style="padding:24px 0;text-align:center;color:var(--txt3);font-size:13px;">Sin ingresos ni gastos ${NOMBRE_PERIODO[PERIODO]}.</td></tr>`;
+  // Últimos 6 meses: ingresos vs gastos
+  const meses=[]; const h=new Date();
+  for(let i=5;i>=0;i--){ const d=new Date(h.getFullYear(), h.getMonth()-i, 1); meses.push(d); }
+  const datos=meses.map(d=>{ const m=d.getMonth(), y=d.getFullYear(); const esMes=f=>{ const t=new Date(f); return t.getMonth()===m&&t.getFullYear()===y; };
+    return { l:d.toLocaleDateString('es-ES',{month:'short'}), i:sumar((CONFIG.ventasReales||[]).filter(v=>esMes(v.created_at)),'total')+sumar((CONFIG.facturasReales||[]).filter(f=>f.estado==='pagada'&&esMes(f.created_at)),'total'), g:sumar((CONFIG.gastosReales||[]).filter(x=>esMes(x.fecha+'T12:00:00')),'monto') }; });
+  const mx=Math.max(1,...datos.map(d=>Math.max(d.i,d.g)));
+  document.getElementById('cashflow-chart').innerHTML=datos.some(d=>d.i||d.g)?datos.map(d=>`
+    <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;">
+      <div style="display:flex;align-items:flex-end;gap:3px;height:120px;">
+        <div title="Ingresos ${fmt2(d.i)}" style="width:14px;height:${d.i/mx*100}%;background:#16a34a;border-radius:3px 3px 0 0;min-height:2px;"></div>
+        <div title="Gastos ${fmt2(d.g)}" style="width:14px;height:${d.g/mx*100}%;background:#ef4444;border-radius:3px 3px 0 0;min-height:2px;"></div>
+      </div>
+      <span style="font-size:10px;color:var(--txt3);text-transform:capitalize;">${d.l}</span>
+    </div>`).join(''):'<div style="padding:20px;text-align:center;color:var(--txt3);font-size:13px;width:100%;">Sin movimientos en los últimos 6 meses</div>';
+  const cats=Object.entries(porCat).sort((a,b)=>b[1]-a[1]);
+  document.getElementById('expense-cats').innerHTML=cats.length?cats.map(([k,v])=>`
+    <div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border2);font-size:13px;"><span>${esc(k)}</span><strong>${fmt2(v)}</strong></div>`).join(''):`<div style="padding:20px;text-align:center;color:var(--txt3);font-size:13px;">Sin gastos ${NOMBRE_PERIODO[PERIODO]}. Añádelos en «Gastos».</div>`;
+}
+
+// ═══════════════ GASTOS ═══════════════
+function renderGastos(){
+  const gastos=CONFIG.gastosReales||[];
+  document.getElementById('gastos-tbody').innerHTML=gastos.length?gastos.map(g=>`
+    <tr>
+      <td>${new Date(g.fecha+'T12:00:00').toLocaleDateString('es-ES')}</td>
+      <td><strong>${esc(g.concepto)}</strong></td>
+      <td>${esc(g.categoria)}</td>
+      <td>${fmt2(g.monto)}</td>
+      <td><button class="btn btn-ghost" id="gasto-del-${g.id}" style="padding:4px 10px;font-size:11px;" onclick="borrarGastoReal('${g.id}')">Borrar</button></td>
+    </tr>`).join(''):'<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:24px;">Sin gastos registrados todavía</td></tr>';
+}
+async function borrarGastoReal(id){
+  const b=document.getElementById('gasto-del-'+id);
+  if(b && b.dataset.confirmar!=='1'){ b.dataset.confirmar='1'; b.textContent='¿Seguro? Pulsa otra vez'; b.style.color='#b3441e'; return; }
+  const { data, error } = await sb.from('gastos').delete().eq('id', id).select('id');
+  if(error||!data?.length){ toast('No se pudo borrar: '+(error?.message||'sin permiso')); return; }
+  await recargarTodo(); toast('✓ Gasto borrado');
+}
+
+// ═══════════════ PEDIDOS (tienda online) ═══════════════
+const ESTADOS_PEDIDO={ pendiente_preparar:['Pendiente de preparar','pending'], preparado:['Preparado · listo para recoger','info'], entregado:['Entregado','ok'], cancelado:['Cancelado','danger'] };
+function renderPedidos(){
+  const tbody=document.getElementById('pedidos-tbody'); if(!tbody) return;
+  const pedidos=CONFIG.pedidosWeb||[];
+  tbody.innerHTML=pedidos.length?pedidos.map(p=>{ const e=ESTADOS_PEDIDO[p.estado]||[p.estado,'info'];
+    const sig=p.estado==='pendiente_preparar'?'preparado':p.estado==='preparado'?'entregado':null;
+    return `<tr>
+      <td>${p.fecha?new Date(p.fecha).toLocaleString('es-ES',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'-'}</td>
+      <td>${esc(p.cliente||'-')}</td>
+      <td>${esc(p.email||p.telefono||'-')}</td>
+      <td>${esc(p.producto)}</td>
+      <td><span class="tag tag-${e[1]}">${esc(e[0])}</span>${sig?` <button class="btn btn-ghost" style="padding:3px 8px;font-size:10px;margin-left:4px;" onclick="cambiarEstadoPedido('${p.id}','${sig}')">→ ${ESTADOS_PEDIDO[sig][0].split(' ·')[0]}</button>`:''}</td>
+    </tr>`; }).join(''):'<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:24px;">Sin pedidos todavía. Llegarán aquí cuando se active la tienda online.</td></tr>';
+}
+async function cambiarEstadoPedido(id, estado){
+  const { data, error } = await sb.from('pedidos').update({ estado }).eq('id', id).select('id');
+  if(error||!data?.length){ toast('No se pudo actualizar: '+(error?.message||'sin permiso')); return; }
+  await recargarTodo(); toast('✓ Pedido: '+ESTADOS_PEDIDO[estado][0]);
+}
+
+// ═══════════════ EQUIPO: alta de personas ═══════════════
+function infoNuevoMiembro(){
+  abrirModal('Dar acceso a una persona nueva', `
+    <p style="font-size:13px;color:var(--txt2);line-height:1.6;">Por seguridad, los accesos al panel los crea Airmate. Mándanos el <strong>nombre</strong> y el <strong>email</strong> de la persona y en el día la tienes dada de alta con su propio usuario (así sus ventas, citas y cierres de caja quedan a su nombre).</p>
+    <div style="display:flex;gap:8px;margin-top:18px;">
+      <button class="btn btn-ghost" style="flex:1" onclick="closeModal()">Cerrar</button>
+      <button class="btn btn-accent" style="flex:1" onclick="window.open('mailto:airmateai@gmail.com?subject='+encodeURIComponent('Nuevo acceso panel Divas Skin Care')+'&body='+encodeURIComponent('Nombre:\\nEmail:\\nRol (propietaria / equipo):'),'_blank')">✉ Pedir acceso a Airmate</button>
+    </div>`);
+}
+
+// ═══════════════ BUSCADOR (Cmd+K) ═══════════════
+function renderCmdK(){
+  const q=(document.getElementById('cmdk-input').value||'').toLowerCase().trim();
+  const t9=q.replace(/\D/g,'');
+  const cli=(CONFIG.clients||[]).filter(c=>!q||c.name.toLowerCase().includes(q)||(t9.length>=3&&tel9(c.phone).includes(t9))).slice(0,5);
+  const cat=(CONFIG.catalog||[]).filter(c=>c.id&&(!q||c.name.toLowerCase().includes(q))).slice(0,4);
+  const prod=(CONFIG.stock||[]).filter(c=>q&&(c.name+' '+(c.marca||'')).toLowerCase().includes(q)).slice(0,4);
+  const inv=(CONFIG.invoices||[]).map((i,idx)=>({...i,idx})).filter(i=>!q||String(i.num).toLowerCase().includes(q)||String(i.client).toLowerCase().includes(q)).slice(0,3);
+  const sec=(title,arr,build)=>arr.length?`<div class="cmdk-section">${title}</div>`+arr.map(build).join(''):'';
+  document.getElementById('cmdk-results').innerHTML=
+    sec('Clientas',cli,c=>`<div class="cmdk-item" onclick="closeCmdK();showClientById('${c.id}')"><div class="cmdk-item-title">${esc(c.name)}</div><div class="cmdk-item-meta">${esc(c.phone)}</div></div>`)+
+    sec('Servicios',cat,c=>`<div class="cmdk-item" onclick="closeCmdK();openServicioForm('${c.id}')"><div class="cmdk-item-title">${esc(c.name)}</div><div class="cmdk-item-meta">${fmt2(c.price)} · ${c.duracionMin} min</div></div>`)+
+    sec('Productos',prod,p=>`<div class="cmdk-item" onclick="closeCmdK();openArticuloForm('${p.id}')"><div class="cmdk-item-title">${esc(p.name)}</div><div class="cmdk-item-meta">${p.qty} en stock · ${fmt2(p.price)}</div></div>`)+
+    sec('Facturas',inv,i=>`<div class="cmdk-item" onclick="closeCmdK();showInvoice(${i.idx})"><div class="cmdk-item-title">${esc(i.num)} · ${esc(i.client)}</div><div class="cmdk-item-meta">${fmt2(i.total)}</div></div>`)
+    || '<div class="cmdk-item"><div class="cmdk-item-meta">Sin resultados</div></div>';
+}
+
+// ═══════════════ NAVEGACIÓN ═══════════════
+function goPage(id,el,isBottom){
+  CURRENT_PAGE=id;
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.querySelectorAll('.bnav-btn').forEach(n=>n.classList.remove('active'));
+  const bn=document.getElementById('bnav-'+id); if(bn) bn.classList.add('active');
+  const sn=[...document.querySelectorAll('.nav-item')].find(x=>(x.getAttribute('onclick')||'').includes("'"+id+"'")); if(sn) sn.classList.add('active');
+  const titles={dashboard:'Panel',schedule:'Citas',pipeline:'En cabina',salas:'Cabina',clients:'Clientas',catalog:'Servicios',invoices:'Facturas',reports:'Informes',waitlist:'Lista de espera',caja:'Cierre de caja',notificaciones:'Notificaciones',stock:'Stock',pos:'Punto de venta',team:'Equipo',gastos:'Gastos',pedidos:'Pedidos',accounting:'Contabilidad',followups:'Seguimientos'};
+  document.getElementById('topbar-title').textContent=titles[id]||id;
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('mob-overlay').classList.remove('open');
+  if(id==='salas') renderSalas();
+  if(id==='dashboard') renderDashboard();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
 </script>
 </body>
 </html>
