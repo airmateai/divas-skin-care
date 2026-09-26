@@ -27,7 +27,7 @@ const cors = {
 const json = (b: unknown, status = 200) => new Response(JSON.stringify(b), { status, headers: { ...cors, "Content-Type": "application/json" } });
 
 // ─── Sesión con el proveedor ───
-let token: string | null = null, tokenAt = 0, modoAuth: string | null = null;
+let token: string | null = null, tokenAt = 0;
 async function apiToken(forzar = false) {
   if (!forzar && token && Date.now() - tokenAt < 20 * 60_000) return token;
   const r = await fetch(ENDPOINT, {
@@ -41,34 +41,26 @@ async function apiToken(forzar = false) {
 }
 // La documentación pública no dice en qué cabecera va el token: se prueban las formas habituales
 // y se recuerda la que el proveedor acepta.
-async function api(method: "GET" | "POST", datos: Record<string, unknown>) {
+// Cabeceras confirmadas por soporte de apiverifactu (26/09/2026):
+//   Authorizationtoken: Bearer <access_token>   +   X-User-Id: <client_id>
+async function api(method: "GET" | "POST", datos: Record<string, unknown>, reintento = true): Promise<{ status: number; j: any }> {
   const t = await apiToken();
-  const modos = modoAuth ? [modoAuth] : ["bearer", "token", "body"];
-  let ultimo: { status: number; j: any } = { status: 0, j: {} };
-  for (const m of modos) {
-    const headers: Record<string, string> = { "Content-Type": "application/json" };
-    if (m === "bearer") headers["Authorization"] = "Bearer " + t;
-    if (m === "token") headers["token"] = t;
-    const extra = m === "body" ? { token: t, access_token: t } : {};
-    let url = ENDPOINT, body: string | undefined;
-    if (method === "GET") url += "?" + new URLSearchParams(Object.entries({ ...datos, ...extra }).map(([k, v]) => [k, String(v)]));
-    else body = JSON.stringify({ ...datos, ...extra });
-    const r = await fetch(url, { method, headers, body });
-    const txt = await r.text();
-    let j: any; try { j = JSON.parse(txt); } catch { j = { raw: txt.slice(0, 400) }; }
-    ultimo = { status: r.status, j };
-    if ((r.status === 401 || r.status === 403) && !modoAuth) continue;
-    if (r.ok) modoAuth = m;
-    return ultimo;
-  }
-  return ultimo;
+  const headers = { "Content-Type": "application/json", "Authorizationtoken": "Bearer " + t, "X-User-Id": CID };
+  let url = ENDPOINT, body: string | undefined;
+  if (method === "GET") url += "?" + new URLSearchParams(Object.entries(datos).map(([k, v]) => [k, String(v)]));
+  else body = JSON.stringify(datos);
+  const r = await fetch(url, { method, headers, body });
+  const txt = await r.text();
+  let j: any; try { j = JSON.parse(txt); } catch { j = { raw: txt.slice(0, 400) }; }
+  if (r.status === 401 && reintento) { await apiToken(true); return api(method, datos, false); } // token caducado
+  return { status: r.status, j };
 }
 let entorno: string | null = null;
 async function resumen() {
   const r = await api("GET", { action: "account_summary" });
   const d = r.j?.data || r.j;
   entorno = d?.environment || entorno;
-  return { status: r.status, cuenta: d, modo_auth: modoAuth };
+  return { status: r.status, cuenta: d };
 }
 
 // ─── Construcción del registro a partir de una venta del TPV ───
@@ -86,7 +78,7 @@ function lineasImpuesto(items: any[]) {
   const exento = Deno.env.get("VERIFACTU_EXENTO") || "E1";
   return Object.values(grupos).map((g) => g.rate > 0
     ? { tax: "03", vatKey: "01", operation_rating: "S1", exempt_operation: "E0", base: g.base, rate: g.rate, amount: g.amount }
-    : { tax: "03", vatKey: "01", operation_rating: "", exempt_operation: exento, base: g.base, rate: 0, amount: 0 });
+    : { tax: "03", vatKey: "01", operation_rating: "S1", exempt_operation: exento, base: g.base, rate: 0, amount: 0 });
 }
 function fechaCanarias(iso: string) {
   return new Date(iso).toLocaleDateString("en-CA", { timeZone: "Atlantic/Canary" }); // YYYY-MM-DD
