@@ -7,6 +7,7 @@
 <title>Divas Skin Care by Louie · Management Panel</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
 :root{
   --primary:#3d4a3a;
@@ -1690,8 +1691,8 @@ function showInvoice(idx){
     <div style="display:flex;justify-content:space-between;font-size:13px;color:var(--txt2);margin-bottom:10px;"><span>IGIC</span><span>Exento</span></div>
     <div style="display:flex;justify-content:space-between;font-family:var(--font-serif);font-size:22px;font-weight:500;color:var(--accent);padding-top:10px;border-top:1px solid var(--border);"><span>Total</span><span>${fmt(inv.total)}</span></div>
     <div style="display:flex;gap:8px;margin-top:18px;">
-      <button class="btn btn-ghost" style="flex:1" onclick="enviarWhatsApp('${(CONFIG.clients||[]).find(c=>c.email===inv.clientEmail)?.phone||''}','Hola, te enviamos la factura ${inv.num} de Divas Skin Care — total ${fmt(inv.total)}. ¡Gracias!')">💬 Enviar</button>
-      <button class="btn btn-ghost" style="flex:1" onclick="window.print()">↓ PDF</button>
+      <button class="btn btn-ghost" style="flex:1" onclick="enviarFacturaPDF(${idx})">📤 Enviar factura</button>
+      <button class="btn btn-ghost" style="flex:1" onclick="enviarFacturaPDF(${idx},true)">↓ PDF</button>
       ${inv.statusClass!=='ok'?`<button class="btn btn-accent" style="flex:1" onclick="marcarFacturaPagada('${inv.id}')">✓ Marcar pagada</button>`:''}
     </div>`;
   document.getElementById('modal-host').classList.add('open');
@@ -2873,6 +2874,7 @@ async function posPay(method){
   if(error||!ventaId){ toast('No se pudo guardar la venta: '+textoError(error?.message)); await recargarTodo(); return; }
   await recargarTodo();
   const num='RCP-'+String(ventaId).slice(0,8).toUpperCase();
+  ULTIMO_RECIBO={ numero:num, fecha:new Date().toLocaleString('es-ES'), metodo:METODOS_PAGO[method], usuario:usuario||'', lineas:items.map(c=>[c.qty+' × '+c.name, fmt2(c.price*c.qty)]), total:fmt2(t.total) };
   ULTIMO_RECIBO_TEXTO='Recibo '+num+' · Divas Skin Care\n'+items.map(c=>c.qty+' × '+c.name+' · '+fmt2(c.price*c.qty)).join('\n')+'\nTotal: '+fmt2(t.total)+' ('+METODOS_PAGO[method]+')';
   abrirModal('Recibo '+num, `
     <div style="text-align:center;margin-bottom:18px;padding-bottom:14px;border-bottom:1px dashed var(--border);">
@@ -2890,8 +2892,8 @@ async function posPay(method){
     <div style="display:flex;justify-content:space-between;font-family:var(--font-serif);font-size:22px;color:var(--accent);font-weight:600;margin-top:10px;padding-top:10px;border-top:1px solid var(--border);"><span>Total</span><span>${fmt2(t.total)}</span></div>
     <div style="margin-top:20px;text-align:center;font-size:10px;color:var(--txt3);letter-spacing:.18em;text-transform:uppercase;">Gracias · Hasta pronto</div>
     <div style="display:flex;gap:8px;margin-top:18px;">
-      <button class="btn btn-ghost" style="flex:1" onclick="enviarWhatsApp('',ULTIMO_RECIBO_TEXTO)">💬 Enviar</button>
-      <button class="btn btn-ghost" style="flex:1" onclick="window.print()">🖨 Imprimir</button>
+      <button class="btn btn-ghost" style="flex:1" onclick="enviarReciboPDF()">📤 Enviar recibo</button>
+      <button class="btn btn-ghost" style="flex:1" onclick="enviarReciboPDF(true)">↓ PDF</button>
       <button class="btn btn-accent" style="flex:1" onclick="closeModal()">Hecho</button>
     </div>`);
   POS_CART=[]; posRedrawCart(); posFilter('');
@@ -3605,6 +3607,67 @@ async function guardarObjetivo(){
   const _lr=loadRealData;
   loadRealData=async function(){ await Promise.all([_lr.apply(this,arguments), cargarObjetivos().catch(()=>{})]); };
 })();
+
+// ═════════════════════════════════════════════════════════════════════
+// Recibos y facturas en PDF: se generan en el propio dispositivo (gratis) y
+// se comparten con el menú del sistema (WhatsApp, Mail…) con el PDF adjunto.
+// Si el dispositivo no tiene menú de compartir, se descarga el PDF.
+// ═════════════════════════════════════════════════════════════════════
+let ULTIMO_RECIBO=null, _logoPDF=null;
+async function logoPDF(){
+  if(_logoPDF) return _logoPDF;
+  try{ const b=await (await fetch('img/logo-divas-silueta.jpeg')).blob();
+    _logoPDF=await new Promise(r=>{ const fr=new FileReader(); fr.onload=()=>r(fr.result); fr.readAsDataURL(b); }); }catch(_){ }
+  return _logoPDF;
+}
+async function crearPDF(d){
+  const { jsPDF } = window.jspdf;
+  const doc=new jsPDF({ unit:'mm', format:'a5' });
+  const L=14, R=134; let y=14;
+  const logo=await logoPDF(); if(logo) doc.addImage(logo,'JPEG',L,y,13,19);
+  doc.setFont('times','normal'); doc.setFontSize(19); doc.setTextColor(20); doc.text('Divas Skin Care',L+17,y+8);
+  doc.setFont('helvetica','normal'); doc.setFontSize(7.5); doc.setTextColor(130);
+  doc.text('Calle Arguijón 1 · La Laguna, Tenerife',L+17,y+13); doc.text('NIF 42418484K',L+17,y+17);
+  doc.setFontSize(8); doc.text(d.tipo.toUpperCase(),R,y+4,{align:'right'});
+  doc.setTextColor(188,145,106); doc.setFontSize(13); doc.text(d.numero,R,y+10,{align:'right'});
+  y+=28; doc.setDrawColor(220,229,209); doc.line(L,y,R,y); y+=8;
+  doc.setTextColor(130); doc.setFontSize(7.5); doc.text('FECHA',L,y); if(d.clienta) doc.text('CLIENTA',L+62,y);
+  y+=5; doc.setTextColor(20); doc.setFontSize(10); doc.text(d.fecha,L,y); if(d.clienta) doc.text(doc.splitTextToSize(d.clienta,58),L+62,y);
+  y+=12; doc.setTextColor(130); doc.setFontSize(7.5); doc.text('CONCEPTO',L,y); doc.text('IMPORTE',R,y,{align:'right'});
+  y+=2.5; doc.line(L,y,R,y); y+=6; doc.setTextColor(20); doc.setFontSize(10);
+  d.lineas.forEach(([t,imp])=>{ const w=doc.splitTextToSize(String(t),92); doc.text(w,L,y); doc.text(String(imp),R,y,{align:'right'}); y+=5*w.length+2; });
+  y+=1; doc.line(L,y,R,y); y+=9;
+  doc.setFont('times','bold'); doc.setFontSize(16); doc.text('Total',L,y); doc.setTextColor(188,145,106); doc.text(d.total,R,y,{align:'right'});
+  doc.setFont('helvetica','normal'); doc.setTextColor(130); doc.setFontSize(8); y+=9;
+  (d.pie||[]).forEach(t=>{ doc.text(t,L,y); y+=4.5; });
+  doc.setFontSize(8); doc.text('Gracias · Hasta pronto',74,200,{align:'center'});
+  return doc.output('blob');
+}
+async function compartirPDF(blob, nombre, texto, soloDescargar){
+  const file=new File([blob], nombre, { type:'application/pdf' });
+  if(!soloDescargar && navigator.canShare && navigator.canShare({ files:[file] })){
+    try{ await navigator.share({ files:[file], title:nombre, text:texto }); return; }
+    catch(e){ if(e && e.name==='AbortError') return; }
+  }
+  const url=URL.createObjectURL(blob); const a=document.createElement('a');
+  a.href=url; a.download=nombre; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),5000);
+  toast(soloDescargar?'✓ PDF descargado':'PDF descargado: adjúntalo en WhatsApp o en el email');
+}
+async function enviarReciboPDF(soloDescargar){
+  const r=ULTIMO_RECIBO; if(!r){ toast('No hay ningún recibo reciente'); return; }
+  try{
+    const blob=await crearPDF({ tipo:'Recibo', numero:r.numero, fecha:r.fecha, lineas:r.lineas, total:r.total, pie:['Pagado con '+r.metodo+(r.usuario?' · atendida por '+r.usuario:''),'IGIC: exento'] });
+    await compartirPDF(blob, 'Recibo '+r.numero+' - Divas Skin Care.pdf', 'Tu recibo de Divas Skin Care · '+r.total+'. ¡Gracias por tu visita!', soloDescargar);
+  }catch(e){ console.error(e); toast('No se pudo crear el PDF: '+(e.message||e)); }
+}
+async function enviarFacturaPDF(idx, soloDescargar){
+  const inv=CONFIG.invoices[idx]; if(!inv) return;
+  try{
+    const blob=await crearPDF({ tipo:'Factura', numero:inv.num, fecha:inv.date, clienta:inv.client, lineas:[[inv.items||'Servicios', fmt(inv.total)]], total:fmt(inv.total), pie:['Estado: '+inv.status,'IGIC: exento'] });
+    await compartirPDF(blob, 'Factura '+inv.num+' - Divas Skin Care.pdf', 'Tu factura '+inv.num+' de Divas Skin Care · '+fmt(inv.total)+'. ¡Gracias!', soloDescargar);
+  }catch(e){ console.error(e); toast('No se pudo crear el PDF: '+(e.message||e)); }
+}
 
 // Mantener la sesión al recargar: si ya hay una sesión iniciada, entrar directamente
 // sin volver a pedir email y contraseña.
