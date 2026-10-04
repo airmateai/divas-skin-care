@@ -2173,7 +2173,8 @@ function renderSchedule(){
 
 function renderKanban(){
   const hoyK=dayKey(new Date());
-  const citasHoy=(CONFIG.citasWeb||[]).filter(c=>citaActiva(c) && dayKey(c.fecha)===hoyK);
+  // Hoy + cualquier cita marcada "en cabina" aunque sea de otro día, para que nunca desaparezca del tablero
+  const citasHoy=(CONFIG.citasWeb||[]).filter(c=>citaActiva(c) && (dayKey(c.fecha)===hoyK || c.estado==='en_cabina'));
   const porColumna={esperando:[],en_cabina:[],completada:[]};
   citasHoy.forEach(c=>{ porColumna[(c.estado==='en_cabina'||c.estado==='completada')?c.estado:'esperando'].push(c); });
   document.getElementById('kanban').innerHTML=KANBAN_COLS.map(col=>`
@@ -2221,7 +2222,7 @@ function abrirDetalleCita(citaId){
     ${activa?`<div style="margin-top:16px;">
       <div style="${LBL}margin-bottom:6px;">Cambiar estado</div>
       <div style="display:flex;gap:6px;flex-wrap:wrap;">
-        ${['confirmada','en_cabina','completada','no_show'].filter(e=>e!==c.estado).map(e=>`<button class="btn btn-ghost" style="padding:5px 10px;font-size:11px;" onclick="cambiarEstadoCita('${c.id}','${e}')">${ESTADOS_CITA[e].t}</button>`).join('')}
+        ${['confirmada','en_cabina','completada','no_show'].filter(e=>e!==c.estado).filter(e=>{ const hoyD=dayKey(new Date()), diaD=dayKey(c.fecha); if(e==='en_cabina') return diaD===hoyD; if(e==='completada'||e==='no_show') return diaD<=hoyD; return true; }).map(e=>`<button class="btn btn-ghost" style="padding:5px 10px;font-size:11px;" onclick="cambiarEstadoCita('${c.id}','${e}')">${ESTADOS_CITA[e].t}</button>`).join('')}
       </div>
     </div>`:''}
     <div style="display:flex;gap:8px;margin-top:18px;flex-wrap:wrap;">
@@ -3096,7 +3097,8 @@ function rangoPeriodo(p){
   else if(p==='anio') d=new Date(h.getFullYear(), 0, 1);
   else d=new Date(h.getFullYear(), h.getMonth(), 1);
   d.setHours(0,0,0,0);
-  return { desde:d, hasta:h };
+  const fin=new Date(h); fin.setHours(23,59,59,999); // incluye todo el día de hoy (los gastos se guardan a las 12:00)
+  return { desde:d, hasta:fin };
 }
 function enPeriodo(f){ const r=rangoPeriodo(PERIODO), t=new Date(f); return t>=r.desde && t<=r.hasta; }
 function setPeriodo(p){ PERIODO=p; document.querySelectorAll('.sel-periodo').forEach(s=>s.value=p); renderReports(); renderAccounting(); }
