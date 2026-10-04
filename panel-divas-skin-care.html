@@ -3598,6 +3598,25 @@ async function guardarObjetivo(){
   const _lr=loadRealData;
   loadRealData=async function(){ await Promise.all([_lr.apply(this,arguments), cargarObjetivos().catch(()=>{})]); };
 })();
+
+// Mantener la sesión al recargar: si ya hay una sesión iniciada, entrar directamente
+// sin volver a pedir email y contraseña.
+(async function restaurarSesion(){
+  try{
+    const { data:{ session } } = await sb.auth.getSession();
+    if(!session) return;
+    document.getElementById('login').classList.add('hidden');
+    document.getElementById('app').classList.add('visible');
+    await loadRealData();
+    await cargarUsuarioActual();
+    initApp();
+    suscribirTiempoReal();
+  }catch(e){
+    console.error('No se pudo restaurar la sesión', e);
+    document.getElementById('app').classList.remove('visible');
+    document.getElementById('login').classList.remove('hidden');
+  }
+})();
 </script>
 </body>
 </html>
