@@ -3616,15 +3616,15 @@ async function guardarObjetivo(){
 let ULTIMO_RECIBO=null, _logoPDF=null;
 async function logoPDF(){
   if(_logoPDF) return _logoPDF;
-  try{ const b=await (await fetch('img/logo-divas-silueta.jpeg')).blob();
-    _logoPDF=await new Promise(r=>{ const fr=new FileReader(); fr.onload=()=>r(fr.result); fr.readAsDataURL(b); }); }catch(_){ }
+  // Se pasa a PNG con un canvas: jsPDF no dibuja algunos JPEG (progresivos)
+  try{ _logoPDF=await new Promise((res,rej)=>{ const im=new Image(); im.onload=()=>{ const c=document.createElement('canvas'); c.width=im.naturalWidth; c.height=im.naturalHeight; c.getContext('2d').drawImage(im,0,0); res(c.toDataURL('image/png')); }; im.onerror=rej; im.src='img/logo-divas-silueta.jpeg'; }); }catch(_){ }
   return _logoPDF;
 }
 async function crearPDF(d){
   const { jsPDF } = window.jspdf;
   const doc=new jsPDF({ unit:'mm', format:'a5' });
   const L=14, R=134; let y=14;
-  const logo=await logoPDF(); if(logo) doc.addImage(logo,'JPEG',L,y,13,19);
+  const logo=await logoPDF(); if(logo) doc.addImage(logo,'PNG',L,y,13,19);
   doc.setFont('times','normal'); doc.setFontSize(19); doc.setTextColor(20); doc.text('Divas Skin Care',L+17,y+8);
   doc.setFont('helvetica','normal'); doc.setFontSize(7.5); doc.setTextColor(130);
   doc.text('Calle Arguijón 1 · La Laguna, Tenerife',L+17,y+13); doc.text('NIF 42418484K',L+17,y+17);
