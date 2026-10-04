@@ -3614,6 +3614,7 @@ async function guardarObjetivo(){
 // Si el dispositivo no tiene menú de compartir, se descarga el PDF.
 // ═════════════════════════════════════════════════════════════════════
 let ULTIMO_RECIBO=null, _logoPDF=null;
+const CLAUSULA_RGPD='De conformidad con Ley Orgánica de Protección de Datos Personales y Garantía de los Derechos Digitales (LOPD-GDD 3/2018) y con el Reglamento General de Protección de Datos (RGPD UE 2016/679), le informamos que los datos de carácter personal que pudieran constar en este documento han sido incluidos en los ficheros propiedad de Louie Nocum Lapuz. No se cederán datos a terceros, salvo excepción legal. El tratamiento de tales datos tiene por finalidad y base legal el establecimiento de la relación contractual con esta Empresa. Podrá ejercer los derechos de acceso, rectificación, oposición, limitación, portabilidad y supresión en los términos previstos en la legislación vigente, dirigiéndose a Louie Nocum Lapuz. Puede consultar la información adicional y detallada sobre Protección de Datos dirigiéndose a la empresa. También tiene derecho a presentar una reclamación ante la Agencia Española de Protección de Datos (www.aepd.es).';
 async function logoPDF(){
   if(_logoPDF) return _logoPDF;
   // Se re-codifica con un canvas: jsPDF no dibuja algunos JPEG (progresivos)
@@ -3640,7 +3641,10 @@ async function crearPDF(d){
   doc.setFont('times','bold'); doc.setFontSize(16); doc.text('Total',L,y); doc.setTextColor(188,145,106); doc.text(d.total,R,y,{align:'right'});
   doc.setFont('helvetica','normal'); doc.setTextColor(130); doc.setFontSize(8); y+=9;
   (d.pie||[]).forEach(t=>{ doc.text(t,L,y); y+=4.5; });
-  doc.setFontSize(8); doc.text('Gracias · Hasta pronto',74,200,{align:'center'});
+  doc.setFontSize(8); doc.text('Gracias · Hasta pronto',74,172,{align:'center'});
+  // Cláusula de protección de datos (facilitada por Divas)
+  doc.setFontSize(5.6); doc.setTextColor(150);
+  doc.text(doc.splitTextToSize(CLAUSULA_RGPD,R-L),L,180);
   return doc.output('blob');
 }
 async function compartirPDF(blob, nombre, texto, soloDescargar){
