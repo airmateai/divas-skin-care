@@ -2202,6 +2202,39 @@ function renderKanban(){
     </div>`).join('');
 }
 
+// ═══════════════ RECORDATORIOS DE CITA (WhatsApp) ═══════════════
+// Mensaje con la política de 48 h. Se abre WhatsApp con el texto escrito; Louie solo pulsa enviar.
+function textoRecordatorio(c){
+  const ini=new Date(c.fecha);
+  const dia=ini.toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long'});
+  const nombre=(c.cliente||'').split(' ')[0]||'';
+  return `Hola ${nombre} 💛 Te recordamos tu cita en Divas Skin Care:\n\n`+
+    `📅 ${dia.charAt(0).toUpperCase()+dia.slice(1)} a las ${minToHHMM(minDelDia(ini))}\n`+
+    `✨ ${nombreServicioCita(c)}\n📍 Calle Arguijón 1, La Laguna\n\n`+
+    `Si necesitas cambiarla o cancelarla, avísanos con al menos 48 horas de antelación. `+
+    `Si no nos avisas a tiempo (salvo causa urgente justificada), la cita se dará por realizada: se pierde la señal o el importe pagado y, si tienes bono, se descuenta la sesión.\n\n`+
+    `Respóndenos a este mensaje para confirmar tu asistencia. ¡Te esperamos!`;
+}
+function enviarRecordatorioCita(citaId){
+  const c=(CONFIG.citasWeb||[]).find(x=>String(x.id)===String(citaId));
+  if(!c||!c.fecha){ toast('Esta cita no tiene fecha'); return; }
+  enviarWhatsApp(c.telefono, textoRecordatorio(c));
+}
+function citasDeManana(){
+  const m=new Date(); m.setDate(m.getDate()+1); const k=dayKey(m);
+  return (CONFIG.citasWeb||[]).filter(c=>c.fecha && citaActiva(c) && dayKey(c.fecha)===k).sort((a,b)=>new Date(a.fecha)-new Date(b.fecha));
+}
+function abrirRecordatoriosManana(){
+  const lista=citasDeManana();
+  abrirModal('Recordatorios para mañana', lista.length?`
+    <p style="font-size:13px;color:var(--txt2);margin:0 0 12px;">Pulsa cada botón: se abre WhatsApp con el recordatorio (incluye el aviso de las 48 horas). Solo tienes que darle a enviar.</p>
+    ${lista.map(c=>`<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border2);">
+      <span style="width:46px;font-weight:600;">${minToHHMM(minDelDia(new Date(c.fecha)))}</span>
+      <span style="flex:1;"><strong>${esc(c.cliente||'-')}</strong><br><span style="font-size:11px;color:var(--txt3);">${esc(nombreServicioCita(c))}</span></span>
+      <button class="btn btn-ghost" style="padding:5px 10px;font-size:11px;" onclick="enviarRecordatorioCita('${c.id}');this.textContent='✓ Abierto';">📲 Recordar</button>
+    </div>`).join('')}`:'<p style="font-size:13px;color:var(--txt2);">No hay citas para mañana.</p>');
+}
+
 // ═══════════════ DETALLE / EDICIÓN DE CITA ═══════════════
 function abrirDetalleCita(citaId){
   const c=(CONFIG.citasWeb||[]).find(x=>String(x.id)===String(citaId));
@@ -2235,6 +2268,7 @@ function abrirDetalleCita(citaId){
     </div>`:''}
     <div style="display:flex;gap:8px;margin-top:18px;flex-wrap:wrap;">
       ${cl?`<button class="btn btn-ghost" onclick="showClientById('${cl.id}')">Ver ficha de la clienta</button>`:''}
+      ${activa&&c.fecha?`<button class="btn btn-ghost" onclick="enviarRecordatorioCita('${c.id}')">📲 Recordatorio WhatsApp</button>`:''}
       ${activa?`<button class="btn btn-ghost" onclick="openBookingForm({citaId:'${c.id}'})">✎ Modificar cita</button>`:''}
       ${activa?`<button class="btn btn-ghost" id="btn-cancelar-cita" style="color:#b3441e;" onclick="pedirConfirmacionCancelar('${c.id}')">Cancelar cita</button>`:''}
       ${!activa&&c.fecha?`<button class="btn btn-ghost" onclick="mostrarCompatiblesHueco('${c.id}')">Ver lista de espera para este hueco</button>`:''}
@@ -3183,6 +3217,8 @@ function calcularAvisos(){
   const av=[];
   const porConfirmar=(CONFIG.citasWeb||[]).filter(c=>citaActiva(c) && /^pendiente/.test(c.estado) && new Date(c.fecha)>=ahora);
   const sinFecha=(CONFIG.citasWeb||[]).filter(c=>!c.fecha && /^pendiente/.test(c.estado));
+  const manana=citasDeManana();
+  if(manana.length) av.push({ icon:'📲', color:'#25a35a', title:`${manana.length} cita${manana.length>1?'s':''} mañana · enviar recordatorios`, body:'Abre WhatsApp con el recordatorio y la norma de las 48 horas, una por una.', go:'js:abrirRecordatoriosManana()' });
   if(porConfirmar.length) av.push({ icon:'📅', color:'#bc916a', title:`${porConfirmar.length} reserva${porConfirmar.length>1?'s':''} por confirmar`, body:'Reservas web pendientes de confirmar o de pagar el depósito.', go:'schedule' });
   if(sinFecha.length) av.push({ icon:'💳', color:'#bc916a', title:`${sinFecha.length} pago${sinFecha.length>1?'s':''} online sin hora`, body:'Clientas que pagaron por Stripe y hay que darles fecha y hora.', go:'schedule' });
   const conHueco=(CONFIG.waitlist||[]).filter(w=>(w.estado==='pendiente'||w.estado==='contactada') && huecosParaEspera(w));
@@ -3220,7 +3256,7 @@ function renderDashboard(){
 
   const av=calcularAvisos();
   document.getElementById('dash-insights').innerHTML=av.length?av.map(i=>`
-    <div class="insight" onclick="goPage('${i.go}')">
+    <div class="insight" onclick="${i.go.startsWith('js:')?i.go.slice(3):`goPage('${i.go}')`}">
       <div class="insight-hd"><div class="insight-icon" style="background:${i.color}15;color:${i.color};border:1px solid ${i.color}40">${i.icon}</div><div class="insight-title">${esc(i.title)}</div></div>
       <div class="insight-body">${esc(i.body)}</div>
     </div>`).join(''):'<div class="insight"><div class="insight-hd"><div class="insight-icon" style="background:#16a34a15;color:#16a34a;border:1px solid #16a34a40">✓</div><div class="insight-title">Todo al día</div></div><div class="insight-body">No hay reservas por confirmar, ni stock agotado, ni seguimientos urgentes.</div></div>';
