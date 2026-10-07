@@ -1320,7 +1320,7 @@ if(_initialTab)filterSvcByCat(_initialTab.textContent.trim());
 document.querySelectorAll('#svc-tabs .cat-tab').forEach(conectarPestanaServicio);
 
 // ═══ Tienda: filtro por marca ═══
-(function(){
+function montarTabsTienda(){
   const shopGrid=document.querySelector('.shop-grid');
   const tabsCont=document.getElementById('shop-tabs');
   if(!shopGrid||!tabsCont)return;
@@ -1359,7 +1359,9 @@ document.querySelectorAll('#svc-tabs .cat-tab').forEach(conectarPestanaServicio)
       filterShopByMarca(tab.dataset.marca);
     });
   });
-})();
+}
+montarTabsTienda();
+
 
 // ═══ WOW: reveal on scroll ═══
 (function(){
@@ -1607,6 +1609,7 @@ const RE_DURACION = /^\s*(\d+\s*h)?\s*(\d+\s*min)?\s*$/i;
     if (!s || !card) return;
     conTarjeta.add(s.id);
     if (s.reservable === false) { card.dataset.inactivo = '1'; card.style.display = 'none'; return; }
+    if (s.img_url) { const media = card.querySelector('.svc-img'); if (media) media.innerHTML = `<img src="${escWeb(s.img_url)}" alt="${escWeb(s.nombre)}" loading="lazy">`; }
     btn.dataset.precio = s.precio;
     const precioEl = card.querySelector('.svc-price');
     if (precioEl) precioEl.textContent = precioWeb(s.precio);
@@ -1634,6 +1637,25 @@ const RE_DURACION = /^\s*(\d+\s*h)?\s*(\d+\s*min)?\s*$/i;
   });
   const activa = tabs.querySelector('.cat-tab.active');
   if (activa) filterSvcByCat(activa.textContent.trim());
+})();
+
+// ═══ Tienda conectada al panel ═══
+// Los productos que Louie marca "Publicar en la tienda web" en el panel salen aquí con su foto,
+// marca y precio (vista pública tienda_web: sin costes ni stock exacto). Si todavía no hay
+// ninguno publicado, se queda la tienda escrita en esta página.
+(async function tiendaDesdePanel(){
+  const grid=document.querySelector('.shop-grid');
+  if(!grid) return;
+  const { data, error } = await sb.from('tienda_web').select('id,nombre,marca,precio,imagen_url,disponible').order('marca',{nullsFirst:false}).order('nombre');
+  if(error || !data || !data.length) return;
+  const grupos={};
+  data.forEach(p=>{ const m=(p.marca||'Otros').toUpperCase(); (grupos[m]=grupos[m]||[]).push(p); });
+  grid.innerHTML=Object.entries(grupos).map(([m,ps])=>`<div class="shop-marca-title" style="grid-column:1/-1;padding:18px 20px 4px;"><h3 style="font-family:var(--font-serif);color:var(--accent-lt);font-size:20px;">${escWeb(m)}</h3></div>`+
+    ps.map(p=>`<div class="shop-card">
+        <div class="shop-img">${p.imagen_url?`<img src="${escWeb(p.imagen_url)}" alt="${escWeb(p.nombre)}" loading="lazy">`:''}</div>
+        <div class="shop-body"><h4>${escWeb(p.nombre)}</h4><div class="price">${precioWeb(p.precio)}</div>${p.disponible?'':'<div style="font-size:11px;opacity:.7;margin-top:4px;">Sin stock ahora</div>'}</div>
+      </div>`).join('')).join('');
+  montarTabsTienda();
 })();
 
 async function abrirFormularioReserva(card, bookBtn){
