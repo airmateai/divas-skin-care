@@ -118,13 +118,20 @@ Deno.serve(async (req) => {
         producto_id: productoId,
         estado: "pendiente_preparar",
         origen: "stripe",
-        notas: `Pago recibido por Stripe (sesión ${session.id}).`,
+        notas: `Pagado online (${((session.amount_total ?? 0) / 100).toFixed(2).replace('.', ',')} €). Recoge en cabina. Sesión ${session.id}.`,
       });
 
       if (pedidoError) {
         console.error("Error creando pedido:", pedidoError.message);
       } else {
         console.log(`Pedido creado para ${nombre} (${email}) — producto ${productoId}`);
+        // Descontar 1 unidad del stock (venta online, recogida en cabina)
+        const { data: art } = await supabase.from("stock").select("cantidad").eq("id", productoId).maybeSingle();
+        if (art) {
+          const { error: stockError } = await supabase.from("stock")
+            .update({ cantidad: Math.max(0, (art.cantidad ?? 0) - 1) }).eq("id", productoId);
+          if (stockError) console.error("Error descontando stock:", stockError.message);
+        }
       }
     }
   }
