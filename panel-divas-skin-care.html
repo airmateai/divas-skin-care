@@ -142,6 +142,7 @@ a{color:inherit;text-decoration:none;}
   .mob-hamburger{display:inline-flex;align-items:center;justify-content:center;}
   .topbar-title{font-size:13px;}
   .topbar-right .topbar-btn:not(:last-child){display:none;}
+  .topbar-right .topbar-btn.pw-btn{display:block;padding:8px 10px;}.pw-tx{display:none;}
   .bottom-nav{display:flex;}
 
   /* Page header más compacto */
@@ -626,6 +627,7 @@ tbody tr:hover{background:rgba(0,0,0,.02);}
           </button>
           <div class="bell-panel" id="bell-panel"></div>
         </div>
+        <button class="topbar-btn pw-btn" onclick="abrirCambioPass()" title="Cambiar contraseña">🔑<span class="pw-tx"> Contraseña</span></button>
         <button class="topbar-btn" onclick="logout()">Cerrar sesión</button>
       </div>
     </div>
@@ -1194,6 +1196,40 @@ async function login(){
   initApp();
   suscribirTiempoReal();
 }
+// Cambiar contraseña: comprueba la actual volviendo a entrar y luego la actualiza en Supabase Auth.
+function abrirCambioPass(){
+  const pw='type="password" autocomplete="new-password" style="'+INP+'"';
+  abrirModal('Cambiar contraseña', `<div style="display:flex;flex-direction:column;gap:12px;">
+    ${campo('Contraseña actual','<input id="pw-actual" type="password" autocomplete="current-password" style="'+INP+'">')}
+    ${campo('Nueva contraseña (mínimo 8 caracteres)','<input id="pw-nueva" '+pw+'>')}
+    ${campo('Repite la nueva contraseña','<input id="pw-repite" '+pw+'>')}
+    <div id="pw-err" style="color:#b42318;font-size:12px;min-height:16px;"></div>
+    <button class="btn-login" id="pw-btn" onclick="guardarCambioPass()">Guardar contraseña</button>
+  </div>`);
+}
+async function guardarCambioPass(){
+  const v=id=>document.getElementById(id).value, err=document.getElementById('pw-err'), btn=document.getElementById('pw-btn');
+  const actual=v('pw-actual'), nueva=v('pw-nueva'), repite=v('pw-repite');
+  err.textContent='';
+  if(nueva.length<8){ err.textContent='La nueva contraseña debe tener al menos 8 caracteres.'; return; }
+  if(nueva!==repite){ err.textContent='Las dos contraseñas nuevas no coinciden.'; return; }
+  if(nueva===actual){ err.textContent='La nueva contraseña tiene que ser distinta de la actual.'; return; }
+  btn.disabled=true; btn.textContent='Guardando…';
+  try{
+    const { data:{ user } } = await sb.auth.getUser();
+    if(!user) throw new Error('La sesión ha caducado. Vuelve a entrar.');
+    const re = await sb.auth.signInWithPassword({ email:user.email, password:actual });
+    if(re.error) throw new Error('La contraseña actual no es correcta.');
+    const { error } = await sb.auth.updateUser({ password:nueva });
+    if(error) throw error;
+    closeModal();
+    toast('Contraseña cambiada ✓');
+  }catch(e){
+    err.textContent=e.message||'No se pudo cambiar la contraseña.';
+    btn.disabled=false; btn.textContent='Guardar contraseña';
+  }
+}
+
 async function logout(){
   if(_rtCanal){ sb.removeChannel(_rtCanal); _rtCanal=null; }
   await sb.auth.signOut();
