@@ -1,2 +1,8 @@
 
 supabase/.temp/
+*.sql
+.DS_Store
+*.patch
+propuesta-divas-skin-care.html
+briefing-divas-skin-care.html
+web-divas-skin-care.html
