@@ -502,6 +502,7 @@ tbody tr:hover{background:rgba(0,0,0,.02);}
       </div>
       <button class="btn-login" onclick="login()">Entrar al panel</button>
       <div class="login-hint" id="login-hint">Acceso solo para el equipo de Divas Skin Care</div>
+      <div style="text-align:center;margin-top:14px;"><a href="#" onclick="olvideClave(event)" style="font-size:12px;color:var(--txt2);text-decoration:underline;">¿Has olvidado tu contraseña?</a></div>
     </div>
   </div>
 </div>
@@ -1174,6 +1175,9 @@ let LANG='en';
 const SUPABASE_URL = 'https://tmbnufvchgwfnwmpbamq.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRtYm51ZnZjaGd3Zm53bXBiYW1xIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc3NDEwMzAsImV4cCI6MjEwMzMxNzAzMH0.lYEIDtBEonDCcyWi3eluP5e6m7lgefxFstheWpA7KHg';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// Si se abre desde el enlace de "He olvidado mi contraseña", pedir la nueva al entrar.
+let _vieneDeRecuperacion = /type=recovery/.test(location.hash);
+sb.auth.onAuthStateChange(ev=>{ if(ev==='PASSWORD_RECOVERY') _vieneDeRecuperacion=true; });
 
 // ═══════════════ AUTH ═══════════════
 async function login(){
@@ -1196,6 +1200,45 @@ async function login(){
   initApp();
   suscribirTiempoReal();
 }
+// Recuperar contraseña: envía un email con un enlace que abre este mismo panel.
+async function olvideClave(ev){
+  ev.preventDefault();
+  const email=document.getElementById('li-email').value.trim(), hint=document.getElementById('login-hint');
+  if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){ hint.textContent='Escribe arriba tu email y vuelve a pulsar «¿Has olvidado tu contraseña?».'; hint.style.color='#b42318'; return; }
+  hint.textContent='Enviando…'; hint.style.color='';
+  const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: location.origin + location.pathname });
+  if(error){ hint.textContent='No se pudo enviar el email: '+(error.message||'inténtalo de nuevo'); hint.style.color='#b42318'; return; }
+  hint.textContent='Te hemos enviado un email con un enlace para crear una contraseña nueva. Revisa también la carpeta de spam.'; hint.style.color='var(--primary)';
+}
+// Tras abrir el enlace del email ya hay sesión: solo se pide la nueva contraseña.
+function abrirNuevaPass(){
+  const pw='type="password" autocomplete="new-password" style="'+INP+'"';
+  abrirModal('Crea tu contraseña nueva', `<div style="display:flex;flex-direction:column;gap:12px;">
+    ${campo('Nueva contraseña (mínimo 8 caracteres)','<input id="pw-nueva" '+pw+'>')}
+    ${campo('Repite la nueva contraseña','<input id="pw-repite" '+pw+'>')}
+    <div id="pw-err" style="color:#b42318;font-size:12px;min-height:16px;"></div>
+    <button class="btn-login" id="pw-btn" onclick="guardarNuevaPass()">Guardar contraseña</button>
+  </div>`);
+}
+async function guardarNuevaPass(){
+  const v=id=>document.getElementById(id).value, err=document.getElementById('pw-err'), btn=document.getElementById('pw-btn');
+  const nueva=v('pw-nueva'), repite=v('pw-repite');
+  err.textContent='';
+  if(nueva.length<8){ err.textContent='La contraseña debe tener al menos 8 caracteres.'; return; }
+  if(nueva!==repite){ err.textContent='Las dos contraseñas no coinciden.'; return; }
+  btn.disabled=true; btn.textContent='Guardando…';
+  try{
+    const { error } = await sb.auth.updateUser({ password:nueva });
+    if(error) throw error;
+    _vieneDeRecuperacion=false;
+    closeModal();
+    toast('Contraseña guardada ✓ La próxima vez entra con la nueva.');
+  }catch(e){
+    err.textContent=e.message||'No se pudo guardar la contraseña.';
+    btn.disabled=false; btn.textContent='Guardar contraseña';
+  }
+}
+
 // Cambiar contraseña: comprueba la actual volviendo a entrar y luego la actualiza en Supabase Auth.
 function abrirCambioPass(){
   const pw='type="password" autocomplete="new-password" style="'+INP+'"';
@@ -3807,6 +3850,7 @@ async function enviarFacturaPDF(idx, soloDescargar){
     await cargarUsuarioActual();
     initApp();
     suscribirTiempoReal();
+    if(_vieneDeRecuperacion) abrirNuevaPass();
   }catch(e){
     console.error('No se pudo restaurar la sesión', e);
     document.getElementById('app').classList.remove('visible');
