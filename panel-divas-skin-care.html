@@ -1335,6 +1335,7 @@ async function loadRealData(){
       email: p.cliente_email,
       producto: stockById[p.producto_id] || 'Producto',
       estado: p.estado,
+      notas: p.notas || '',
       fecha: p.created_at
     }));
   }
@@ -3507,17 +3508,18 @@ async function borrarGastoReal(id){
 }
 
 // ═══════════════ PEDIDOS (tienda online) ═══════════════
-const ESTADOS_PEDIDO={ pendiente_preparar:['Pendiente de preparar','pending'], preparado:['Preparado · listo para recoger','info'], entregado:['Entregado','ok'], cancelado:['Cancelado','danger'] };
+const ESTADOS_PEDIDO={ encargo:['Encargo nuevo · escribir por WhatsApp','pending'], encargado:['Pedido al proveedor','info'], pendiente_preparar:['Pendiente de preparar','pending'], preparado:['Preparado · listo para recoger','info'], entregado:['Entregado','ok'], cancelado:['Cancelado','danger'] };
 function renderPedidos(){
   const tbody=document.getElementById('pedidos-tbody'); if(!tbody) return;
   const pedidos=CONFIG.pedidosWeb||[];
   tbody.innerHTML=pedidos.length?pedidos.map(p=>{ const e=ESTADOS_PEDIDO[p.estado]||[p.estado,'info'];
-    const sig=p.estado==='pendiente_preparar'?'preparado':p.estado==='preparado'?'entregado':null;
+    const sig=p.estado==='encargo'?'encargado':p.estado==='encargado'?'preparado':p.estado==='pendiente_preparar'?'preparado':p.estado==='preparado'?'entregado':null;
+    const tlf=String(p.telefono||'').replace(/\D/g,''); const wa=tlf.length>=9?`https://wa.me/${tlf.length===9?'34'+tlf:tlf}?text=${encodeURIComponent('Hola '+String(p.cliente||'').split(' ')[0]+', te escribimos de Divas Skin Care por tu encargo de '+p.producto+(p.notas?' ('+p.notas.replace('Encargo web · ','')+')':'')+'.')}`:'';
     return `<tr>
       <td>${p.fecha?new Date(p.fecha).toLocaleString('es-ES',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'-'}</td>
       <td>${esc(p.cliente||'-')}</td>
-      <td>${esc(p.email||p.telefono||'-')}</td>
-      <td>${esc(p.producto)}</td>
+      <td>${esc(p.email||p.telefono||'-')}${wa?` <a class="btn btn-ghost" style="padding:3px 8px;font-size:10px;margin-left:4px;color:#128c4a;" href="${wa}" target="_blank" rel="noopener">WhatsApp</a>`:''}</td>
+      <td>${esc(p.producto)}${p.notas?`<div style="font-size:11px;color:var(--txt3);">${esc(p.notas)}</div>`:''}</td>
       <td><span class="tag tag-${e[1]}">${esc(e[0])}</span>${sig?` <button class="btn btn-ghost" style="padding:3px 8px;font-size:10px;margin-left:4px;" onclick="cambiarEstadoPedido('${p.id}','${sig}')">→ ${ESTADOS_PEDIDO[sig][0].split(' ·')[0]}</button>`:''}</td>
     </tr>`; }).join(''):'<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:24px;">Sin pedidos todavía. Llegarán aquí cuando se active la tienda online.</td></tr>';
 }

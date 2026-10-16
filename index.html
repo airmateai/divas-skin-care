@@ -1693,17 +1693,29 @@ function encargarProducto(id){
       ${tallas.length?`<label style="font-size:12px;font-weight:600;">Talla${sel('enc-talla',tallas)}</label>`:''}
       ${colores.length?`<label style="font-size:12px;font-weight:600;">Color${sel('enc-color',colores.map(c=>c.charAt(0)+c.slice(1).toLowerCase()))}</label>`:''}
     </div>
-    <p style="font-size:12px;opacity:.7;margin:14px 0 0;">Producto bajo pedido: te lo encargamos y te avisamos cuando llegue para recogerlo en cabina.</p>
-    <button type="button" id="enc-ok" style="width:100%;margin-top:16px;background:#25D366;color:#fff;border:none;border-radius:10px;padding:15px;font:inherit;font-weight:600;cursor:pointer;">Encargar por WhatsApp</button>
+    <label style="display:block;font-size:12px;font-weight:600;margin-top:14px;">Tu nombre<input id="enc-nombre" autocomplete="name" maxlength="80" style="width:100%;padding:12px;border:1px solid #d9d4c7;border-radius:8px;font:inherit;background:#fff;margin-top:6px;"></label>
+    <label style="display:block;font-size:12px;font-weight:600;margin-top:12px;">Tu teléfono (WhatsApp)<input id="enc-tel" type="tel" autocomplete="tel" inputmode="tel" maxlength="20" style="width:100%;padding:12px;border:1px solid #d9d4c7;border-radius:8px;font:inherit;background:#fff;margin-top:6px;"></label>
+    <label style="display:flex;gap:8px;align-items:flex-start;font-size:12px;line-height:1.5;margin-top:12px;opacity:.85;"><input type="checkbox" id="enc-priv" style="margin-top:3px;"> Acepto que Divas Skin Care use mis datos para gestionar este encargo y contactarme por WhatsApp (<a href="privacidad.html" target="_blank" style="text-decoration:underline;">privacidad</a>).</label>
+    <p style="font-size:12px;opacity:.7;margin:12px 0 0;">Producto bajo pedido: te lo encargamos y te escribimos por WhatsApp para confirmarlo. Se paga y recoge en cabina.</p>
+    <div id="enc-err" style="display:none;color:#b3441e;font-size:13px;margin-top:10px;"></div>
+    <button type="button" id="enc-ok" style="width:100%;margin-top:14px;background:#3d4a3a;color:#fff;border:none;border-radius:10px;padding:15px;font:inherit;font-weight:600;cursor:pointer;">Solicitar encargo</button>
     <button type="button" id="enc-x" style="width:100%;margin-top:8px;background:none;border:none;padding:10px;font:inherit;opacity:.7;cursor:pointer;">Cancelar</button></div>`;
   document.body.appendChild(ov);
   const cerrar=()=>ov.remove();
   ov.addEventListener('click',e=>{ if(e.target===ov) cerrar(); });
   ov.querySelector('#enc-x').onclick=cerrar;
-  ov.querySelector('#enc-ok').onclick=()=>{
-    const t=ov.querySelector('#enc-talla')?.value, c=ov.querySelector('#enc-color')?.value;
-    const msg=`Hola, quiero encargar la faja ${p.nombre} (Ref. ${p.referencia||''})`+(t?`, talla ${t}`:'')+(c?`, color ${c}`:'')+`. Precio ${precioWeb(p.precio)}.`;
-    window.open('https://wa.me/34613367567?text='+encodeURIComponent(msg),'_blank'); cerrar();
+  ov.querySelector('#enc-ok').onclick=async (ev)=>{
+    const btn=ev.currentTarget, err=ov.querySelector('#enc-err');
+    const fallo=m=>{ err.textContent=m; err.style.display='block'; btn.disabled=false; btn.textContent='Solicitar encargo'; };
+    const nombre=ov.querySelector('#enc-nombre').value.trim(), tel=ov.querySelector('#enc-tel').value.trim();
+    if(nombre.length<2) return fallo('Escribe tu nombre.');
+    if(tel.replace(/\D/g,'').length<9) return fallo('Escribe un teléfono válido.');
+    if(!ov.querySelector('#enc-priv').checked) return fallo('Marca la casilla de privacidad para poder enviarlo.');
+    btn.disabled=true; btn.textContent='Enviando…'; err.style.display='none';
+    const { error } = await sb.rpc('encargar_producto',{ p_nombre:nombre, p_telefono:tel, p_producto:String(p.id), p_talla:ov.querySelector('#enc-talla')?.value||null, p_color:ov.querySelector('#enc-color')?.value||null });
+    if(error) return fallo((error.message&&!/function|schema|permission/i.test(error.message))?error.message:'No se pudo enviar. Escríbenos por WhatsApp al 613 36 75 67.');
+    ov.firstElementChild.innerHTML=`<div style="text-align:center;padding:20px 6px;"><div style="font-size:40px;">✓</div><h4 style="font-family:var(--font-serif);font-size:22px;margin:10px 0 8px;">¡Encargo recibido!</h4><p style="font-size:14px;opacity:.8;line-height:1.6;">Te escribimos por WhatsApp en breve para confirmar tu ${escWeb(p.nombre.toLowerCase())}.</p><button type="button" style="margin-top:18px;background:#3d4a3a;color:#fff;border:none;border-radius:10px;padding:13px 26px;font:inherit;cursor:pointer;">Cerrar</button></div>`;
+    ov.querySelector('button').onclick=cerrar;
   };
 }
 
