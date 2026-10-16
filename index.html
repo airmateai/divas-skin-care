@@ -764,7 +764,7 @@ footer{background:var(--primary-dk);color:var(--cream);padding:0 0 34px;}
       <h2>Continúa el cuidado en casa</h2>
       <p>Productos profesionales seleccionados por nosotras. Compra online y recoge tu pedido en cabina — sin gastos de envío. <a href="condiciones.html" style="color:inherit;text-decoration:underline;opacity:.8;">Condiciones de venta y devoluciones</a></p>
     </div>
-    <div class="section-head center" style="margin-bottom:22px;"><p style="color:var(--cream);opacity:.8;">Marcas Utsukusy, Kelaya, Herbalife y Kefus — catálogo completo en cabina.</p></div>
+    <div class="section-head center" style="margin-bottom:22px;"><p style="color:var(--cream);opacity:.8;">Marcas Utsukusy, Kelaya, Herbalife, Kefus y fajas Fájate — catálogo completo en cabina.</p></div>
     <div class="cat-tabs" id="shop-tabs" style="border-bottom-color:rgba(255,255,255,.15);"></div>
     <div id="shop-marca-heading" style="padding:18px 4px 4px;"><h3 style="font-family:var(--font-serif);color:var(--accent-lt);font-size:20px;"></h3></div>
     <div style="position:relative;">
@@ -1650,8 +1650,10 @@ const RE_DURACION = /^\s*(\d+\s*h)?\s*(\d+\s*min)?\s*$/i;
 (async function tiendaDesdePanel(){
   const grid=document.querySelector('.shop-grid');
   if(!grid) return;
-  const { data, error } = await sb.from('tienda_web').select('id,nombre,marca,precio,imagen_url,disponible').order('marca',{nullsFirst:false}).order('nombre');
+  let { data, error } = await sb.from('tienda_web').select('id,nombre,marca,precio,imagen_url,disponible,bajo_pedido,descripcion,tallas,colores,referencia').order('marca',{nullsFirst:false}).order('nombre');
+  if(error){ ({ data, error } = await sb.from('tienda_web').select('id,nombre,marca,precio,imagen_url,disponible').order('marca',{nullsFirst:false}).order('nombre')); }
   if(error || !data || !data.length) return;
+  window._tiendaWeb=Object.fromEntries(data.map(p=>[p.id,p]));
   const grupos={};
   const LINEAS_KELAYA=/^(kelaya|ceutical k|ceut\.? ?k sun|equilibrium k|perpetual k|preliminar k|k body|k p[eé]ptido|infusi[oó]n 7c)/i;
   const marcaWeb=m=>{ m=String(m||'').replace(/^kelaya\s*·\s*/i,'').trim(); if(!m) return 'OTROS'; return LINEAS_KELAYA.test(m)?'KELAYA':m.toUpperCase(); };
@@ -1659,10 +1661,51 @@ const RE_DURACION = /^\s*(\d+\s*h)?\s*(\d+\s*min)?\s*$/i;
   grid.innerHTML=Object.entries(grupos).map(([m,ps])=>`<div class="shop-marca-title" style="grid-column:1/-1;padding:18px 20px 4px;"><h3 style="font-family:var(--font-serif);color:var(--accent-lt);font-size:20px;">${escWeb(m)}</h3></div>`+
     ps.map(p=>`<div class="shop-card">
         <div class="shop-img">${p.imagen_url?`<img src="${escWeb(p.imagen_url)}" alt="${escWeb(p.nombre)}" loading="lazy">`:''}</div>
-        <div class="shop-body"><h4>${escWeb(p.nombre)}</h4><div class="price">${precioWeb(p.precio)}</div>${p.disponible?`<button class="svc-book" type="button" style="display:block;margin-top:8px;background:none;border:none;padding:0;cursor:pointer;font:inherit;" onclick="comprarProducto('${p.id}',this)">Comprar · recoger en cabina →</button>`:'<div style="font-size:11px;opacity:.7;margin-top:8px;">Sin stock ahora · pregúntanos</div>'}</div>
+        <div class="shop-body"><h4>${escWeb(p.nombre)}</h4><div class="price">${precioWeb(p.precio)}</div>${p.bajo_pedido?`<div style="font-size:11px;opacity:.75;margin-top:4px;">Bajo pedido${p.tallas?` · ${escWeb(p.tallas)}`:''}</div><button class="svc-book" type="button" style="display:block;margin-top:8px;background:none;border:none;padding:0;cursor:pointer;font:inherit;" onclick="encargarProducto('${p.id}')">Encargar →</button>`:p.disponible?`<button class="svc-book" type="button" style="display:block;margin-top:8px;background:none;border:none;padding:0;cursor:pointer;font:inherit;" onclick="comprarProducto('${p.id}',this)">Comprar · recoger en cabina →</button>`:'<div style="font-size:11px;opacity:.7;margin-top:8px;">Sin stock ahora · pregúntanos</div>'}</div>
       </div>`).join('')).join('');
   montarTabsTienda();
 })();
+
+// Encargar un producto bajo pedido (fajas Fájate): elegir talla y color, y el pedido sale por WhatsApp
+function tallasDe(t){
+  const ORD=['XS','S','M','L','XL','2XL','3XL','4XL','5XL','6XL'];
+  t=String(t||'').trim().toUpperCase();
+  const m=t.match(/^([0-9A-Z]+)\s*-\s*([0-9A-Z]+)$/);
+  if(m){
+    const a=ORD.indexOf(m[1]), b=ORD.indexOf(m[2]);
+    if(a>=0&&b>=a) return ORD.slice(a,b+1);
+    if(/^\d+$/.test(m[1])&&/^\d+$/.test(m[2])){ const r=[]; for(let n=+m[1];n<=+m[2];n+=2) r.push(String(n)); return r; }
+  }
+  return t?[t.charAt(0)+t.slice(1).toLowerCase()]:[];
+}
+function encargarProducto(id){
+  const p=(window._tiendaWeb||{})[id]; if(!p) return;
+  const tallas=tallasDe(p.tallas), colores=String(p.colores||'').split(/\s*-\s*/).filter(Boolean);
+  const ov=document.createElement('div');
+  ov.style.cssText='position:fixed;inset:0;z-index:9999;background:rgba(20,24,18,.6);display:flex;align-items:flex-end;justify-content:center;';
+  const sel=(id,ops)=>`<select id="${id}" style="width:100%;padding:12px;border:1px solid #d9d4c7;border-radius:8px;font:inherit;background:#fff;margin-top:6px;">${ops.map(o=>`<option>${escWeb(o)}</option>`).join('')}</select>`;
+  ov.innerHTML=`<div style="background:#fbf9f4;color:#2b3128;width:100%;max-width:520px;max-height:90vh;overflow:auto;border-radius:16px 16px 0 0;padding:24px 22px 28px;">
+    <div style="display:flex;gap:14px;align-items:flex-start;">${p.imagen_url?`<img src="${escWeb(p.imagen_url)}" alt="" style="width:110px;height:110px;object-fit:cover;border-radius:8px;flex:none;">`:''}
+      <div><div style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;opacity:.6;">Fájate · Ref. ${escWeb(p.referencia||'')}</div>
+      <h4 style="font-family:var(--font-serif);font-size:20px;line-height:1.2;margin:4px 0 6px;">${escWeb(p.nombre)}</h4><div style="font-size:18px;font-weight:600;">${precioWeb(p.precio)}</div></div></div>
+    ${p.descripcion?`<p style="font-size:13.5px;line-height:1.6;opacity:.85;margin:16px 0 0;">${escWeb(p.descripcion)}</p>`:''}
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:18px;">
+      ${tallas.length?`<label style="font-size:12px;font-weight:600;">Talla${sel('enc-talla',tallas)}</label>`:''}
+      ${colores.length?`<label style="font-size:12px;font-weight:600;">Color${sel('enc-color',colores.map(c=>c.charAt(0)+c.slice(1).toLowerCase()))}</label>`:''}
+    </div>
+    <p style="font-size:12px;opacity:.7;margin:14px 0 0;">Producto bajo pedido: te lo encargamos y te avisamos cuando llegue para recogerlo en cabina.</p>
+    <button type="button" id="enc-ok" style="width:100%;margin-top:16px;background:#25D366;color:#fff;border:none;border-radius:10px;padding:15px;font:inherit;font-weight:600;cursor:pointer;">Encargar por WhatsApp</button>
+    <button type="button" id="enc-x" style="width:100%;margin-top:8px;background:none;border:none;padding:10px;font:inherit;opacity:.7;cursor:pointer;">Cancelar</button></div>`;
+  document.body.appendChild(ov);
+  const cerrar=()=>ov.remove();
+  ov.addEventListener('click',e=>{ if(e.target===ov) cerrar(); });
+  ov.querySelector('#enc-x').onclick=cerrar;
+  ov.querySelector('#enc-ok').onclick=()=>{
+    const t=ov.querySelector('#enc-talla')?.value, c=ov.querySelector('#enc-color')?.value;
+    const msg=`Hola, quiero encargar la faja ${p.nombre} (Ref. ${p.referencia||''})`+(t?`, talla ${t}`:'')+(c?`, color ${c}`:'')+`. Precio ${precioWeb(p.precio)}.`;
+    window.open('https://wa.me/34613367567?text='+encodeURIComponent(msg),'_blank'); cerrar();
+  };
+}
 
 // Comprar un producto: el servidor crea el cobro de Stripe con el precio del panel
 async function comprarProducto(id, btn){
