@@ -1604,7 +1604,8 @@ function precioWeb(p){ p=Number(p)||0; return (Number.isInteger(p)?p:p.toFixed(2
 function escWeb(t){ return String(t??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 const RE_DURACION = /^\s*(\d+\s*h)?\s*(\d+\s*min)?\s*$/i;
 (async function sincronizarServiciosWeb(){
-  const { data, error } = await sb.from('servicios').select('id,nombre,categoria,duracion,duracion_min,precio,reservable,descripcion,color,img_url,video_url,orden').order('orden');
+  let { data, error } = await sb.from('servicios').select('id,nombre,categoria,duracion,duracion_min,precio,reservable,descripcion,color,img_url,video_url,orden,precio_oferta,bono_sesiones,bono_precio').order('orden');
+  if (error) ({ data, error } = await sb.from('servicios').select('id,nombre,categoria,duracion,duracion_min,precio,reservable,descripcion,color,img_url,video_url,orden').order('orden'));
   if (error || !data) return;
   const conTarjeta = new Set();
   data.forEach(s => { SERVICIOS_MAP[s.id] = s.duracion_min || 60; SERVICIOS_DB[s.id] = s; });
@@ -1617,7 +1618,8 @@ const RE_DURACION = /^\s*(\d+\s*h)?\s*(\d+\s*min)?\s*$/i;
     if (s.img_url) { const media = card.querySelector('.svc-img'); if (media) media.innerHTML = `<img src="${escWeb(s.img_url)}" alt="${escWeb(s.nombre)}" loading="lazy">`; }
     btn.dataset.precio = s.precio;
     const precioEl = card.querySelector('.svc-price');
-    if (precioEl) precioEl.textContent = precioWeb(s.precio);
+    if (precioEl) precioEl.innerHTML = precioServicioWeb(s);
+    if (s.categoria) { const c = card.querySelector('.svc-cat'); if (c) c.textContent = s.categoria; }
     const durEl = card.querySelector('.dur');
     if (durEl && s.duracion_min && RE_DURACION.test(durEl.textContent)) {
       const h = Math.floor(s.duracion_min/60), m = s.duracion_min%60;
@@ -1636,13 +1638,41 @@ const RE_DURACION = /^\s*(\d+\s*h)?\s*(\d+\s*min)?\s*$/i;
       : `<div style="width:100%;height:100%;display:grid;place-items:center;background:linear-gradient(135deg,${color},${color}88);color:#fff;font-family:var(--font-serif);font-size:22px;font-style:italic;padding:20px;text-align:center;">${escWeb(s.nombre)}</div>`;
     const card = document.createElement('div');
     card.className = 'svc-card';
-    card.innerHTML = `<div class="svc-img">${media}</div><div class="svc-body"><div class="svc-cat">${escWeb(tab.textContent.trim())}</div><h3>${escWeb(s.nombre)}</h3><div class="dur">${h&&m?`${h}h ${m}min`:h?`${h}h`:`${m} min`}</div><div class="svc-foot"><span class="svc-price">${precioWeb(s.precio)}</span><a class="svc-book" href="#reservar" data-servicio-id="${s.id}" data-precio="${s.precio}">Reservar →</a></div></div>`;
+    card.innerHTML = `<div class="svc-img">${media}</div><div class="svc-body"><div class="svc-cat">${escWeb(tab.textContent.trim())}</div><h3>${escWeb(s.nombre)}</h3><div class="dur">${h&&m?`${h}h ${m}min`:h?`${h}h`:`${m} min`}</div><div class="svc-foot"><span class="svc-price">${precioServicioWeb(s)}</span><a class="svc-book" href="#reservar" data-servicio-id="${s.id}" data-precio="${s.precio}">Reservar →</a></div></div>`;
     grid.appendChild(card);
     conectarTarjetaServicio(card);
   });
+  await ordenarServiciosWeb(data);
   const activa = tabs.querySelector('.cat-tab.active');
   if (activa) filterSvcByCat(activa.textContent.trim());
 })();
+function precioServicioWeb(s){
+  const base = precioWeb(s.precio);
+  const precio = s.precio_oferta != null ? `<s style="opacity:.55;font-size:.85em;margin-right:4px;">${base}</s>${precioWeb(s.precio_oferta)}` : base;
+  return s.bono_sesiones ? `${precio}<small style="display:block;font-size:11px;opacity:.8;font-weight:500;">Bono ${s.bono_sesiones} sesiones · ${precioWeb(s.bono_precio)}</small>` : precio;
+}
+// Pestañas y tarjetas en el orden que Louie pone en el panel (categorías y servicios)
+async function ordenarServiciosWeb(data){
+  const tabs = document.getElementById('svc-tabs'), grid = document.querySelector('.svc-grid');
+  if (!tabs || !grid) return;
+  let ordC = {};
+  try { const { data: oc } = await sb.from('orden_categorias').select('tipo,nombre,orden').eq('tipo','servicio'); (oc||[]).forEach(o => ordC[normCat(o.nombre)] = o.orden); } catch(e) {}
+  const ordS = {}; (data||[]).forEach(s => ordS[s.id] = s.orden ?? 9999);
+  const cards = [...grid.querySelectorAll('.svc-card')];
+  const catDe = c => (c.querySelector('.svc-cat')?.textContent || '').trim();
+  const tabsAntes = [...tabs.querySelectorAll('.cat-tab')].map(t => normCat(t.textContent));
+  const cats = [];
+  cards.forEach(c => { if (c.dataset.inactivo === '1') return; const k = catDe(c); if (k && !cats.some(x => normCat(x) === normCat(k))) cats.push(k); });
+  const pos = k => ordC[normCat(k)] ?? (500 + (tabsAntes.indexOf(normCat(k)) >= 0 ? tabsAntes.indexOf(normCat(k)) : 100 + cats.indexOf(k)));
+  cats.sort((a,b) => pos(a) - pos(b));
+  const activa = normCat(tabs.querySelector('.cat-tab.active')?.textContent);
+  const existentes = {}; tabs.querySelectorAll('.cat-tab').forEach(t => existentes[normCat(t.textContent)] = t);
+  tabs.innerHTML = '';
+  cats.forEach((k,i) => { let t = existentes[normCat(k)]; if (!t) { t = document.createElement('div'); t.className = 'cat-tab'; conectarPestanaServicio(t); } t.textContent = k; t.classList.toggle('active', activa ? normCat(k) === activa : i === 0); tabs.appendChild(t); });
+  if (!tabs.querySelector('.cat-tab.active') && tabs.firstChild) tabs.firstChild.classList.add('active');
+  const idDe = c => c.querySelector('.svc-book[data-servicio-id]')?.dataset.servicioId;
+  cards.map((c,i) => ({ c, i, o: ordS[idDe(c)] ?? (9000 + i) })).sort((a,b) => a.o - b.o || a.i - b.i).forEach(({c}) => grid.appendChild(c));
+}
 
 // ═══ Tienda conectada al panel ═══
 // Los productos que Louie marca "Publicar en la tienda web" en el panel salen aquí con su foto,
@@ -1659,7 +1689,9 @@ const RE_DURACION = /^\s*(\d+\s*h)?\s*(\d+\s*min)?\s*$/i;
   const LINEAS_KELAYA=/^(kelaya|ceutical k|ceut\.? ?k sun|equilibrium k|perpetual k|preliminar k|k body|k p[eé]ptido|infusi[oó]n 7c)/i;
   const marcaWeb=m=>{ m=String(m||'').replace(/^kelaya\s*·\s*/i,'').trim(); if(!m) return 'OTROS'; return LINEAS_KELAYA.test(m)?'KELAYA':m.toUpperCase(); };
   data.forEach(p=>{ const m=marcaWeb(p.marca); (grupos[m]=grupos[m]||[]).push(p); });
-  grid.innerHTML=Object.entries(grupos).map(([m,ps])=>`<div class="shop-marca-title" style="grid-column:1/-1;padding:18px 20px 4px;"><h3 style="font-family:var(--font-serif);color:var(--accent-lt);font-size:20px;">${escWeb(m)}</h3></div>`+
+  let ordM={}; try{ const { data:om } = await sb.from('orden_categorias').select('nombre,orden').eq('tipo','marca'); (om||[]).forEach(o=>ordM[o.nombre]=o.orden); }catch(e){}
+  const claves=Object.keys(grupos);
+  grid.innerHTML=Object.entries(grupos).sort((a,b)=>((ordM[a[0]]??(1000+claves.indexOf(a[0])))-(ordM[b[0]]??(1000+claves.indexOf(b[0]))))).map(([m,ps])=>`<div class="shop-marca-title" style="grid-column:1/-1;padding:18px 20px 4px;"><h3 style="font-family:var(--font-serif);color:var(--accent-lt);font-size:20px;">${escWeb(m)}</h3></div>`+
     ps.map(p=>`<div class="shop-card">
         <div class="shop-img">${p.imagen_url?`<img src="${escWeb(p.imagen_url)}" alt="${escWeb(p.nombre)}" loading="lazy">`:''}</div>
         <div class="shop-body"><h4>${escWeb(p.nombre)}</h4><div class="price">${precioWeb(p.precio)}</div>${p.bajo_pedido?`<div style="font-size:11px;opacity:.75;margin-top:4px;">Bajo pedido${p.tallas?` · ${escWeb(p.tallas)}`:''}</div><button class="svc-book" type="button" style="display:block;margin-top:8px;background:none;border:none;padding:0;cursor:pointer;font:inherit;" onclick="encargarProducto('${p.id}')">Encargar →</button>`:p.disponible?`<button class="svc-book" type="button" style="display:block;margin-top:8px;background:none;border:none;padding:0;cursor:pointer;font:inherit;" onclick="comprarProducto('${p.id}',this)">Comprar · recoger en cabina →</button>`:'<div style="font-size:11px;opacity:.7;margin-top:8px;">Sin stock ahora · pregúntanos</div>'}</div>
@@ -1868,7 +1900,7 @@ form.addEventListener('submit', async (e)=>{
   submitBtn.textContent = 'Enviar solicitud de reserva';
   if (error || !citaId) {
     msg.style.color = '#b3441e';
-    if (/SOLAPE/.test(error?.message || '')) {
+    if (/SOLAPE|BLOQUEO/.test(error?.message || '')) {
       msg.textContent = 'Vaya, esa hora se acaba de ocupar. Elige otra, por favor.';
       await cargarOcupadosRango(proximosDias(14));
       renderSlotPicker();

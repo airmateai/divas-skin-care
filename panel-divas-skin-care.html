@@ -426,6 +426,23 @@ tbody tr:hover{background:rgba(0,0,0,.02);}
 .cal-hora:first-child{transform:none;}
 .cal-col{position:relative;border-left:1px solid var(--border2);background-image:repeating-linear-gradient(to bottom,var(--border2) 0,var(--border2) 1px,transparent 1px,transparent 75px);cursor:copy;}
 .cal-cerrado{position:absolute;left:0;right:0;background:repeating-linear-gradient(135deg,rgba(0,0,0,.035) 0 6px,transparent 6px 12px);pointer-events:none;}
+.cal-bloq{position:absolute;z-index:1;left:2px;right:2px;border-radius:7px;padding:4px 7px;overflow:hidden;cursor:pointer;font-size:11px;color:var(--txt2);background:repeating-linear-gradient(135deg,color-mix(in srgb,var(--txt3) 16%,var(--surface)) 0 7px,var(--surface) 7px 14px);border:1px dashed var(--txt3);}
+.cal-bloq b{color:var(--txt);font-weight:700;}
+.bq-chip{padding:8px 14px;border-radius:999px;border:1px solid var(--border);background:var(--surface);color:var(--txt2);font-size:13px;font-weight:600;cursor:pointer;}
+.bq-chip.on{background:var(--primary);border-color:var(--primary);color:#fff;}
+.bf-tabs{display:flex;gap:4px;border-bottom:1px solid var(--border);margin:-4px 0 6px;}
+.bf-tabs button{padding:8px 14px;font-size:13px;font-weight:700;color:var(--txt3);border-bottom:2px solid transparent;cursor:pointer;background:none;}
+.bf-tabs button.on{color:var(--accent);border-color:var(--accent);}
+.bf-cl{position:relative;}
+.bf-cl-res{position:absolute;left:0;right:0;top:100%;z-index:30;background:var(--surface);border:1px solid var(--border);border-radius:8px;box-shadow:0 12px 28px rgba(0,0,0,.14);max-height:260px;overflow:auto;display:none;margin-top:4px;}
+.bf-cl-res.on{display:block;}
+.bf-cl-res div{padding:10px 12px;font-size:13px;cursor:pointer;border-bottom:1px solid var(--border2);}
+.bf-cl-res div:hover,.bf-cl-res div.act{background:color-mix(in srgb,var(--accent) 12%,var(--surface));}
+.bf-cl-res small{color:var(--txt3);margin-left:6px;}
+.cat-hd{grid-column:1/-1;display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 4px 2px;border-bottom:1px solid var(--border2);}
+.cat-hd b{font-family:var(--font-serif);font-size:20px;font-weight:500;color:var(--txt);}
+.ord-b{border:1px solid var(--border);background:var(--surface);border-radius:6px;padding:3px 8px;font-size:12px;cursor:pointer;color:var(--txt2);}
+.ord-b:disabled{opacity:.3;cursor:default;}
 .cal-ev{position:absolute;z-index:2;border-radius:7px;padding:4px 7px;overflow:hidden;cursor:pointer;background:color-mix(in srgb,var(--c) 22%,var(--surface));border-left:4px solid var(--c);color:var(--txt);box-shadow:0 1px 2px rgba(0,0,0,.06);transition:transform .12s,box-shadow .12s;}
 .cal-ev:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(0,0,0,.12);z-index:4;}
 .cal-ev-pend{background:repeating-linear-gradient(135deg,color-mix(in srgb,var(--c) 22%,var(--surface)) 0 8px,color-mix(in srgb,var(--c) 10%,var(--surface)) 8px 16px);}
@@ -680,6 +697,7 @@ tbody tr:hover{background:rgba(0,0,0,.02);}
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;">
           <button class="btn btn-ghost" onclick="openWaitlistForm()">+ Lista de espera</button>
+          <button class="btn btn-ghost" onclick="abrirBloqueoForm()">🔒 Bloquear horas</button>
           <button class="btn btn-accent" onclick="openBookingForm()">+ Nueva cita</button>
         </div>
       </div>
@@ -767,11 +785,11 @@ tbody tr:hover{background:rgba(0,0,0,.02);}
           <h1 class="page-title">Servicios</h1>
           <div class="page-sub">Productos y servicios</div>
         </div>
-        <button class="btn btn-accent" onclick="openServicioForm()">+ Nuevo servicio</button>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;"><button class="btn btn-ghost" onclick="abrirOrdenMarcas()">↕ Orden de marcas (tienda)</button><button class="btn btn-accent" onclick="openServicioForm()">+ Nuevo servicio</button></div>
       </div>
       <div class="card">
         <div class="card-body">
-          <div id="catalog-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;"></div>
+          <div style="font-size:12px;color:var(--txt3);margin-bottom:8px;">Usa ↑ ↓ para ordenar categorías y servicios. La web se ordena igual.</div><div id="catalog-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;"></div>
         </div>
       </div>
     </div>
@@ -1310,6 +1328,8 @@ async function loadRealData(){
   CONFIG.waitlist = waitlist || [];
   CONFIG.cierresCaja = cierresCaja || [];
   CONFIG.notificacionesReales = notif || [];
+  try{ const r=await sb.from('bloqueos').select('*').gte('inicio', new Date(Date.now()-90*864e5).toISOString()).order('inicio'); CONFIG.bloqueos=r.error?[]:(r.data||[]); }catch(e){ CONFIG.bloqueos=[]; }
+  try{ const r=await sb.from('orden_categorias').select('*'); CONFIG.ordenCat=r.error?[]:(r.data||[]); }catch(e){ CONFIG.ordenCat=[]; }
 
   if (servicios && servicios.length) {
     CONFIG.catalog = servicios.map(s => ({
@@ -1323,7 +1343,11 @@ async function loadRealData(){
       color: s.color || '#A9B6A2',
       categoria: s.categoria || '',
       descripcion: s.descripcion || '',
-      imgUrl: s.img_url || ''
+      imgUrl: s.img_url || '',
+      orden: s.orden ?? 9999,
+      precioOferta: s.precio_oferta ?? null,
+      bonoSesiones: s.bono_sesiones ?? null,
+      bonoPrecio: s.bono_precio ?? null
     }));
   }
 
@@ -2050,8 +2074,13 @@ function nombreServicioCita(c){ return servicioDe(c.servicioId)?.name || (c.nota
 function colorCita(c){ return servicioDe(c.servicioId)?.color || '#A9B6A2'; }
 function estadoTag(e){ const x=ESTADOS_CITA[e]||{t:e||'-',c:'info'}; return `<span class="tag tag-${x.c}">${esc(x.t)}</span>`; }
 function citaActiva(c){ return c.fecha && !ESTADOS_INACTIVOS.includes(c.estado); }
-function esErrorSolape(msg){ return /SOLAPE/.test(msg||''); }
+function esErrorSolape(msg){ return /SOLAPE|BLOQUEO/.test(msg||''); }
+function bloqueoQueSolapa(ini, fin){
+  return (CONFIG.bloqueos||[]).find(b=>{ const bi=new Date(b.inicio).getTime(), bf=bi+b.duracion_min*60000; return ini<bf && fin>bi; });
+}
+function bloqueosDia(d){ const k=dayKey(d); return (CONFIG.bloqueos||[]).filter(b=>dayKey(b.inicio)===k).sort((a,b)=>new Date(a.inicio)-new Date(b.inicio)); }
 function textoError(msg){
+  if(/BLOQUEO/.test(msg||'')) return 'Esa franja está bloqueada en la agenda. Elige otra hora o quita el bloqueo.';
   if(esErrorSolape(msg)) return 'Esa franja ya está ocupada por otra cita (teniendo en cuenta la duración). Elige otra hora.';
   if(/STOCK/.test(msg||'')) return (msg||'').replace(/^.*STOCK: /,'');
   return msg||'Error desconocido';
@@ -2084,6 +2113,8 @@ function clientaDeCita(ct){
 // ¿Choca [inicio, inicio+dur) con alguna cita activa? (misma regla que la BD)
 function citaQueSolapa(inicio, dur, ignorarId){
   const ini=new Date(inicio).getTime(), fin=ini+dur*60000;
+  const b=bloqueoQueSolapa(ini, fin);
+  if(b) return { cliente:'el bloqueo «'+b.tipo+'»', fecha:b.inicio, bloqueo:true };
   return (CONFIG.citasWeb||[]).find(c=>{
     if(!citaActiva(c) || String(c.id)===String(ignorarId)) return false;
     const cIni=new Date(c.fecha).getTime(), cFin=cIni+duracionCita(c)*60000;
@@ -2206,8 +2237,11 @@ function calRejillaHTML(dias, hoy){
         ${h>60&&c.profesional?`<div class="cal-ev-p">👤 ${esc(c.profesional)}</div>`:''}
       </div>`;
     }).join('');
+    const bqs=bloqueosDia(d).map(b=>{ const ini=minDelDia(b.inicio), fin=ini+b.duracion_min;
+      const top=(Math.max(ini,CAL_INI)-CAL_INI)*CAL_PX, h=Math.max((Math.min(fin,CAL_FIN)-Math.max(ini,CAL_INI))*CAL_PX,22);
+      return `<div class="cal-bloq" style="top:${top}px;height:${h}px" onclick="event.stopPropagation();abrirDetalleBloqueo('${b.id}')" title="${esc(b.tipo)}"><b>🔒 ${esc(b.tipo)}</b> ${minToHHMM(ini)}–${minToHHMM(fin)}${b.profesional&&h>40?`<div>👤 ${esc(b.profesional)}</div>`:''}</div>`; }).join('');
     const ahora=(esHoy && minDelDia(hoy)>=CAL_INI && minDelDia(hoy)<=CAL_FIN)?`<div class="cal-now" style="top:${(minDelDia(hoy)-CAL_INI)*CAL_PX}px"></div>`:'';
-    cols+=`<div class="cal-col" style="height:${alto}px" onclick="calClickHueco(event,'${k}')">${cerr}${evs}${ahora}</div>`;
+    cols+=`<div class="cal-col" style="height:${alto}px" onclick="calClickHueco(event,'${k}')">${cerr}${bqs}${evs}${ahora}</div>`;
   });
   return `<div class="cal-scroll"><div class="cal-grid" style="min-width:${dias.length>1?820:0}px;grid-template-columns:56px repeat(${dias.length},minmax(0,1fr))">
     ${head}<div class="cal-horas" style="height:${alto}px">${horas}</div>${cols}</div></div>`;
@@ -2230,6 +2264,7 @@ function calMesHTML(){
       <div class="cal-mnum">${d.getDate()}</div>
       ${citas.slice(0,3).map(c=>`<div class="cal-chip" data-svc="${esc(c.servicioId||'')}" style="--c:${colorCita(c)}" onclick="event.stopPropagation();abrirDetalleCita('${c.id}')">${new Date(c.fecha).toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'})} ${esc((c.cliente||'').split(' ')[0])}</div>`).join('')}
       ${citas.length>3?`<div class="cal-mas">+${citas.length-3} más</div>`:''}
+      ${bloqueosDia(d).length?`<div class="cal-mas">🔒 ${bloqueosDia(d).length} bloqueo${bloqueosDia(d).length>1?'s':''}</div>`:''}
     </div>`;
   }
   return `<div class="cal-mes">${html}</div>`;
@@ -2413,21 +2448,23 @@ function openBookingForm(opts={}){
   }
   const clientas=(CONFIG.clients||[]).slice().sort((a,b)=>a.name.localeCompare(b.name,'es'));
   const selCl=BF.clientaId?String(BF.clientaId):(BF.nombre&&!edit?'__nueva':'');
-  const svcs=(CONFIG.catalog||[]).filter(s=>s.id && (s.bookable!==false || String(s.id)===String(BF.servicioId)));
-  abrirModal(edit?'Modificar cita':'Nueva cita', `
+  const _co=categoriasOrdenadas();
+  const svcs=(CONFIG.catalog||[]).filter(s=>s.id && (s.bookable!==false || String(s.id)===String(BF.servicioId)))
+    .sort((a,b)=>(_co.indexOf(a.categoria||'Sin categoría')-_co.indexOf(b.categoria||'Sin categoría'))||((a.orden??9999)-(b.orden??9999)));
+  const clIni=clientas.find(c=>String(c.id)===selCl);
+  abrirModal(edit?'Modificar cita':'Añadir al calendario', `
     <div style="display:flex;flex-direction:column;gap:14px;">
-      ${edit?`<div style="font-size:13px;color:var(--txt2);">Clienta: <strong>${esc(edit.cliente)}</strong></div>`:campo('Clienta',`<select id="bf-client" style="${INP}" onchange="bfToggleNueva()">
-        <option value="">— Elige una clienta —</option>
-        <option value="__nueva" ${selCl==='__nueva'?'selected':''}>+ Clienta nueva</option>
-        ${clientas.map(c=>`<option value="${c.id}" ${String(c.id)===selCl?'selected':''}>${esc(c.name)}${c.phone&&c.phone!=='—'?' · '+esc(c.phone):''}</option>`).join('')}
-      </select>`)}
+      ${edit?'':`<div class="bf-tabs"><button class="on">Cita</button><button onclick="abrirBloqueoForm({fecha:document.getElementById('bf-date').value,hora:BF.hora})">🔒 Bloqueo</button></div>`}
+      ${edit?`<div style="font-size:13px;color:var(--txt2);">Clienta: <strong>${esc(edit.cliente)}</strong></div>`:campo('Clienta',`<div class="bf-cl"><input type="hidden" id="bf-client" value="${esc(selCl)}">
+        <input id="bf-cl-q" autocomplete="off" placeholder="Escribe el nombre o el teléfono…" value="${clIni?esc(clIni.name):selCl==='__nueva'?'+ Clienta nueva':''}" oninput="bfBuscarCl()" onfocus="this.select();bfBuscarCl()" onkeydown="bfTeclaCl(event)" style="${INP}width:100%;">
+        <div class="bf-cl-res" id="bf-cl-res"></div></div>`)}
       <div id="bf-nueva" class="two-col" style="display:${selCl==='__nueva'?'grid':'none'};">
         ${campo('Nombre',`<input id="bf-nombre" value="${esc(BF.nombre||'')}" style="${INP}">`)}
         ${campo('Teléfono',`<input id="bf-tel" value="${esc(BF.telefono||'')}" style="${INP}">`)}
         ${campo('Fecha de nacimiento',`<input type="date" id="bf-nac" style="${INP}">`)}
       </div>
       ${campo(CONFIG.labels.catalog||'Tratamiento',`<select id="bf-svc" style="${INP}" onchange="bfPintarHoras()">
-        ${svcs.map(s=>`<option value="${s.id}" ${String(s.id)===String(BF.servicioId)?'selected':''}>${esc(s.name)} · ${s.duracionMin} min · ${fmt(s.price)}${s.bookable===false?' (desactivado)':''}</option>`).join('')}
+        ${svcs.map(s=>`<option value="${s.id}" ${String(s.id)===String(BF.servicioId)?'selected':''}>${esc(s.name)} · ${s.duracionMin} min · ${s.precioOferta!=null?fmt(s.precioOferta)+' (oferta)':fmt(s.price)}${s.bookable===false?' (desactivado)':''}</option>`).join('')}
       </select>`)}
       <div class="two-col">
         ${campo('Fecha',`<input type="date" id="bf-date" value="${BF.fecha||dayKey(new Date())}" style="${INP}" onchange="bfPintarHoras()">`)}
@@ -2445,6 +2482,124 @@ function openBookingForm(opts={}){
   bfPintarHoras();
 }
 function bfToggleNueva(){ const v=document.getElementById('bf-client').value; document.getElementById('bf-nueva').style.display=v==='__nueva'?'grid':'none'; }
+// Buscador de clienta: escribe parte del nombre (sin importar tildes) o del teléfono
+const normTxt=t=>String(t||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+let _bfRes=[], _bfAct=0;
+function bfBuscarCl(){
+  const q=normTxt(document.getElementById('bf-cl-q').value.trim()), qd=q.replace(/\D/g,'');
+  const box=document.getElementById('bf-cl-res');
+  const palabras=q.split(/\s+/).filter(Boolean);
+  _bfRes=(CONFIG.clients||[]).filter(c=>{ if(!q) return true; const n=normTxt(c.name); return palabras.every(w=>n.includes(w)) || (qd.length>=3 && String(c.phone||'').replace(/\D/g,'').includes(qd)); })
+    .sort((a,b)=>a.name.localeCompare(b.name,'es')).slice(0,30);
+  _bfAct=0;
+  box.innerHTML=`<div data-id="__nueva">+ Clienta nueva${q?` «${esc(document.getElementById('bf-cl-q').value.trim())}»`:''}</div>`+
+    _bfRes.map((c,i)=>`<div data-id="${c.id}" class="${i===0&&q?'act':''}">${esc(c.name)}${c.phone&&c.phone!=='—'?`<small>${esc(c.phone)}</small>`:''}</div>`).join('')+
+    (q&&!_bfRes.length?'<div style="color:var(--txt3);cursor:default">No hay ninguna clienta con ese nombre</div>':'');
+  box.querySelectorAll('[data-id]').forEach(el=>el.onmousedown=e=>{ e.preventDefault(); bfElegirCl(el.dataset.id); });
+  box.classList.add('on');
+}
+function bfTeclaCl(e){
+  if(e.key==='Enter'){ e.preventDefault(); if(_bfRes[_bfAct]) bfElegirCl(_bfRes[_bfAct].id); return; }
+  if(e.key==='ArrowDown'||e.key==='ArrowUp'){ e.preventDefault(); _bfAct=Math.max(0,Math.min(_bfRes.length-1,_bfAct+(e.key==='ArrowDown'?1:-1)));
+    document.querySelectorAll('#bf-cl-res [data-id]').forEach(el=>el.classList.toggle('act', el.dataset.id===String(_bfRes[_bfAct]?.id))); }
+  if(e.key==='Escape') document.getElementById('bf-cl-res').classList.remove('on');
+}
+function bfElegirCl(id){
+  const q=document.getElementById('bf-cl-q'), h=document.getElementById('bf-client');
+  if(id==='__nueva'){ const t=q.value.trim(); h.value='__nueva'; if(t && !/^\+ Clienta nueva/.test(t)) document.getElementById('bf-nombre').value=t; q.value='+ Clienta nueva'; }
+  else { const c=(CONFIG.clients||[]).find(x=>String(x.id)===String(id)); h.value=id; q.value=c?c.name:''; }
+  document.getElementById('bf-cl-res').classList.remove('on'); bfToggleNueva();
+}
+document.addEventListener('click',e=>{ if(!e.target.closest||!e.target.closest('.bf-cl')){ const r=document.getElementById('bf-cl-res'); if(r) r.classList.remove('on'); } });
+
+// ═══════════════ BLOQUEOS DE AGENDA ═══════════════
+const TIPOS_BLOQUEO=['Pausa','Comida','Reunión','Tiempo libre','Personalizar'];
+let BQ={};
+function horasSelect(id, sel){ let o=''; for(let m=7*60;m<=22*60;m+=15){ const h=minToHHMM(m); o+=`<option ${h===sel?'selected':''}>${h}</option>`; } return `<select id="${id}" style="${INP}">${o}</select>`; }
+function abrirBloqueoForm(opts={}){
+  BQ={ tipo:'Pausa', ...opts };
+  const ini=opts.hora||'13:00', fin=minToHHMM(Math.min(22*60,hhmmToMin(ini)+30));
+  abrirModal('Añadir al calendario', `
+    <div style="display:flex;flex-direction:column;gap:14px;">
+      <div class="bf-tabs"><button onclick="openBookingForm({fecha:document.getElementById('bq-fecha').value,hora:document.getElementById('bq-ini').value})">Cita</button><button class="on">🔒 Bloqueo</button></div>
+      <div><div style="${LBL}margin-bottom:8px;">Tipo de bloqueo</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">${TIPOS_BLOQUEO.map(t=>`<button type="button" class="bq-chip ${t===BQ.tipo?'on':''}" onclick="bqTipo('${t}',this)">${t}</button>`).join('')}</div>
+        <input id="bq-otro" placeholder="Escribe el motivo (ej. Formación, Médico…)" style="${INP}width:100%;margin-top:8px;display:none;"></div>
+      ${campo('Fecha',`<input type="date" id="bq-fecha" value="${opts.fecha||dayKey(new Date())}" style="${INP}">`)}
+      <div class="two-col">${campo('Hora de inicio',horasSelect('bq-ini',ini))}${campo('Hora de finalización',horasSelect('bq-fin',fin))}</div>
+      ${campo('Repetir este bloqueo',`<select id="bq-rep" style="${INP}" onchange="document.getElementById('bq-hasta-w').style.display=this.value?'':'none'"><option value="">No se repite</option><option value="dia">Todos los días que abrimos</option><option value="lv">De lunes a viernes</option><option value="semana">Cada semana, el mismo día</option></select>`)}
+      <div id="bq-hasta-w" style="display:none">${campo('Repetir hasta',`<input type="date" id="bq-hasta" value="${dayKey(new Date(Date.now()+28*864e5))}" style="${INP}">`)}</div>
+      ${campo('Miembro del equipo',`<select id="bq-prof" style="${INP}"><option value="">Todo el centro</option>${PROFESIONALES.map(p=>`<option>${p}</option>`).join('')}</select>`)}
+    </div>
+    <p id="bq-error" style="color:#b3441e;font-size:12px;margin-top:8px;"></p>
+    <div style="display:flex;gap:8px;margin-top:18px;">
+      <button class="btn btn-ghost" style="flex:1" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-accent" style="flex:1" id="bq-btn" onclick="guardarBloqueo()">Guardar bloqueo</button>
+    </div>`);
+}
+function bqTipo(t, el){ BQ.tipo=t; BQ.forzar=false; document.querySelectorAll('.bq-chip').forEach(b=>b.classList.toggle('on',b===el)); document.getElementById('bq-otro').style.display=t==='Personalizar'?'':'none'; }
+function fechasBloqueo(fecha, rep, hasta){
+  const out=[], d0=new Date(fecha+'T00:00:00');
+  if(!rep) return [d0];
+  const fin=new Date((hasta||fecha)+'T00:00:00'); const dSem=d0.getDay();
+  for(let d=new Date(d0); d<=fin && out.length<370; d.setDate(d.getDate()+1)){
+    const wd=d.getDay();
+    if(rep==='semana' && wd!==dSem) continue;
+    if(rep==='lv' && (wd===0||wd===6)) continue;
+    if(rep==='dia' && !(HORARIO_CENTRO[wd]||[]).length) continue;
+    out.push(new Date(d));
+  }
+  return out;
+}
+async function guardarBloqueo(){
+  const err=document.getElementById('bq-error'), btn=document.getElementById('bq-btn');
+  const tipo=BQ.tipo==='Personalizar'?(document.getElementById('bq-otro').value.trim()||'Bloqueo'):BQ.tipo;
+  const fecha=document.getElementById('bq-fecha').value, ini=hhmmToMin(document.getElementById('bq-ini').value), fin=hhmmToMin(document.getElementById('bq-fin').value);
+  const rep=document.getElementById('bq-rep').value, hasta=document.getElementById('bq-hasta').value, prof=document.getElementById('bq-prof').value||null;
+  if(!fecha){ err.textContent='Elige la fecha.'; return; }
+  if(!(fin>ini)){ err.textContent='La hora de finalización tiene que ser después de la de inicio.'; return; }
+  if(rep && hasta<fecha){ err.textContent='La fecha «Repetir hasta» tiene que ser posterior.'; return; }
+  const dias=fechasBloqueo(fecha, rep, hasta);
+  const filas=dias.map(d=>{ const i=new Date(d); i.setMinutes(ini); return { inicio:i.toISOString(), duracion_min:fin-ini, tipo, profesional:prof }; });
+  // ¿Hay citas ya reservadas en esa franja?
+  const conCita=filas.map(f=>{ const a=new Date(f.inicio).getTime(), b=a+f.duracion_min*60000; return (CONFIG.citasWeb||[]).find(c=>citaActiva(c) && new Date(c.fecha).getTime()<b && new Date(c.fecha).getTime()+duracionCita(c)*60000>a); }).filter(Boolean);
+  if(conCita.length && !BQ.forzar){ BQ.forzar=true; err.innerHTML=`⚠ Ya hay ${conCita.length} cita${conCita.length>1?'s':''} en esa franja (${conCita.slice(0,3).map(c=>esc(c.cliente)+' '+new Date(c.fecha).toLocaleDateString('es-ES',{day:'numeric',month:'short'})).join(', ')}). Las citas no se borran. Pulsa otra vez «Guardar bloqueo» para bloquear igualmente.`; return; }
+  if(filas.length>1){ const sid=crypto.randomUUID(); filas.forEach(f=>f.serie_id=sid); }
+  btn.disabled=true; err.textContent='Guardando…';
+  try{
+    const { data, error } = await sb.from('bloqueos').insert(filas).select('id');
+    if(error) throw error;
+    if(!data?.length) throw new Error('sin permiso');
+    await recargarTodo(); closeModal();
+    toast(filas.length>1?`🔒 ${filas.length} bloqueos guardados (${tipo})`:`🔒 Bloqueo guardado: ${tipo} ${minToHHMM(ini)}–${minToHHMM(fin)}`);
+  }catch(e){ btn.disabled=false; err.textContent='No se pudo guardar: '+(/relation .*bloqueos|does not exist/.test(e.message||'')?'falta activar los bloqueos en la base de datos (avisa a Airmate).':e.message); }
+}
+function abrirDetalleBloqueo(id){
+  const b=(CONFIG.bloqueos||[]).find(x=>String(x.id)===String(id)); if(!b) return;
+  const ini=minDelDia(b.inicio), serie=b.serie_id?(CONFIG.bloqueos||[]).filter(x=>x.serie_id===b.serie_id).length:0;
+  abrirModal('🔒 '+b.tipo, `<div style="font-size:14px;color:var(--txt2);line-height:1.8;">
+      <div><b>${new Date(b.inicio).toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long'})}</b></div>
+      <div>${minToHHMM(ini)} – ${minToHHMM(ini+b.duracion_min)} · ${b.duracion_min} min</div>
+      <div>${b.profesional?'👤 '+esc(b.profesional):'Todo el centro'}</div>
+      ${serie>1?`<div style="color:var(--txt3);font-size:12px;">Forma parte de una serie de ${serie} bloqueos repetidos</div>`:''}
+    </div>
+    <p id="bqd-error" style="color:#b3441e;font-size:12px;margin-top:8px;"></p>
+    <div style="display:flex;gap:8px;margin-top:18px;flex-wrap:wrap;">
+      <button class="btn btn-ghost" style="flex:1" onclick="closeModal()">Cerrar</button>
+      <button class="btn btn-ghost" style="flex:1;color:#b3441e" onclick="quitarBloqueo('${b.id}',false)">Quitar este bloqueo</button>
+      ${serie>1?`<button class="btn btn-ghost" style="flex:1;color:#b3441e" onclick="quitarBloqueo('${b.id}',true)">Quitar toda la serie (${serie})</button>`:''}
+    </div>`);
+}
+async function quitarBloqueo(id, serie){
+  const b=(CONFIG.bloqueos||[]).find(x=>String(x.id)===String(id)); if(!b) return;
+  const err=document.getElementById('bqd-error'); err.textContent='Quitando…';
+  try{
+    const q=serie&&b.serie_id?sb.from('bloqueos').delete().eq('serie_id',b.serie_id):sb.from('bloqueos').delete().eq('id',id);
+    const { data, error } = await q.select('id');
+    if(error) throw error; if(!data?.length) throw new Error('sin permiso');
+    await recargarTodo(); closeModal(); toast(data.length>1?`Quitados ${data.length} bloqueos`:'Bloqueo quitado: la hora vuelve a estar libre');
+  }catch(e){ err.textContent='No se pudo quitar: '+e.message; }
+}
 function bfPintarHoras(){
   const svc=servicioDe(document.getElementById('bf-svc').value);
   const dur=svc?.duracionMin||60;
@@ -2627,23 +2782,84 @@ async function guardarFichaClienta(id){
 async function guardarFechaNacimiento(clienteId){ return guardarFichaClienta(clienteId); }
 
 // ═══════════════ SERVICIOS (catálogo editable) ═══════════════
+// ── Servicios agrupados por categoría, en el orden que elige Louie (también en la web) ──
+function ordenDe(tipo){ const m={}; (CONFIG.ordenCat||[]).filter(o=>o.tipo===tipo).forEach(o=>m[o.nombre]=o.orden); return m; }
+function categoriasOrdenadas(){
+  const m=ordenDe('servicio'), vistas=[];
+  (CONFIG.catalog||[]).slice().sort((a,b)=>(a.orden??9999)-(b.orden??9999)).forEach(x=>{ const c=x.categoria||'Sin categoría'; if(!vistas.includes(c)) vistas.push(c); });
+  return vistas.sort((a,b)=>((m[a]??(1000+vistas.indexOf(a)))-(m[b]??(1000+vistas.indexOf(b)))));
+}
+function serviciosDeCategoria(cat){ return (CONFIG.catalog||[]).filter(x=>(x.categoria||'Sin categoría')===cat).sort((a,b)=>(a.orden??9999)-(b.orden??9999)); }
+function precioServicioHTML(p){
+  const base=fmt2(p.price).replace(',00','');
+  return p.precioOferta!=null?`<span style="text-decoration:line-through;color:var(--txt3);font-size:12px;margin-right:4px;">${base}</span><span style="font-size:15px;font-weight:800;color:#b3441e;">${fmt2(p.precioOferta).replace(',00','')}</span>`:`<span style="font-size:15px;font-weight:800;color:var(--accent);">${base}</span>`;
+}
 function renderCatalog(){
-  const lista=(CONFIG.catalog||[]).slice().sort((a,b)=>(a.bookable===false)-(b.bookable===false));
-  document.getElementById('catalog-grid').innerHTML=lista.map(p=>`
+  const cats=categoriasOrdenadas();
+  document.getElementById('catalog-grid').innerHTML=cats.map((cat,ci)=>{
+    const lista=serviciosDeCategoria(cat);
+    return `<div class="cat-hd"><b>${esc(cat)} <span style="font-family:var(--font-sans,inherit);font-size:12px;color:var(--txt3);">${lista.length}</span></b>
+      <span style="display:flex;gap:4px;align-items:center;"><span style="font-size:11px;color:var(--txt3);margin-right:4px;">Mover categoría</span>
+      <button class="ord-b" ${ci===0?'disabled':''} onclick="moverCategoria(${ci},-1)">↑</button><button class="ord-b" ${ci===cats.length-1?'disabled':''} onclick="moverCategoria(${ci},1)">↓</button></span></div>`+
+    lista.map((p,pi)=>`
     <div class="svc-admin ${p.bookable===false?'svc-off':''}" style="--c:${p.color||'#A9B6A2'}">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
         <div style="font-size:13px;font-weight:700;color:var(--txt);">${esc(p.name)}</div>
         ${p.bookable===false?'<span class="tag tag-danger">Inactivo</span>':'<span class="tag tag-ok">Activo</span>'}
       </div>
-      <div style="font-size:11px;color:var(--txt3);margin:4px 0 10px;">${esc(p.categoria||'')} · ${p.duracionMin} min</div>
-      <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;">
-        <span style="font-size:15px;font-weight:800;color:var(--accent);">${fmt2(p.price).replace(',00','')}</span>
+      <div style="font-size:11px;color:var(--txt3);margin:4px 0 10px;">${p.duracionMin} min${p.bonoSesiones?` · 🎟️ Bono ${p.bonoSesiones} ses. ${fmt2(p.bonoPrecio||0).replace(',00','')}`:''}</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;flex-wrap:wrap;">
+        <span>${precioServicioHTML(p)}</span>
         <span style="display:flex;gap:4px;">
-          ${p.id?`<button class="btn btn-ghost" style="padding:4px 10px;font-size:10px;" onclick="openServicioForm('${p.id}')">✎ Editar</button>
+          ${p.id?`<button class="ord-b" title="Subir" ${pi===0?'disabled':''} onclick="moverServicio('${p.id}',-1)">↑</button><button class="ord-b" title="Bajar" ${pi===lista.length-1?'disabled':''} onclick="moverServicio('${p.id}',1)">↓</button>
+          <button class="btn btn-ghost" style="padding:4px 10px;font-size:10px;" onclick="openServicioForm('${p.id}')">✎ Editar</button>
           <button class="btn btn-ghost" style="padding:4px 10px;font-size:10px;" onclick="toggleServicioReservable('${p.id}',${p.bookable!==false})">${p.bookable!==false?'Desactivar':'Reactivar'}</button>`:''}
         </span>
       </div>
     </div>`).join('');
+  }).join('');
+}
+async function guardarOrdenCategorias(lista, tipo='servicio'){
+  const filas=lista.map((nombre,i)=>({ tipo, nombre, orden:i+1 }));
+  const { error } = await sb.from('orden_categorias').upsert(filas, { onConflict:'tipo,nombre' }).select('nombre');
+  if(error) throw error;
+  CONFIG.ordenCat=(CONFIG.ordenCat||[]).filter(o=>o.tipo!==tipo).concat(filas);
+}
+async function moverCategoria(i, d){
+  const cats=categoriasOrdenadas(); const j=i+d; if(j<0||j>=cats.length) return;
+  [cats[i],cats[j]]=[cats[j],cats[i]];
+  try{ await guardarOrdenCategorias(cats); renderCatalog(); toast('✓ Orden de categorías guardado (también en la web)'); }
+  catch(e){ toast('No se pudo guardar el orden: '+(/orden_categorias/.test(e.message||'')?'falta activarlo en la base de datos (avisa a Airmate)':e.message)); }
+}
+async function moverServicio(id, d){
+  const s=servicioDe(id); if(!s) return;
+  const cat=s.categoria||'Sin categoría', lista=serviciosDeCategoria(cat);
+  const i=lista.findIndex(x=>String(x.id)===String(id)), j=i+d; if(j<0||j>=lista.length) return;
+  [lista[i],lista[j]]=[lista[j],lista[i]];
+  // Renumerar todos los servicios: categoría por categoría, en el orden elegido
+  const todos=[]; categoriasOrdenadas().forEach(c=>{ (c===cat?lista:serviciosDeCategoria(c)).forEach(x=>todos.push(x)); });
+  const cambios=todos.map((x,k)=>({x,orden:k+1})).filter(({x,orden})=>x.id && x.orden!==orden);
+  try{
+    const res=await Promise.all(cambios.map(({x,orden})=>sb.from('servicios').update({orden}).eq('id',x.id).select('id')));
+    const fallo=res.find(r=>r.error||!r.data?.length); if(fallo) throw new Error(fallo.error?.message||'sin permiso');
+    cambios.forEach(({x,orden})=>x.orden=orden); renderCatalog(); toast('✓ Orden guardado (también en la web)');
+  }catch(e){ toast('No se pudo guardar el orden: '+e.message); await recargarTodo(); }
+}
+// ── Orden de las marcas en la tienda web ──
+const LINEAS_KELAYA_P=/^(kelaya|ceutical k|ceut\.? ?k sun|equilibrium k|perpetual k|preliminar k|k body|k p[eé]ptido|infusi[oó]n 7c)/i;
+function marcaTienda(m){ m=String(m||'').replace(/^kelaya\s*·\s*/i,'').trim(); if(!m) return 'OTROS'; return LINEAS_KELAYA_P.test(m)?'KELAYA':m.toUpperCase(); }
+function marcasOrdenadas(){
+  const m=ordenDe('marca'), vistas=[]; (CONFIG.stock||[]).forEach(p=>{ const k=marcaTienda(p.marca); if(!vistas.includes(k)) vistas.push(k); });
+  return vistas.sort((a,b)=>((m[a]??(1000+vistas.indexOf(a)))-(m[b]??(1000+vistas.indexOf(b)))));
+}
+function abrirOrdenMarcas(){
+  const ms=marcasOrdenadas();
+  abrirModal('Orden de las marcas en la tienda web', `<p style="font-size:13px;color:var(--txt2);margin:0 0 12px;">Así salen las marcas en la tienda de la web, de arriba abajo.</p>
+    <div style="display:flex;flex-direction:column;gap:6px;">${ms.map((m,i)=>`<div style="display:flex;justify-content:space-between;align-items:center;border:1px solid var(--border);border-radius:8px;padding:10px 12px;"><b style="font-size:14px;color:var(--txt)">${i+1}. ${esc(m)}</b><span style="display:flex;gap:4px;"><button class="ord-b" ${i===0?'disabled':''} onclick="moverMarca(${i},-1)">↑</button><button class="ord-b" ${i===ms.length-1?'disabled':''} onclick="moverMarca(${i},1)">↓</button></span></div>`).join('')||'<p style="color:var(--txt3)">Todavía no hay productos con marca.</p>'}</div>`);
+}
+async function moverMarca(i,d){
+  const ms=marcasOrdenadas(), j=i+d; if(j<0||j>=ms.length) return; [ms[i],ms[j]]=[ms[j],ms[i]];
+  try{ await guardarOrdenCategorias(ms,'marca'); abrirOrdenMarcas(); toast('✓ Orden de marcas guardado'); }catch(e){ toast('No se pudo guardar: '+e.message); }
 }
 async function toggleServicioReservable(servicioId, estaActivo){
   const { data, error } = await sb.from('servicios').update({ reservable: !estaActivo }).eq('id', servicioId).select('id');
@@ -2696,7 +2912,15 @@ function openServicioForm(id){
         ${campo('Categoría',`<input id="sf-categoria" list="sf-cats" value="${esc(s?.categoria||'')}" style="${INP}"><datalist id="sf-cats">${cats.map(c=>`<option value="${esc(c)}">`).join('')}</datalist>`)}
         ${campo('Duración (minutos)',`<input id="sf-duracion" type="number" min="5" step="5" value="${s?.duracionMin||60}" style="${INP}">`)}
       </div>
-      ${campo('Precio (€)',`<input id="sf-precio" type="number" min="0" step="0.01" value="${s?.price??''}" style="${INP}">`)}
+      <div class="two-col">
+        ${campo('Precio (€)',`<input id="sf-precio" type="number" min="0" step="0.01" value="${s?.price??''}" style="${INP}">`)}
+        ${campo('Precio con descuento (€) · opcional',`<input id="sf-oferta" type="number" min="0" step="0.01" value="${s?.precioOferta??''}" placeholder="Vacío = sin descuento" style="${INP}">`)}
+      </div>
+      <div class="two-col">
+        ${campo('Bono · nº de sesiones (opcional)',`<input id="sf-bono-n" type="number" min="2" step="1" value="${s?.bonoSesiones??''}" placeholder="ej. 5" style="${INP}">`)}
+        ${campo('Bono · precio total (€)',`<input id="sf-bono-p" type="number" min="0" step="0.01" value="${s?.bonoPrecio??''}" placeholder="ej. 400" style="${INP}">`)}
+      </div>
+      <div id="sf-ahorro" style="font-size:11.5px;color:var(--txt3);margin-top:-8px;">El descuento sale tachado en la web y el bono debajo del precio.</div>
       <div>
         <div style="${LBL}margin-bottom:6px;">Color en calendario y reservas</div>
         <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
@@ -2721,6 +2945,7 @@ function elegirColorServicio(c){
 }
 function rgbAHex(rgb){ const m=rgb.match(/\d+/g); return m?'#'+m.slice(0,3).map(x=>(+x).toString(16).padStart(2,'0')).join(''):rgb; }
 async function submitServicioForm(id){
+  const s0=id?servicioDe(id):null;
   const nombre=document.getElementById('sf-nombre').value.trim();
   const categoria=document.getElementById('sf-categoria').value.trim()||null;
   const dur=parseInt(document.getElementById('sf-duracion').value,10);
@@ -2729,9 +2954,17 @@ async function submitServicioForm(id){
   if(!nombre){ err.textContent='Falta el nombre del servicio.'; return; }
   if(!(dur>0)){ err.textContent='La duración tiene que ser un número de minutos.'; return; }
   if(!(precio>=0)){ err.textContent='Falta el precio.'; return; }
+  const num=id=>{ const v=String(document.getElementById(id).value).trim().replace(',','.'); return v===''?null:parseFloat(v); };
+  const oferta=num('sf-oferta'), bonoN=num('sf-bono-n'), bonoP=num('sf-bono-p');
+  if(oferta!=null && !(oferta>=0 && oferta<precio)){ err.textContent='El precio con descuento tiene que ser menor que el precio normal.'; return; }
+  if((bonoN!=null)!==(bonoP!=null)){ err.textContent='Para el bono rellena las sesiones y el precio (o deja los dos vacíos).'; return; }
+  if(bonoN!=null && !(bonoN>=2 && Number.isInteger(bonoN))){ err.textContent='El bono tiene que tener 2 sesiones o más.'; return; }
   const fila={ nombre, categoria, duracion_min:dur, duracion:fmtDuracion(dur), precio,
     color:document.getElementById('sf-color').value, descripcion:document.getElementById('sf-desc').value.trim()||null,
     reservable:document.getElementById('sf-reservable').checked };
+  // Solo se envían si se usan o ya existían (así no falla si la base de datos aún no tiene estas columnas)
+  if(oferta!=null || s0?.precioOferta!=null) fila.precio_oferta=oferta;
+  if(bonoN!=null || s0?.bonoSesiones!=null){ fila.bono_sesiones=bonoN; fila.bono_precio=bonoP; }
   const fotoSf=document.getElementById('sf-foto')?.files?.[0];
   if(fotoSf){
     err.textContent='Subiendo foto...';
