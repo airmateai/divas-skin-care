@@ -493,8 +493,8 @@ tbody tr:hover{background:rgba(0,0,0,.02);}
       <h2>Bienvenida de nuevo.</h2>
       <p>Inicia sesión para seguir gestionando tu centro.</p>
       <div class="field-group">
-        <label class="field-label">Email</label>
-        <input type="email" class="field-input" id="li-email" placeholder="tu@email.com">
+        <label class="field-label">Usuario</label>
+        <input type="text" class="field-input" id="li-email" placeholder="Tu usuario" autocapitalize="none" autocorrect="off" autocomplete="username">
       </div>
       <div class="field-group">
         <label class="field-label">Contraseña</label>
@@ -502,7 +502,7 @@ tbody tr:hover{background:rgba(0,0,0,.02);}
       </div>
       <button class="btn-login" onclick="login()">Entrar al panel</button>
       <div class="login-hint" id="login-hint">Acceso solo para el equipo de Divas Skin Care</div>
-      <div style="text-align:center;margin-top:14px;"><a href="#" onclick="olvideClave(event)" style="font-size:12px;color:var(--txt2);text-decoration:underline;">¿Has olvidado tu contraseña?</a></div>
+      <div style="text-align:center;margin-top:14px;font-size:12px;color:var(--txt3);">¿Olvidaste la contraseña? Escribe a Airmate y te la restablecemos.</div>
     </div>
   </div>
 </div>
@@ -1181,14 +1181,17 @@ sb.auth.onAuthStateChange(ev=>{ if(ev==='PASSWORD_RECOVERY') _vieneDeRecuperacio
 
 // ═══════════════ AUTH ═══════════════
 async function login(){
-  const email = document.getElementById('li-email').value.trim();
+  // Se entra con un nombre de usuario; por dentro Supabase lo guarda como usuario@panel.divasskincare.com
+  // (no se envía ningún email). Si alguien escribe un email completo, también vale.
+  const usuario = document.getElementById('li-email').value.trim().toLowerCase();
+  const email = usuario.includes('@') ? usuario : usuario + '@panel.divasskincare.com';
   const pass = document.getElementById('li-pass').value;
   const hint = document.getElementById('login-hint');
   hint.textContent = 'Comprobando...';
   hint.style.color = '';
   const { data, error } = await sb.auth.signInWithPassword({ email, password: pass });
   if (error) {
-    hint.textContent = 'Email o contraseña incorrectos.';
+    hint.textContent = 'Usuario o contraseña incorrectos.';
     hint.style.color = '#b3441e';
     return;
   }
