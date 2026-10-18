@@ -32,6 +32,30 @@ Deno.serve(async (req) => {
   if (event.type === "checkout.session.completed") {
     const session = event.data.object as Stripe.Checkout.Session;
 
+    // Tarjeta regalo: se marca como pagada y se avisa en el panel
+    if (session.metadata?.tipo === "regalo" && session.metadata?.tarjeta_id) {
+      const tid = session.metadata.tarjeta_id;
+      const { data: t, error: eT } = await supabase.from("tarjetas_regalo").update({
+        estado: "pagada",
+        pagada_en: new Date().toISOString(),
+        comprador_nombre: session.customer_details?.name || null,
+        comprador_email: session.customer_details?.email || null,
+        comprador_telefono: session.customer_details?.phone || null,
+        stripe_session: session.id,
+      }).eq("id", tid).eq("estado", "pendiente_pago").select("codigo, importe, servicio_nombre").maybeSingle();
+      if (eT) console.error("Error marcando tarjeta regalo:", eT.message);
+      else if (t) {
+        const que = t.servicio_nombre || `${Number(t.importe).toFixed(2).replace(".", ",")} €`;
+        const { error: eN } = await supabase.from("notificaciones").insert({
+          tipo: "regalo",
+          mensaje: `🎁 Tarjeta regalo vendida online: ${que} · código ${t.codigo}`,
+        });
+        if (eN) console.error("Error creando notificación:", eN.message);
+        console.log(`Tarjeta regalo ${t.codigo} pagada`);
+      }
+      return new Response(JSON.stringify({ received: true }), { status: 200 });
+    }
+
     const lineItems = await stripe.checkout.sessions.listLineItems(session.id, {
       expand: ["data.price.product"],
       limit: 1,

@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex,nofollow">
+<meta name="referrer" content="no-referrer">
+<title>Tu tarjeta regalo — Divas Skin Care</title>
+<link rel="stylesheet" href="fonts/fonts.css">
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;min-height:100vh;background:#f6f3ec;font-family:'Poppins',Inter,sans-serif;color:#3d4a3a;padding:28px 16px 60px}
+  .w{max-width:760px;margin:0 auto}
+  .hd{text-align:center;margin-bottom:22px}
+  .hd h1{font-family:'Cormorant Garamond',serif;font-size:32px;font-weight:500;margin:6px 0 6px}
+  .hd p{font-size:14px;line-height:1.6;color:#5c6358;margin:0}
+  .ok{width:58px;height:58px;border-radius:50%;background:#3d4a3a;color:#fff;display:grid;place-items:center;font-size:28px;margin:0 auto}
+  #tarjeta{margin:0 auto;max-width:720px}
+  .btns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:22px}
+  .btn{border:0;cursor:pointer;background:#3d4a3a;color:#fff;text-decoration:none;padding:14px 24px;border-radius:30px;font:600 14px 'Poppins',sans-serif}
+  .btn.g{background:#fff;color:#3d4a3a;border:1px solid #d9d4c7}
+  .nota{text-align:center;font-size:12.5px;color:#7a8076;margin-top:16px;line-height:1.6}
+  .esp{text-align:center;padding:60px 10px;color:#5c6358}
+  .spin{width:34px;height:34px;border:3px solid #dce5d1;border-top-color:#3d4a3a;border-radius:50%;margin:0 auto 14px;animation:g 1s linear infinite}
+  @keyframes g{to{transform:rotate(360deg)}}
+  @media print{body{background:#fff;padding:0}.hd,.btns,.nota{display:none}#tarjeta{max-width:none}.dr-card{box-shadow:none}}
+</style>
+</head>
+<body>
+<div class="w">
+  <div id="estado" class="esp"><div class="spin"></div>Preparando tu tarjeta regalo…</div>
+  <div id="ok" style="display:none">
+    <div class="hd"><div class="ok">🎁</div><h1>¡Tu tarjeta regalo está lista!</h1><p>Descárgala en PDF para imprimirla o envíala por WhatsApp. Guarda este enlace: puedes volver a descargarla cuando quieras.</p></div>
+    <div id="tarjeta"></div>
+    <div class="btns">
+      <button class="btn" id="b-pdf" onclick="descargarPDF()">⬇ Descargar PDF</button>
+      <button class="btn g" onclick="window.print()">🖨 Imprimir</button>
+      <button class="btn g" onclick="compartir()">💬 Enviar por WhatsApp</button>
+    </div>
+    <p class="nota">Para usarla: reservad por WhatsApp o en divasskincare.com y presentad el código en cabina.<br>Divas Skin Care by Louie · Calle Arguijón 1, La Laguna (Tenerife)</p>
+  </div>
+</div>
+<script src="regalo-plantillas.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+const sb = supabase.createClient('https://tmbnufvchgwfnwmpbamq.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRtYm51ZnZjaGd3Zm53bXBiYW1xIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc3NDEwMzAsImV4cCI6MjEwMzMxNzAzMH0.lYEIDtBEonDCcyWi3eluP5e6m7lgefxFstheWpA7KHg');
+const R = window.DIVAS_REGALO; const st = document.createElement('style'); st.textContent = R.css; document.head.appendChild(st);
+const q = new URLSearchParams(location.search), id = q.get('id'), token = q.get('t');
+let T = null;
+async function cargar(intento = 0) {
+  const est = document.getElementById('estado');
+  if (!id || !token) { est.innerHTML = 'Este enlace no es válido. Si has pagado una tarjeta regalo, escríbenos por WhatsApp y te la enviamos.'; return; }
+  const { data, error } = await sb.rpc('tarjeta_regalo_publica', { p_id: id, p_token: token });
+  const t = data && data[0];
+  if (error || !t) { est.innerHTML = 'No encontramos esta tarjeta. Escríbenos por WhatsApp y lo revisamos.'; return; }
+  if (t.estado === 'pendiente_pago') {
+    if (intento < 20) { est.innerHTML = '<div class="spin"></div>Confirmando el pago con el banco…'; return setTimeout(() => cargar(intento + 1), 2000); }
+    est.innerHTML = 'Todavía no nos ha llegado la confirmación del pago. Recarga esta página en un minuto o escríbenos por WhatsApp.'; return;
+  }
+  if (t.estado === 'anulada') { est.innerHTML = 'Esta tarjeta regalo está anulada. Escríbenos por WhatsApp si tienes dudas.'; return; }
+  T = t;
+  const que = t.tipo === 'servicio' ? t.servicio_nombre : `Tarjeta regalo de ${R.euros(t.importe)}`;
+  document.getElementById('tarjeta').innerHTML = R.html({ plantilla: t.plantilla, para: t.para, de: t.de, mensaje: t.mensaje, que, codigo: t.codigo, caduca: t.caduca });
+  est.style.display = 'none'; document.getElementById('ok').style.display = '';
+  if (t.estado === 'canjeada') document.querySelector('.hd p').textContent = 'Esta tarjeta ya se ha canjeado. ¡Esperamos que la hayas disfrutado!';
+}
+async function descargarPDF() {
+  const b = document.getElementById('b-pdf'); b.disabled = true; b.textContent = 'Preparando PDF…';
+  try {
+    const card = document.querySelector('.dr-card');
+    const canvas = await html2canvas(card, { scale: 3, useCORS: true, backgroundColor: null });
+    const { jsPDF } = window.jspdf; const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a5' });
+    const W = 210, H = 148, w = 190, h = w / 1.6;
+    pdf.addImage(canvas.toDataURL('image/png'), 'PNG', (W - w) / 2, (H - h) / 2, w, h);
+    pdf.save(`Tarjeta regalo Divas ${T.codigo}.pdf`);
+  } catch (e) { alert('No se pudo crear el PDF. Usa el botón Imprimir y elige «Guardar como PDF».'); }
+  b.disabled = false; b.textContent = '⬇ Descargar PDF';
+}
+function compartir() {
+  const txt = `🎁 Tienes una tarjeta regalo de Divas Skin Care${T.para ? ' para ' + T.para : ''}. Mírala y descárgala aquí: ${location.href}`;
+  if (navigator.share) navigator.share({ title: 'Tarjeta regalo Divas Skin Care', text: txt }).catch(() => {});
+  else window.open('https://wa.me/?text=' + encodeURIComponent(txt), '_blank');
+}
+cargar();
+</script>
+</body>
+</html>

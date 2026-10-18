@@ -225,6 +225,22 @@ footer{background:var(--primary-dk);color:var(--cream);padding:0 0 34px;}
 .foot-brand{font-family:var(--font-serif);font-weight:400;font-size:22px;margin-bottom:16px;letter-spacing:.02em;}
 .foot-bottom{border-top:1px solid rgba(255,255,255,.1);padding-top:26px;display:flex;justify-content:space-between;font-size:11px;color:rgba(243,241,232,.45);flex-wrap:wrap;gap:10px;letter-spacing:.03em;}
 </style>
+<style>
+.rg-grid{display:grid;grid-template-columns:1fr 1.15fr;gap:40px;align-items:start;}
+.rg-form{background:#fff;border:1px solid var(--border);border-radius:18px;padding:26px;}
+.rg-lbl{font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);margin:18px 0 10px;}.rg-lbl:first-child{margin-top:0}
+.rg-tipo{display:flex;gap:6px;margin-bottom:12px;}.rg-tipo button{flex:1;padding:11px;border-radius:30px;border:1px solid var(--border);background:#fff;font:inherit;font-size:13.5px;cursor:pointer;color:var(--ink2)}
+.rg-tipo button.on{background:var(--primary);border-color:var(--primary);color:#fff}
+.rg-chips{display:flex;flex-wrap:wrap;gap:8px;}
+.rg-chips button{padding:9px 14px;border-radius:30px;border:1px solid var(--border);background:#fff;font:inherit;font-size:13px;cursor:pointer;color:var(--ink)}
+.rg-chips button.on{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,#fff);font-weight:600}
+.rg-in{width:100%;padding:12px 14px;border:1px solid var(--border);border-radius:10px;font:inherit;font-size:14px;background:#fff;margin-bottom:10px;color:var(--ink)}
+.rg-2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.rg-nota{font-size:12px;color:var(--ink2);margin:8px 0 0;line-height:1.5}
+#rg-err{color:#b3441e}
+.svc-regalar{background:none;border:none;padding:0;margin-right:12px;cursor:pointer;font:inherit;font-size:12.5px;color:var(--accent);text-decoration:underline;text-underline-offset:3px}
+@media(max-width:860px){.rg-grid{grid-template-columns:1fr;gap:24px}.rg-grid>div:last-child{order:-1}}
+</style>
 </head>
 <body>
 
@@ -235,6 +251,7 @@ footer{background:var(--primary-dk);color:var(--cream);padding:0 0 34px;}
       <div class="nav-links">
         <a href="#servicios">Servicios</a>
         <a href="#tienda">Tienda</a>
+        <a href="#regalo">Regalar</a>
         <a href="#nosotros">Nosotras</a>
         <a href="#contacto">Contacto</a>
       </div>
@@ -754,6 +771,33 @@ footer{background:var(--primary-dk);color:var(--cream);padding:0 0 34px;}
           <div class="svc-foot"><span class="svc-price">27€</span><a class="svc-book" href="https://buy.stripe.com/00w6oAcYm8YafRu0tN1VK0C" data-servicio-id="f4b9e54d-358c-4906-94cf-07458821bcb2" data-precio="27">Reservar →</a></div>
         </div>
       </div>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="regalo" style="background:var(--cream);">
+  <div class="wrap">
+    <div class="section-head center">
+      <div class="eyebrow">Tarjeta regalo</div>
+      <h2>Regala un momento <em>Divas</em></h2>
+      <p>Elige un tratamiento o un importe, la ocasión y tu dedicatoria. Se paga al momento y la descargas en PDF para imprimirla o enviarla.</p>
+    </div>
+    <div class="rg-grid">
+      <div class="rg-form">
+        <div class="rg-lbl">1 · ¿Qué regalas?</div>
+        <div class="rg-tipo"><button type="button" class="on" data-t="importe">Un importe</button><button type="button" data-t="servicio">Un tratamiento</button></div>
+        <div id="rg-importes" class="rg-chips"></div>
+        <select id="rg-servicio" class="rg-in" style="display:none"></select>
+        <div class="rg-lbl">2 · La ocasión</div>
+        <div id="rg-plantillas" class="rg-chips"></div>
+        <div class="rg-lbl">3 · Tu dedicatoria</div>
+        <div class="rg-2"><input id="rg-para" class="rg-in" maxlength="60" placeholder="Para (ej. Marta)"><input id="rg-de" class="rg-in" maxlength="60" placeholder="De parte de"></div>
+        <textarea id="rg-msg" class="rg-in" maxlength="240" rows="2" placeholder="Mensaje (opcional)"></textarea>
+        <button type="button" class="btn btn-primary" id="rg-pagar" style="width:100%;margin-top:6px;">Pagar y descargar · <span id="rg-total">50 €</span></button>
+        <p class="rg-nota" id="rg-err"></p>
+        <p class="rg-nota">Pago seguro con tarjeta. Válida 12 meses. Al pagar te llevamos a tu tarjeta para descargarla.</p>
+      </div>
+      <div><div id="rg-prev"></div><p class="rg-nota" style="text-align:center">Vista previa · el código se genera al pagar</p></div>
     </div>
   </div>
 </section>
@@ -1459,6 +1503,7 @@ montarTabsTienda();
   </div>
 </div>
 
+<script src="regalo-plantillas.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 const SUPABASE_URL = 'https://tmbnufvchgwfnwmpbamq.supabase.co';
@@ -1643,9 +1688,62 @@ const RE_DURACION = /^\s*(\d+\s*h)?\s*(\d+\s*min)?\s*$/i;
     conectarTarjetaServicio(card);
   });
   await ordenarServiciosWeb(data);
+  montarRegalo(data);
   const activa = tabs.querySelector('.cat-tab.active');
   if (activa) filterSvcByCat(activa.textContent.trim());
 })();
+// ═══ Tarjeta regalo ═══
+const RG = { tipo:'importe', importe:50, servicio:null, plantilla:'cumple', servicios:[] };
+function montarRegalo(data){
+  const R = window.DIVAS_REGALO; if (!R || !document.getElementById('rg-prev')) return;
+  if (!document.getElementById('rg-css')) { const st = document.createElement('style'); st.id = 'rg-css'; st.textContent = R.css; document.head.appendChild(st); }
+  RG.servicios = (data||[]).filter(s => s.reservable === true && s.visible_web !== false && Number(s.precio_oferta ?? s.precio) > 0);
+  const imp = document.getElementById('rg-importes');
+  imp.innerHTML = [25,50,75,100,150].map(v => `<button type="button" data-v="${v}" class="${v===RG.importe?'on':''}">${v} €</button>`).join('');
+  imp.querySelectorAll('button').forEach(b => b.onclick = () => { RG.importe = +b.dataset.v; imp.querySelectorAll('button').forEach(x => x.classList.toggle('on', x===b)); pintarRegalo(); });
+  const sel = document.getElementById('rg-servicio');
+  const cats = {}; RG.servicios.forEach(s => (cats[s.categoria||'Otros'] = cats[s.categoria||'Otros'] || []).push(s));
+  sel.innerHTML = Object.entries(cats).map(([c,ss]) => `<optgroup label="${escWeb(c)}">${ss.map(s => `<option value="${s.id}">${escWeb(s.nombre)} · ${precioWeb(s.precio_oferta ?? s.precio)}</option>`).join('')}</optgroup>`).join('');
+  sel.onchange = () => { RG.servicio = sel.value; pintarRegalo(); };
+  RG.servicio = sel.value || null;
+  document.querySelectorAll('.rg-tipo button').forEach(b => b.onclick = () => regaloTipo(b.dataset.t));
+  const pl = document.getElementById('rg-plantillas');
+  pl.innerHTML = Object.entries(R.plantillas).map(([k,p]) => `<button type="button" data-k="${k}" class="${k===RG.plantilla?'on':''}">${p.icono} ${p.nombre}</button>`).join('');
+  pl.querySelectorAll('button').forEach(b => b.onclick = () => { RG.plantilla = b.dataset.k; pl.querySelectorAll('button').forEach(x => x.classList.toggle('on', x===b)); pintarRegalo(); });
+  ['rg-para','rg-de','rg-msg'].forEach(id => document.getElementById(id).addEventListener('input', pintarRegalo));
+  document.getElementById('rg-pagar').onclick = pagarRegalo;
+  // botón «Regalar» en cada tratamiento
+  document.querySelectorAll('.svc-book[data-servicio-id]').forEach(btn => {
+    const s = RG.servicios.find(x => x.id === btn.dataset.servicioId); if (!s || btn.parentElement.querySelector('.svc-regalar')) return;
+    const r = document.createElement('button'); r.type = 'button'; r.className = 'svc-regalar'; r.textContent = '🎁 Regalar';
+    r.onclick = e => { e.stopPropagation(); e.preventDefault(); regaloTipo('servicio'); sel.value = s.id; RG.servicio = s.id; pintarRegalo(); document.getElementById('regalo').scrollIntoView({ behavior:'smooth' }); };
+    btn.parentElement.insertBefore(r, btn);
+  });
+  pintarRegalo();
+}
+function regaloTipo(t){
+  RG.tipo = t; document.querySelectorAll('.rg-tipo button').forEach(x => x.classList.toggle('on', x.dataset.t===t));
+  document.getElementById('rg-importes').style.display = t==='importe' ? '' : 'none';
+  document.getElementById('rg-servicio').style.display = t==='servicio' ? '' : 'none';
+  if (t==='servicio' && !RG.servicio) RG.servicio = document.getElementById('rg-servicio').value;
+  pintarRegalo();
+}
+function pintarRegalo(){
+  const R = window.DIVAS_REGALO, s = RG.servicios.find(x => x.id === RG.servicio);
+  const precio = RG.tipo==='servicio' ? (s ? Number(s.precio_oferta ?? s.precio) : 0) : RG.importe;
+  const que = RG.tipo==='servicio' ? (s ? s.nombre : 'Elige un tratamiento') : `Tarjeta regalo de ${R.euros(RG.importe)}`;
+  document.getElementById('rg-prev').innerHTML = R.html({ plantilla:RG.plantilla, para:document.getElementById('rg-para').value, de:document.getElementById('rg-de').value, mensaje:document.getElementById('rg-msg').value, que });
+  document.getElementById('rg-total').textContent = R.euros(precio);
+}
+async function pagarRegalo(){
+  const b = document.getElementById('rg-pagar'), err = document.getElementById('rg-err');
+  if (RG.tipo==='servicio' && !RG.servicio) { err.textContent = 'Elige el tratamiento que quieres regalar.'; return; }
+  b.disabled = true; err.textContent = ''; const txt = b.innerHTML; b.textContent = 'Abriendo el pago seguro…';
+  const { data, error } = await sb.functions.invoke('checkout-regalo', { body:{ tipo:RG.tipo, servicio_id:RG.servicio, importe:RG.importe, plantilla:RG.plantilla,
+    para:document.getElementById('rg-para').value, de:document.getElementById('rg-de').value, mensaje:document.getElementById('rg-msg').value } });
+  if (error || !data?.url) { let m = 'No se pudo abrir el pago. Inténtalo de nuevo o escríbenos por WhatsApp.'; try { const j = await error?.context?.json?.(); if (j?.error) m = j.error; } catch(e) {} err.textContent = m; b.disabled = false; b.innerHTML = txt; return; }
+  location.href = data.url;
+}
 function precioServicioWeb(s){
   const base = precioWeb(s.precio);
   const precio = s.precio_oferta != null ? `<s style="opacity:.55;font-size:.85em;margin-right:4px;">${base}</s>${precioWeb(s.precio_oferta)}` : base;
