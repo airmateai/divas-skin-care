@@ -1604,7 +1604,7 @@ function precioWeb(p){ p=Number(p)||0; return (Number.isInteger(p)?p:p.toFixed(2
 function escWeb(t){ return String(t??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 const RE_DURACION = /^\s*(\d+\s*h)?\s*(\d+\s*min)?\s*$/i;
 (async function sincronizarServiciosWeb(){
-  let { data, error } = await sb.from('servicios').select('id,nombre,categoria,duracion,duracion_min,precio,reservable,descripcion,color,img_url,video_url,orden,precio_oferta,bono_sesiones,bono_precio').order('orden');
+  let { data, error } = await sb.from('servicios').select('id,nombre,categoria,duracion,duracion_min,precio,reservable,descripcion,color,img_url,video_url,orden,precio_oferta,bonos,visible_web').order('orden');
   if (error) ({ data, error } = await sb.from('servicios').select('id,nombre,categoria,duracion,duracion_min,precio,reservable,descripcion,color,img_url,video_url,orden').order('orden'));
   if (error || !data) return;
   const conTarjeta = new Set();
@@ -1614,7 +1614,7 @@ const RE_DURACION = /^\s*(\d+\s*h)?\s*(\d+\s*min)?\s*$/i;
     const card = btn.closest('.svc-card');
     if (!s || !card) return;
     conTarjeta.add(s.id);
-    if (s.reservable === false) { card.dataset.inactivo = '1'; card.style.display = 'none'; return; }
+    if (s.reservable === false || s.visible_web === false) { card.dataset.inactivo = '1'; card.style.display = 'none'; return; }
     if (s.img_url) { const media = card.querySelector('.svc-img'); if (media) media.innerHTML = `<img src="${escWeb(s.img_url)}" alt="${escWeb(s.nombre)}" loading="lazy">`; }
     btn.dataset.precio = s.precio;
     const precioEl = card.querySelector('.svc-price');
@@ -1628,7 +1628,7 @@ const RE_DURACION = /^\s*(\d+\s*h)?\s*(\d+\s*min)?\s*$/i;
   });
   const grid = document.querySelector('.svc-grid');
   const tabs = document.getElementById('svc-tabs');
-  data.filter(s => s.reservable === true && !conTarjeta.has(s.id)).forEach(s => {
+  data.filter(s => s.reservable === true && s.visible_web !== false && !conTarjeta.has(s.id)).forEach(s => {
     let tab = [...tabs.querySelectorAll('.cat-tab')].find(t => normCat(t.textContent) === normCat(s.categoria));
     if (!tab) { tab = document.createElement('div'); tab.className = 'cat-tab'; tab.textContent = s.categoria || 'Otros'; tabs.appendChild(tab); conectarPestanaServicio(tab); }
     const h = Math.floor((s.duracion_min||60)/60), m = (s.duracion_min||60)%60;
@@ -1649,7 +1649,8 @@ const RE_DURACION = /^\s*(\d+\s*h)?\s*(\d+\s*min)?\s*$/i;
 function precioServicioWeb(s){
   const base = precioWeb(s.precio);
   const precio = s.precio_oferta != null ? `<s style="opacity:.55;font-size:.85em;margin-right:4px;">${base}</s>${precioWeb(s.precio_oferta)}` : base;
-  return s.bono_sesiones ? `${precio}<small style="display:block;font-size:11px;opacity:.8;font-weight:500;">Bono ${s.bono_sesiones} sesiones · ${precioWeb(s.bono_precio)}</small>` : precio;
+  const bonos = Array.isArray(s.bonos) ? s.bonos.filter(b => b && b.sesiones > 1).sort((a,b) => a.sesiones - b.sesiones) : [];
+  return bonos.length ? `${precio}<small style="display:block;font-size:11px;opacity:.85;font-weight:500;margin-top:2px;">${bonos.map(b => `Bono ${b.sesiones} sesiones · ${precioWeb(b.precio)}`).join('<br>')}</small>` : precio;
 }
 // Pestañas y tarjetas en el orden que Louie pone en el panel (categorías y servicios)
 async function ordenarServiciosWeb(data){
