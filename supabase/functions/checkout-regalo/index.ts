@@ -54,7 +54,7 @@ Deno.serve(async (req) => {
   const token = trozo(24);
   const caduca = new Date(); caduca.setFullYear(caduca.getFullYear() + 1);
   const { data: t, error: e1 } = await supabase.from("tarjetas_regalo").insert({
-    codigo, token, tipo, servicio_id: servicioId, servicio_nombre: servicioNombre, importe, plantilla,
+    codigo, token, tipo, servicio_id: servicioId, servicio_nombre: servicioNombre, importe, saldo: tipo === "importe" ? importe : null, plantilla,
     para: texto(b.para, 60), de: texto(b.de, 60), mensaje: texto(b.mensaje, 240),
     caduca: caduca.toISOString().slice(0, 10), estado: "pendiente_pago",
   }).select("id").single();
