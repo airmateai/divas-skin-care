@@ -1929,7 +1929,7 @@ function abrirVentaRegaloCabina(){
   abrirModal('Vender tarjeta regalo en cabina', `<div style="display:flex;flex-direction:column;gap:12px;">
     ${campo('Regalo',`<select id="rgc-tipo" style="${INP}" onchange="document.getElementById('rgc-imp-w').style.display=this.value==='importe'?'':'none';document.getElementById('rgc-svc-w').style.display=this.value==='servicio'?'':'none'"><option value="importe">Un importe</option><option value="servicio">Un tratamiento</option></select>`)}
     <div id="rgc-imp-w">${campo('Importe (€)',`<input id="rgc-imp" type="number" min="5" step="1" value="50" style="${INP}">`)}</div>
-    <div id="rgc-svc-w" style="display:none">${campo('Tratamiento',`<select id="rgc-svc" style="${INP}">${svcs.map(s=>`<option value="${s.id}">${esc(s.name)} · ${fmtE(s.precioOferta??s.price)}</option>`).join('')}</select>`)}</div>
+    <div id="rgc-svc-w" style="display:none">${campo('Tratamiento o bono',`<select id="rgc-svc" style="${INP}">${svcs.map(s=>`<option value="${s.id}">${esc(s.name)} · ${fmtE(s.precioOferta??s.price)}</option>`+(s.bonos||[]).map(b=>`<option value="${s.id}|${b.sesiones}">🎟️ Bono ${b.sesiones} sesiones · ${esc(s.name)} · ${fmtE(b.precio)}</option>`).join('')).join('')}</select>`)}</div>
     ${campo('Ocasión',`<select id="rgc-pl" style="${INP}">${Object.entries(window.DIVAS_REGALO?.plantillas||{detalle:{nombre:'Un detalle',icono:'✨'}}).map(([k,p])=>`<option value="${k}">${p.icono||''} ${p.nombre}</option>`).join('')}</select>`)}
     <div class="two-col">${campo('Para',`<input id="rgc-para" maxlength="60" style="${INP}">`)}${campo('De parte de',`<input id="rgc-de" maxlength="60" style="${INP}">`)}</div>
     ${campo('Mensaje',`<input id="rgc-msg" maxlength="240" style="${INP}">`)}
@@ -1939,12 +1939,13 @@ function abrirVentaRegaloCabina(){
 }
 async function venderRegaloCabina(){
   const err=document.getElementById('rgc-err'), btn=document.getElementById('rgc-btn');
-  const tipo=document.getElementById('rgc-tipo').value, s=tipo==='servicio'?servicioDe(document.getElementById('rgc-svc').value):null;
-  const importe=tipo==='servicio'?Number(s?.precioOferta??s?.price):Math.round(parseFloat(document.getElementById('rgc-imp').value)*100)/100;
+  const tipo=document.getElementById('rgc-tipo').value, [sid,nb]=String(document.getElementById('rgc-svc').value||'').split('|'), s=tipo==='servicio'?servicioDe(sid):null;
+  const bono=s&&nb?(s.bonos||[]).find(b=>b.sesiones===+nb):null;
+  const importe=tipo==='servicio'?Number(bono?bono.precio:(s?.precioOferta??s?.price)):Math.round(parseFloat(document.getElementById('rgc-imp').value)*100)/100;
   if(!(importe>0)){ err.textContent='Pon un importe válido.'; return; }
   const A='ABCDEFGHJKLMNPQRSTUVWXYZ23456789', tr=n=>Array.from(crypto.getRandomValues(new Uint8Array(n)),b=>A[b%A.length]).join('');
   const caduca=new Date(); caduca.setMonth(caduca.getMonth()+4);
-  const fila={ codigo:`DIVAS-${tr(4)}-${tr(4)}`, token:tr(24), tipo, servicio_id:s?.id||null, servicio_nombre:s?.name||null, importe, plantilla:document.getElementById('rgc-pl').value,
+  const fila={ codigo:`DIVAS-${tr(4)}-${tr(4)}`, token:tr(24), tipo, servicio_id:s?.id||null, servicio_nombre:s?(bono?`Bono ${bono.sesiones} sesiones · ${s.name}`:s.name):null, sesiones:bono?bono.sesiones:null, importe, plantilla:document.getElementById('rgc-pl').value,
     para:document.getElementById('rgc-para').value.trim()||null, de:document.getElementById('rgc-de').value.trim()||null, mensaje:document.getElementById('rgc-msg').value.trim()||null,
     saldo:tipo==='servicio'?null:importe, estado:'pagada', pagada_en:new Date().toISOString(), caduca:dayKey(caduca), origen:'panel' };
   btn.disabled=true; err.textContent='Guardando…';
@@ -1980,7 +1981,8 @@ function posCanjearRegalo(codigo){
   if(t.tipo!=='servicio' && saldoRegalo(t)<=0) return fallo('Esta tarjeta ya no tiene saldo.');
   if(POS_REGALOS.includes(t.id)) return fallo('Ya está en esta venta.');
   POS_REGALOS.push(t.id); closeModal();
-  if(t.tipo==='servicio' && t.servicio_id){ const s=servicioDe(t.servicio_id); posAddLinea({ type:'servicio', servicioId:t.servicio_id, name:(s?.name||t.servicio_nombre)+' · regalo '+t.codigo, price:0, precioBase:0, precioAntes:Number(t.importe), regaloId:t.id }); }
+  if(t.tipo==='servicio' && t.servicio_id && t.sesiones>1){ posAddLinea({ type:'regalo_bono', servicioId:t.servicio_id, name:t.servicio_nombre+' · regalo '+t.codigo, price:0, precioBase:0, precioAntes:Number(t.importe), regaloId:t.id, sesiones:t.sesiones, regaloImporte:Number(t.importe) }); if(!POS_CLIENTA) toast('Elige la clienta: el bono regalado se guarda en su ficha'); }
+  else if(t.tipo==='servicio' && t.servicio_id){ const s=servicioDe(t.servicio_id); posAddLinea({ type:'servicio', servicioId:t.servicio_id, name:(s?.name||t.servicio_nombre)+' · regalo '+t.codigo, price:0, precioBase:0, precioAntes:Number(t.importe), regaloId:t.id }); }
   else posAddLinea({ type:'regalo_canje', name:'Tarjeta regalo '+t.codigo, price:0, precioBase:0, regaloId:t.id, regaloSaldo:saldoRegalo(t) });
   toast(t.tipo==='servicio'?'🎁 Tarjeta '+t.codigo+' añadida a la venta':`🎁 Tarjeta ${t.codigo} · saldo ${fmtE(saldoRegalo(t))}. Se descuenta lo que cueste la venta y el resto queda para otro día.`);
 }
@@ -3515,7 +3517,7 @@ function posRedrawCart(soloTotales){
 async function posPay(method){
   if(!POS_CART.length){ toast('El carrito está vacío'); return; }
   if(posTotales().total<0){ toast('La tarjeta regalo vale más que la venta: añade servicios o productos hasta cubrir su importe'); return; }
-  if(POS_CART.some(c=>c.type==='bono') && !POS_CLIENTA){ toast('Elige la clienta arriba: el bono se guarda en su ficha'); document.getElementById('pos-cl-q')?.focus(); return; }
+  if(POS_CART.some(c=>c.type==='bono'||c.type==='regalo_bono') && !POS_CLIENTA){ toast('Elige la clienta arriba: el bono se guarda en su ficha'); document.getElementById('pos-cl-q')?.focus(); return; }
   const items=POS_CART.map(c=>({ type:c.type, stock_id:c.stockId, servicio_id:c.servicioId, name:c.name, qty:c.qty, price:c.price, precio_antes:c.precioAntes||null, sesiones:c.sesiones||null, tipo_impuesto:c.tipoImpuesto, porcentaje_impuesto:c.pctImpuesto }));
   const clientaVenta=POS_CLIENTA;
   const t=posTotales();
@@ -3526,6 +3528,7 @@ async function posPay(method){
   if(clientaVenta){
     await sb.from('ventas').update({ clienta_id:clientaVenta.id }).eq('id',ventaId);
     const bonos=[]; items.filter(c=>c.type==='bono').forEach(c=>{ for(let k=0;k<c.qty;k++) bonos.push({ clienta_id:clientaVenta.id, servicio_id:c.servicio_id, nombre:c.name, sesiones_total:c.sesiones, precio:c.price, venta_id:ventaId }); });
+    POS_CART.filter(c=>c.type==='regalo_bono').forEach(c=>bonos.push({ clienta_id:clientaVenta.id, servicio_id:c.servicioId, nombre:c.name.replace(/ · regalo .*/,''), sesiones_total:c.sesiones, precio:c.regaloImporte, venta_id:ventaId, notas:'Tarjeta regalo '+(c.name.match(/DIVAS-[A-Z0-9-]+/)||[''])[0] }));
     if(bonos.length){ const { data:bd, error:be } = await sb.from('bonos_clienta').insert(bonos).select('id'); if(be||!bd?.length) toast('⚠ La venta se guardó, pero el bono NO se guardó en la ficha: '+(be?.message||'sin permiso')+'. Avisa a Airmate.'); else toast(`🎟️ Bono guardado en la ficha de ${clientaVenta.name}`); }
   }
   const lineasRegalo=POS_CART.filter(c=>c.regaloId);

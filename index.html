@@ -1693,7 +1693,8 @@ const RE_DURACION = /^\s*(\d+\s*h)?\s*(\d+\s*min)?\s*$/i;
   if (activa) filterSvcByCat(activa.textContent.trim());
 })();
 // ═══ Tarjeta regalo ═══
-const RG = { tipo:'importe', importe:50, servicio:null, plantilla:'cumple', servicios:[] };
+const RG = { tipo:'importe', importe:50, servicio:null, bono:null, plantilla:'cumple', servicios:[] };
+const bonosDeServicio = s => (Array.isArray(s?.bonos) ? s.bonos.filter(b => b && b.sesiones > 1 && b.precio > 0).sort((a,b) => a.sesiones - b.sesiones) : []);
 function montarRegalo(data){
   const R = window.DIVAS_REGALO; if (!R || !document.getElementById('rg-prev')) return;
   if (!document.getElementById('rg-css')) { const st = document.createElement('style'); st.id = 'rg-css'; st.textContent = R.css; document.head.appendChild(st); }
@@ -1702,10 +1703,14 @@ function montarRegalo(data){
   imp.innerHTML = [25,50,75,100,150].map(v => `<button type="button" data-v="${v}" class="${v===RG.importe?'on':''}">${v} €</button>`).join('');
   imp.querySelectorAll('button').forEach(b => b.onclick = () => { RG.importe = +b.dataset.v; imp.querySelectorAll('button').forEach(x => x.classList.toggle('on', x===b)); pintarRegalo(); });
   const sel = document.getElementById('rg-servicio');
-  const cats = {}; RG.servicios.forEach(s => (cats[s.categoria||'Otros'] = cats[s.categoria||'Otros'] || []).push(s));
-  sel.innerHTML = Object.entries(cats).map(([c,ss]) => `<optgroup label="${escWeb(c)}">${ss.map(s => `<option value="${s.id}">${escWeb(s.nombre)} · ${precioWeb(s.precio_oferta ?? s.precio)}</option>`).join('')}</optgroup>`).join('');
-  sel.onchange = () => { RG.servicio = sel.value; pintarRegalo(); };
-  RG.servicio = sel.value || null;
+  const cats = {}; RG.servicios.slice().sort((a,b) => (a.orden ?? 9999) - (b.orden ?? 9999)).forEach(s => (cats[s.categoria||'Otros'] = cats[s.categoria||'Otros'] || []).push(s));
+  const oc = window._ordCatServ || {}, claves = Object.keys(cats);
+  const pos = c => oc[normCat(c)] ?? (1000 + claves.indexOf(c));
+  sel.innerHTML = claves.slice().sort((a,b) => pos(a) - pos(b)).map(c => `<optgroup label="${escWeb(c)}">${cats[c].map(s => `<option value="${s.id}">${escWeb(s.nombre)} · ${precioWeb(s.precio_oferta ?? s.precio)}</option>` +
+    bonosDeServicio(s).map(b => `<option value="${s.id}|${b.sesiones}">🎟️ Bono ${b.sesiones} sesiones · ${escWeb(s.nombre)} · ${precioWeb(b.precio)}</option>`).join('')).join('')}</optgroup>`).join('');
+  const leerSel = () => { const [id, n] = String(sel.value || '').split('|'); RG.servicio = id || null; RG.bono = n ? +n : null; };
+  sel.onchange = () => { leerSel(); pintarRegalo(); };
+  leerSel();
   document.querySelectorAll('.rg-tipo button').forEach(b => b.onclick = () => regaloTipo(b.dataset.t));
   const pl = document.getElementById('rg-plantillas');
   pl.innerHTML = Object.entries(R.plantillas).map(([k,p]) => `<button type="button" data-k="${k}" class="${k===RG.plantilla?'on':''}">${p.icono} ${p.nombre}</button>`).join('');
@@ -1716,7 +1721,7 @@ function montarRegalo(data){
   document.querySelectorAll('.svc-book[data-servicio-id]').forEach(btn => {
     const s = RG.servicios.find(x => x.id === btn.dataset.servicioId); if (!s || btn.parentElement.querySelector('.svc-regalar')) return;
     const r = document.createElement('button'); r.type = 'button'; r.className = 'svc-regalar'; r.textContent = '🎁 Regalar';
-    r.onclick = e => { e.stopPropagation(); e.preventDefault(); regaloTipo('servicio'); sel.value = s.id; RG.servicio = s.id; pintarRegalo(); document.getElementById('regalo').scrollIntoView({ behavior:'smooth' }); };
+    r.onclick = e => { e.stopPropagation(); e.preventDefault(); regaloTipo('servicio'); sel.value = s.id; RG.servicio = s.id; RG.bono = null; pintarRegalo(); document.getElementById('regalo').scrollIntoView({ behavior:'smooth' }); };
     btn.parentElement.insertBefore(r, btn);
   });
   pintarRegalo();
@@ -1725,13 +1730,14 @@ function regaloTipo(t){
   RG.tipo = t; document.querySelectorAll('.rg-tipo button').forEach(x => x.classList.toggle('on', x.dataset.t===t));
   document.getElementById('rg-importes').style.display = t==='importe' ? '' : 'none';
   document.getElementById('rg-servicio').style.display = t==='servicio' ? '' : 'none';
-  if (t==='servicio' && !RG.servicio) RG.servicio = document.getElementById('rg-servicio').value;
+  if (t==='servicio' && !RG.servicio) { const [id, n] = String(document.getElementById('rg-servicio').value || '').split('|'); RG.servicio = id || null; RG.bono = n ? +n : null; }
   pintarRegalo();
 }
 function pintarRegalo(){
   const R = window.DIVAS_REGALO, s = RG.servicios.find(x => x.id === RG.servicio);
-  const precio = RG.tipo==='servicio' ? (s ? Number(s.precio_oferta ?? s.precio) : 0) : RG.importe;
-  const que = RG.tipo==='servicio' ? (s ? s.nombre : 'Elige un tratamiento') : `Tarjeta regalo de ${R.euros(RG.importe)}`;
+  const bono = RG.tipo==='servicio' && RG.bono ? bonosDeServicio(s).find(b => b.sesiones === RG.bono) : null;
+  const precio = RG.tipo==='servicio' ? (bono ? Number(bono.precio) : s ? Number(s.precio_oferta ?? s.precio) : 0) : RG.importe;
+  const que = RG.tipo==='servicio' ? (s ? (bono ? `Bono ${bono.sesiones} sesiones · ${s.nombre}` : s.nombre) : 'Elige un tratamiento') : `Tarjeta regalo de ${R.euros(RG.importe)}`;
   document.getElementById('rg-prev').innerHTML = R.html({ plantilla:RG.plantilla, para:document.getElementById('rg-para').value, de:document.getElementById('rg-de').value, mensaje:document.getElementById('rg-msg').value, que });
   document.getElementById('rg-total').textContent = R.euros(precio);
 }
@@ -1739,7 +1745,7 @@ async function pagarRegalo(){
   const b = document.getElementById('rg-pagar'), err = document.getElementById('rg-err');
   if (RG.tipo==='servicio' && !RG.servicio) { err.textContent = 'Elige el tratamiento que quieres regalar.'; return; }
   b.disabled = true; err.textContent = ''; const txt = b.innerHTML; b.textContent = 'Abriendo el pago seguro…';
-  const { data, error } = await sb.functions.invoke('checkout-regalo', { body:{ tipo:RG.tipo, servicio_id:RG.servicio, importe:RG.importe, plantilla:RG.plantilla,
+  const { data, error } = await sb.functions.invoke('checkout-regalo', { body:{ tipo:RG.tipo, servicio_id:RG.servicio, bono_sesiones:RG.tipo==='servicio'?RG.bono:null, importe:RG.importe, plantilla:RG.plantilla,
     para:document.getElementById('rg-para').value, de:document.getElementById('rg-de').value, mensaje:document.getElementById('rg-msg').value } });
   if (error || !data?.url) { let m = 'No se pudo abrir el pago. Inténtalo de nuevo o escríbenos por WhatsApp.'; try { const j = await error?.context?.json?.(); if (j?.error) m = j.error; } catch(e) {} err.textContent = m; b.disabled = false; b.innerHTML = txt; return; }
   location.href = data.url;
@@ -1756,6 +1762,7 @@ async function ordenarServiciosWeb(data){
   if (!tabs || !grid) return;
   let ordC = {};
   try { const { data: oc } = await sb.from('orden_categorias').select('tipo,nombre,orden').eq('tipo','servicio'); (oc||[]).forEach(o => ordC[normCat(o.nombre)] = o.orden); } catch(e) {}
+  window._ordCatServ = ordC;
   const ordS = {}; (data||[]).forEach(s => ordS[s.id] = s.orden ?? 9999);
   const cards = [...grid.querySelectorAll('.svc-card')];
   const catDe = c => (c.querySelector('.svc-cat')?.textContent || '').trim();

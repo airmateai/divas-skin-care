@@ -34,15 +34,21 @@ Deno.serve(async (req) => {
   if (!tipo) return json({ error: "Elige un servicio o un importe" }, 400, origin);
   const plantilla = PLANTILLAS.includes(String(b.plantilla)) ? String(b.plantilla) : "detalle";
 
-  let importe = 0, servicioId: string | null = null, servicioNombre: string | null = null;
+  let importe = 0, servicioId: string | null = null, servicioNombre: string | null = null, sesiones: number | null = null;
   if (tipo === "servicio") {
     const id = String(b.servicio_id || "");
     if (!/^[0-9a-f-]{36}$/i.test(id)) return json({ error: "Servicio no válido" }, 400, origin);
     const { data: s, error } = await supabase.from("servicios")
-      .select("id, nombre, precio, precio_oferta, reservable").eq("id", id).maybeSingle();
+      .select("id, nombre, precio, precio_oferta, reservable, bonos").eq("id", id).maybeSingle();
     if (error || !s || s.reservable === false) return json({ error: "Este servicio no se puede regalar ahora" }, 404, origin);
-    importe = Number(s.precio_oferta ?? s.precio);
     servicioId = s.id; servicioNombre = s.nombre;
+    importe = Number(s.precio_oferta ?? s.precio);
+    const n = Number(b.bono_sesiones || 0);
+    if (n) {
+      const bono = (Array.isArray(s.bonos) ? s.bonos : []).find((x: { sesiones: number; precio: number }) => Number(x?.sesiones) === n);
+      if (!bono || !(Number(bono.precio) > 0)) return json({ error: "Ese bono ya no está disponible" }, 404, origin);
+      importe = Number(bono.precio); sesiones = n; servicioNombre = `Bono ${n} sesiones · ${s.nombre}`;
+    }
   } else {
     importe = Math.round(Number(b.importe) * 100) / 100;
     if (!(importe >= 10 && importe <= 500)) return json({ error: "El importe tiene que estar entre 10 € y 500 €" }, 400, origin);
@@ -54,7 +60,7 @@ Deno.serve(async (req) => {
   const token = trozo(24);
   const caduca = new Date(); caduca.setMonth(caduca.getMonth() + 4);
   const { data: t, error: e1 } = await supabase.from("tarjetas_regalo").insert({
-    codigo, token, tipo, servicio_id: servicioId, servicio_nombre: servicioNombre, importe, saldo: tipo === "importe" ? importe : null, plantilla,
+    codigo, token, tipo, servicio_id: servicioId, servicio_nombre: servicioNombre, importe, saldo: tipo === "importe" ? importe : null, sesiones, plantilla,
     para: texto(b.para, 60), de: texto(b.de, 60), mensaje: texto(b.mensaje, 240),
     caduca: caduca.toISOString().slice(0, 10), estado: "pendiente_pago",
   }).select("id").single();
