@@ -101,7 +101,7 @@ Deno.serve(async (req) => {
         product_data: {
           name: nombre,
           description: tipo === "productos"
-            ? `Lo preparamos ${presentacion === "cesta" ? "en cesta" : "envuelto para regalo"} y se recoge en cabina (Divas Skin Care, La Laguna) con el código de la tarjeta. Válida 4 meses.`
+            ? `Lo preparamos ${presentacion === "cesta" ? "en cesta" : "envuelto para regalo"} y se recoge en el centro (Divas Skin Care, La Laguna) con el código de la tarjeta. Válida 4 meses.`
             : "Divas Skin Care · La Laguna. Válida 4 meses. Al pagar, la descargas en PDF para imprimir o enviar.",
           metadata: { tipo: "regalo", tarjeta_id: t.id },
         },

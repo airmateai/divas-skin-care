@@ -48,7 +48,7 @@ Deno.serve(async (req) => {
         unit_amount: centimos,
         product_data: {
           name: p.nombre,
-          description: "Recogida en cabina · Divas Skin Care, La Laguna",
+          description: "Recogida en el centro · Divas Skin Care, La Laguna",
           ...(imagen ? { images: [imagen] } : {}),
           metadata: { producto_id: p.id, tipo: "producto" },
         },

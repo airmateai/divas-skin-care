@@ -833,7 +833,7 @@ footer{background:var(--primary-dk);color:var(--cream);padding:0 0 34px;}
             <input id="rg-pq" class="rg-in" placeholder="Buscar producto o marca" autocomplete="off">
             <div id="rg-plist" class="rg-plist"></div>
             <div class="rg-pres" id="rg-pres"><button type="button" class="on" data-p="cesta"><b>En cesta</b><small>Presentada en cesta de regalo</small></button><button type="button" data-p="envuelto"><b>Envuelto</b><small>Con papel y lazo</small></button></div>
-            <p class="rg-nota">Se recoge en cabina · Calle Arguijón 1, La Laguna · presentando el código.</p>
+            <p class="rg-nota">Se recoge en el centro · Calle Arguijón 1, La Laguna · presentando el código.</p>
           </div>
         </div></div>
         <div class="rg-step"><span class="rg-n">II</span><div><div class="rg-lbl">La ocasión</div><div id="rg-plantillas" class="rg-occ"></div></div></div>
@@ -855,7 +855,7 @@ footer{background:var(--primary-dk);color:var(--cream);padding:0 0 34px;}
     <div class="section-head center">
       <div class="eyebrow">Tienda online</div>
       <h2>Continúa el cuidado en casa</h2>
-      <p>Productos profesionales seleccionados por nosotras. Compra online y recoge tu pedido en cabina — sin gastos de envío. <a href="condiciones.html" style="color:inherit;text-decoration:underline;opacity:.8;">Condiciones de venta y devoluciones</a></p>
+      <p>Productos profesionales seleccionados por nosotras. Compra online y recoge tu pedido en el centro — sin gastos de envío. <a href="condiciones.html" style="color:inherit;text-decoration:underline;opacity:.8;">Condiciones de venta y devoluciones</a></p>
     </div>
     <div class="section-head center" style="margin-bottom:22px;"><p style="color:var(--cream);opacity:.8;">Cosmética Utsukusy, Kelaya, The Ordinary, Dr. Melaxin y Beauty of Joseon. Otros: Herbalife, Kefus y fajas Fájate · catálogo completo en el centro.</p></div>
     <div class="cat-tabs" id="shop-tabs" style="border-bottom-color:rgba(255,255,255,.15);"></div>
@@ -1300,7 +1300,7 @@ footer{background:var(--primary-dk);color:var(--cream);padding:0 0 34px;}
       </div>
       </div>
     </div>
-    <div class="shop-more"><a href="#contacto" class="btn" style="background:var(--accent);color:var(--primary)">Ver catálogo completo en cabina</a></div>
+    <div class="shop-more"><a href="#contacto" class="btn" style="background:var(--accent);color:var(--primary)">Ver catálogo completo en el centro</a></div>
   </div>
 </section>
 
@@ -1872,7 +1872,7 @@ async function ordenarServiciosWeb(data){
   grid.innerHTML=Object.entries(grupos).sort((a,b)=>((ordM[a[0]]??(1000+claves.indexOf(a[0])))-(ordM[b[0]]??(1000+claves.indexOf(b[0]))))).map(([m,ps])=>`<div class="shop-marca-title" style="grid-column:1/-1;padding:18px 20px 4px;"><h3 style="font-family:var(--font-serif);color:var(--accent-lt);font-size:20px;">${escWeb(m)}</h3></div>`+
     ps.map(p=>`<div class="shop-card">
         <div class="shop-img">${p.imagen_url?`<img src="${escWeb(p.imagen_url)}" alt="${escWeb(p.nombre)}" loading="lazy">`:''}</div>
-        <div class="shop-body"><h4>${escWeb(p.nombre)}</h4><div class="price">${precioWeb(p.precio)}</div>${p.bajo_pedido?`<div style="font-size:11px;opacity:.75;margin-top:4px;">Bajo pedido${p.tallas?` · ${escWeb(p.tallas)}`:''}</div><button class="svc-book" type="button" style="display:block;margin-top:8px;background:none;border:none;padding:0;cursor:pointer;font:inherit;" onclick="encargarProducto('${p.id}')">Encargar →</button>`:p.disponible?`<button class="svc-book" type="button" style="display:block;margin-top:8px;background:none;border:none;padding:0;cursor:pointer;font:inherit;" onclick="comprarProducto('${p.id}',this)">Comprar · recoger en cabina →</button>`:'<div style="font-size:11px;opacity:.7;margin-top:8px;">Sin stock ahora · pregúntanos</div>'}</div>
+        <div class="shop-body"><h4>${escWeb(p.nombre)}</h4><div class="price">${precioWeb(p.precio)}</div>${p.bajo_pedido?`<div style="font-size:11px;opacity:.75;margin-top:4px;">Bajo pedido${p.tallas?` · ${escWeb(p.tallas)}`:''}</div><button class="svc-book" type="button" style="display:block;margin-top:8px;background:none;border:none;padding:0;cursor:pointer;font:inherit;" onclick="encargarProducto('${p.id}')">Encargar →</button>`:p.disponible?`<button class="svc-book" type="button" style="display:block;margin-top:8px;background:none;border:none;padding:0;cursor:pointer;font:inherit;" onclick="comprarProducto('${p.id}',this)">Comprar · recoger en el centro →</button>`:'<div style="font-size:11px;opacity:.7;margin-top:8px;">Sin stock ahora · pregúntanos</div>'}</div>
       </div>`).join('')).join('');
   montarTabsTienda();
 })();
@@ -1899,7 +1899,7 @@ const GUIAS_FAJATE={
 function guiaDe(p){ const n=String(p.nombre||'').toLowerCase(); if(/mentonera/.test(n)) return 'mentonera'; if(/masculin|hombre/.test(n)) return 'hombre'; if(/^bra|brasier|sujetador/.test(n)||/^\d{2}\s*-\s*\d{2}$/.test(String(p.tallas||'').trim())) return 'brasier'; return null; }
 function guiaHTML(k){
   const g=GUIAS_FAJATE[k];
-  if(!g) return `<details class="enc-guia"><summary>¿Qué talla elijo?</summary><p style="font-size:13px;line-height:1.6;margin:10px 0 0;">Te tomamos las medidas en cabina en un momento, o escríbenos por WhatsApp con tu contorno de cintura y cadera y te decimos tu talla. Si estás entre dos tallas, elige la más grande.</p></details>`;
+  if(!g) return `<details class="enc-guia"><summary>¿Qué talla elijo?</summary><p style="font-size:13px;line-height:1.6;margin:10px 0 0;">Te tomamos las medidas en el centro en un momento, o escríbenos por WhatsApp con tu contorno de cintura y cadera y te decimos tu talla. Si estás entre dos tallas, elige la más grande.</p></details>`;
   return `<details class="enc-guia"><summary>${escWeb(g.t)}</summary><table><thead><tr>${g.h.map(x=>`<th>${escWeb(x)}</th>`).join('')}</tr></thead><tbody>${g.f.map(r=>`<tr>${r.map(x=>`<td>${escWeb(x)}</td>`).join('')}</tr>`).join('')}</tbody></table>${g.nota?`<p>${g.nota}</p>`:''}<p>Si estás entre dos tallas, te recomendamos la más grande.</p></details>`;
 }
 function encargarProducto(id){
@@ -2111,7 +2111,7 @@ form.addEventListener('submit', async (e)=>{
     }, 1200);
   } else {
     msg.style.color = '#3d4a3a';
-    msg.textContent = '¡Hora reservada! Se paga en cabina. Te confirmaremos por teléfono o email.';
+    msg.textContent = '¡Hora reservada! Se paga en el centro. Te confirmaremos por teléfono o email.';
     form.reset();
     setTimeout(()=>{ modal.style.display='none'; }, 2500);
   }
