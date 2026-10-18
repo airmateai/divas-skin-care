@@ -52,7 +52,7 @@ Deno.serve(async (req) => {
 
   const codigo = `DIVAS-${trozo(4)}-${trozo(4)}`;
   const token = trozo(24);
-  const caduca = new Date(); caduca.setFullYear(caduca.getFullYear() + 1);
+  const caduca = new Date(); caduca.setMonth(caduca.getMonth() + 4);
   const { data: t, error: e1 } = await supabase.from("tarjetas_regalo").insert({
     codigo, token, tipo, servicio_id: servicioId, servicio_nombre: servicioNombre, importe, saldo: tipo === "importe" ? importe : null, plantilla,
     para: texto(b.para, 60), de: texto(b.de, 60), mensaje: texto(b.mensaje, 240),
@@ -72,7 +72,7 @@ Deno.serve(async (req) => {
         unit_amount: centimos,
         product_data: {
           name: nombre,
-          description: "Divas Skin Care · La Laguna. Válida 12 meses. Al pagar, la descargas en PDF para imprimir o enviar.",
+          description: "Divas Skin Care · La Laguna. Válida 4 meses. Al pagar, la descargas en PDF para imprimir o enviar.",
           metadata: { tipo: "regalo", tarjeta_id: t.id },
         },
       },

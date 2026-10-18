@@ -22,7 +22,7 @@ window.DIVAS_REGALO = {
       <div class="dr-que">${e(d.que || '')}</div>
       ${d.mensaje ? `<div class="dr-msg">«${e(d.mensaje)}»</div>` : ''}
       ${d.de ? `<div class="dr-de">De parte de <b>${e(d.de)}</b></div>` : ''}
-      <div class="dr-pie"><div><small>Código</small><b>${e(d.codigo || 'DIVAS-XXXX-XXXX')}</b></div><div style="text-align:right"><small>Válida hasta</small><b>${d.caduca ? new Date(d.caduca + 'T12:00:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' }) : '12 meses'}</b></div></div>
+      <div class="dr-pie"><div><small>Código</small><b>${e(d.codigo || 'DIVAS-XXXX-XXXX')}</b></div><div style="text-align:right"><small>Válida hasta</small><b>${d.caduca ? new Date(d.caduca + 'T12:00:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' }) : '4 meses'}</b></div></div>
       <div class="dr-info">Reserva por WhatsApp o en divasskincare.com y presenta este código · Calle Arguijón 1, La Laguna</div>
     </div>`;
   },

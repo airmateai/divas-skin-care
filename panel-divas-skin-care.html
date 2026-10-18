@@ -1943,7 +1943,7 @@ async function venderRegaloCabina(){
   const importe=tipo==='servicio'?Number(s?.precioOferta??s?.price):Math.round(parseFloat(document.getElementById('rgc-imp').value)*100)/100;
   if(!(importe>0)){ err.textContent='Pon un importe válido.'; return; }
   const A='ABCDEFGHJKLMNPQRSTUVWXYZ23456789', tr=n=>Array.from(crypto.getRandomValues(new Uint8Array(n)),b=>A[b%A.length]).join('');
-  const caduca=new Date(); caduca.setFullYear(caduca.getFullYear()+1);
+  const caduca=new Date(); caduca.setMonth(caduca.getMonth()+4);
   const fila={ codigo:`DIVAS-${tr(4)}-${tr(4)}`, token:tr(24), tipo, servicio_id:s?.id||null, servicio_nombre:s?.name||null, importe, plantilla:document.getElementById('rgc-pl').value,
     para:document.getElementById('rgc-para').value.trim()||null, de:document.getElementById('rgc-de').value.trim()||null, mensaje:document.getElementById('rgc-msg').value.trim()||null,
     saldo:tipo==='servicio'?null:importe, estado:'pagada', pagada_en:new Date().toISOString(), caduca:dayKey(caduca), origen:'panel' };
