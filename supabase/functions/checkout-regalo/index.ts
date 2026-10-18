@@ -30,11 +30,12 @@ Deno.serve(async (req) => {
 
   let b: Record<string, unknown> = {};
   try { b = await req.json(); } catch { /* vacío */ }
-  const tipo = b.tipo === "servicio" ? "servicio" : b.tipo === "importe" ? "importe" : null;
-  if (!tipo) return json({ error: "Elige un servicio o un importe" }, 400, origin);
+  const tipo = b.tipo === "servicio" ? "servicio" : b.tipo === "importe" ? "importe" : b.tipo === "productos" ? "productos" : null;
+  if (!tipo) return json({ error: "Elige un servicio, un importe o productos" }, 400, origin);
   const plantilla = PLANTILLAS.includes(String(b.plantilla)) ? String(b.plantilla) : "detalle";
 
   let importe = 0, servicioId: string | null = null, servicioNombre: string | null = null, sesiones: number | null = null;
+  let productos: { id: string; nombre: string; qty: number; precio: number }[] | null = null, presentacion: string | null = null;
   if (tipo === "servicio") {
     const id = String(b.servicio_id || "");
     if (!/^[0-9a-f-]{36}$/i.test(id)) return json({ error: "Servicio no válido" }, 400, origin);
@@ -49,6 +50,27 @@ Deno.serve(async (req) => {
       if (!bono || !(Number(bono.precio) > 0)) return json({ error: "Ese bono ya no está disponible" }, 404, origin);
       importe = Number(bono.precio); sesiones = n; servicioNombre = `Bono ${n} sesiones · ${s.nombre}`;
     }
+  } else if (tipo === "productos") {
+    const pedidos = (Array.isArray(b.productos) ? b.productos : []) as { id: string; qty: number }[];
+    const qty = new Map<string, number>();
+    for (const x of pedidos) { const id = String(x?.id || ""); const q = Math.floor(Number(x?.qty)); if (/^[0-9a-f-]{36}$/i.test(id) && q > 0) qty.set(id, Math.min(5, (qty.get(id) || 0) + q)); }
+    if (!qty.size || qty.size > 12) return json({ error: "Elige entre 1 y 12 productos" }, 400, origin);
+    const { data: ps, error } = await supabase.from("stock").select("id, nombre, precio, cantidad, visible_web, bajo_pedido").in("id", [...qty.keys()]);
+    if (error || !ps || ps.length !== qty.size) return json({ error: "Algún producto ya no está disponible" }, 404, origin);
+    productos = [];
+    for (const p of ps) {
+      const q = qty.get(p.id)!;
+      if (!p.visible_web || p.bajo_pedido) return json({ error: `${p.nombre} no se puede regalar online` }, 409, origin);
+      if ((p.cantidad ?? 0) < q) return json({ error: `No queda stock suficiente de ${p.nombre}` }, 409, origin);
+      if (!(Number(p.precio) > 0)) return json({ error: `${p.nombre} no tiene precio` }, 409, origin);
+      productos.push({ id: p.id, nombre: p.nombre, qty: q, precio: Number(p.precio) });
+      importe += Number(p.precio) * q;
+    }
+    importe = Math.round(importe * 100) / 100;
+    presentacion = b.presentacion === "envuelto" ? "envuelto" : "cesta";
+    const n = productos.reduce((a, p) => a + p.qty, 0);
+    servicioNombre = `${presentacion === "cesta" ? "Cesta regalo" : "Regalo envuelto"} · ${n} producto${n > 1 ? "s" : ""}: ` + productos.map((p) => (p.qty > 1 ? p.qty + "× " : "") + p.nombre).join(", ");
+    if (servicioNombre.length > 300) servicioNombre = servicioNombre.slice(0, 297) + "…";
   } else {
     importe = Math.round(Number(b.importe) * 100) / 100;
     if (!(importe >= 10 && importe <= 500)) return json({ error: "El importe tiene que estar entre 10 € y 500 €" }, 400, origin);
@@ -60,14 +82,14 @@ Deno.serve(async (req) => {
   const token = trozo(24);
   const caduca = new Date(); caduca.setMonth(caduca.getMonth() + 4);
   const { data: t, error: e1 } = await supabase.from("tarjetas_regalo").insert({
-    codigo, token, tipo, servicio_id: servicioId, servicio_nombre: servicioNombre, importe, saldo: tipo === "importe" ? importe : null, sesiones, plantilla,
+    codigo, token, tipo, servicio_id: servicioId, servicio_nombre: servicioNombre, importe, saldo: tipo === "importe" ? importe : null, sesiones, productos, presentacion, plantilla,
     para: texto(b.para, 60), de: texto(b.de, 60), mensaje: texto(b.mensaje, 240),
     caduca: caduca.toISOString().slice(0, 10), estado: "pendiente_pago",
   }).select("id").single();
   if (e1 || !t) return json({ error: "No se pudo preparar la tarjeta, inténtalo de nuevo" }, 500, origin);
 
   const base = origin && ORIGENES_OK.includes(origin) ? origin + (origin.includes("github.io") ? "/divas-skin-care/" : "/") : WEB;
-  const nombre = tipo === "servicio" ? `Tarjeta regalo · ${servicioNombre}` : `Tarjeta regalo · ${importe.toFixed(2).replace(".", ",").replace(",00", "")} €`;
+  const nombre = tipo === "importe" ? `Tarjeta regalo · ${importe.toFixed(2).replace(".", ",").replace(",00", "")} €` : `Tarjeta regalo · ${servicioNombre}`.slice(0, 250);
 
   const session = await stripe.checkout.sessions.create({
     mode: "payment",
@@ -78,7 +100,9 @@ Deno.serve(async (req) => {
         unit_amount: centimos,
         product_data: {
           name: nombre,
-          description: "Divas Skin Care · La Laguna. Válida 4 meses. Al pagar, la descargas en PDF para imprimir o enviar.",
+          description: tipo === "productos"
+            ? `Lo preparamos ${presentacion === "cesta" ? "en cesta" : "envuelto para regalo"} y se recoge en cabina (Divas Skin Care, La Laguna) con el código de la tarjeta. Válida 4 meses.`
+            : "Divas Skin Care · La Laguna. Válida 4 meses. Al pagar, la descargas en PDF para imprimir o enviar.",
           metadata: { tipo: "regalo", tarjeta_id: t.id },
         },
       },

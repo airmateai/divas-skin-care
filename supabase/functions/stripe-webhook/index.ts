@@ -42,7 +42,7 @@ Deno.serve(async (req) => {
         comprador_email: session.customer_details?.email || null,
         comprador_telefono: session.customer_details?.phone || null,
         stripe_session: session.id,
-      }).eq("id", tid).eq("estado", "pendiente_pago").select("codigo, importe, servicio_nombre").maybeSingle();
+      }).eq("id", tid).eq("estado", "pendiente_pago").select("codigo, importe, servicio_nombre, productos, presentacion, para").maybeSingle();
       if (eT) console.error("Error marcando tarjeta regalo:", eT.message);
       else if (t) {
         const que = t.servicio_nombre || `${Number(t.importe).toFixed(2).replace(".", ",")} €`;
@@ -51,6 +51,24 @@ Deno.serve(async (req) => {
           mensaje: `🎁 Tarjeta regalo vendida online: ${que} · código ${t.codigo}`,
         });
         if (eN) console.error("Error creando notificación:", eN.message);
+        // Regalo de productos: pedido para preparar (cesta o envuelto) y se descuenta el stock
+        for (const p of (Array.isArray(t.productos) ? t.productos : []) as { id: string; nombre: string; qty: number }[]) {
+          const { error: eP } = await supabase.from("pedidos").insert({
+            cliente_nombre: session.customer_details?.name || "Regalo",
+            cliente_telefono: session.customer_details?.phone || null,
+            cliente_email: session.customer_details?.email || null,
+            producto_id: p.id,
+            estado: "pendiente_preparar",
+            origen: "regalo",
+            notas: `🎁 REGALO ${t.presentacion === "cesta" ? "EN CESTA" : "ENVUELTO"} · ${p.qty > 1 ? p.qty + " unidades · " : ""}código ${t.codigo}${t.para ? " · para " + t.para : ""}. Pagado online. Se recoge en cabina con el código.`,
+          });
+          if (eP) console.error("Error creando pedido de regalo:", eP.message);
+          const { data: art } = await supabase.from("stock").select("cantidad").eq("id", p.id).maybeSingle();
+          if (art) {
+            const { error: eS } = await supabase.from("stock").update({ cantidad: Math.max(0, (art.cantidad ?? 0) - (p.qty || 1)) }).eq("id", p.id);
+            if (eS) console.error("Error descontando stock (regalo):", eS.message);
+          }
+        }
         console.log(`Tarjeta regalo ${t.codigo} pagada`);
       }
       return new Response(JSON.stringify({ received: true }), { status: 200 });

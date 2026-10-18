@@ -237,6 +237,13 @@ footer{background:var(--primary-dk);color:var(--cream);padding:0 0 34px;}
 .rg-in{width:100%;padding:12px 14px;border:1px solid var(--border);border-radius:10px;font:inherit;font-size:14px;background:#fff;margin-bottom:10px;color:var(--ink)}
 .rg-2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
 .rg-nota{font-size:12px;color:var(--ink2);margin:8px 0 0;line-height:1.5}
+.rg-tipo button{font-size:12.5px;padding:11px 6px}
+.rg-plist{max-height:300px;overflow:auto;border:1px solid var(--border);border-radius:10px;}
+.rg-pi{display:flex;align-items:center;gap:10px;padding:8px 10px;border-bottom:1px solid var(--border);}
+.rg-pi:last-child{border-bottom:0}.rg-pi img,.rg-pi .ph{width:42px;height:42px;border-radius:8px;object-fit:cover;background:var(--cream);flex:none}
+.rg-pi .tx{flex:1;min-width:0;font-size:13px;line-height:1.3}.rg-pi .tx small{display:block;color:var(--ink2);font-size:11.5px}
+.rg-pi .q{display:flex;align-items:center;gap:6px}.rg-pi .q button{width:28px;height:28px;border-radius:50%;border:1px solid var(--border);background:#fff;cursor:pointer;font-size:15px;line-height:1}
+.rg-pi.on{background:color-mix(in srgb,var(--accent) 8%,#fff)}
 #rg-err{color:#b3441e}
 .svc-regalar{background:none;border:none;padding:0;margin-right:12px;cursor:pointer;font:inherit;font-size:12.5px;color:var(--accent);text-decoration:underline;text-underline-offset:3px}
 @media(max-width:860px){.rg-grid{grid-template-columns:1fr;gap:24px}.rg-grid>div:last-child{order:-1}}
@@ -785,9 +792,16 @@ footer{background:var(--primary-dk);color:var(--cream);padding:0 0 34px;}
     <div class="rg-grid">
       <div class="rg-form">
         <div class="rg-lbl">1 · ¿Qué regalas?</div>
-        <div class="rg-tipo"><button type="button" class="on" data-t="importe">Un importe</button><button type="button" data-t="servicio">Un tratamiento</button></div>
+        <div class="rg-tipo"><button type="button" class="on" data-t="importe">Un importe</button><button type="button" data-t="servicio">Un tratamiento</button><button type="button" data-t="productos">Productos</button></div>
         <div id="rg-importes" class="rg-chips"></div>
         <select id="rg-servicio" class="rg-in" style="display:none"></select>
+        <div id="rg-productos" style="display:none">
+          <input id="rg-pq" class="rg-in" placeholder="Buscar producto…" autocomplete="off">
+          <div id="rg-plist" class="rg-plist"></div>
+          <div class="rg-lbl" style="margin-top:14px">Lo preparamos</div>
+          <div class="rg-chips" id="rg-pres"><button type="button" class="on" data-p="cesta">🧺 En cesta</button><button type="button" data-p="envuelto">🎀 Envuelto para regalo</button></div>
+          <p class="rg-nota">Se recoge en cabina (Calle Arguijón 1, La Laguna) presentando el código de la tarjeta.</p>
+        </div>
         <div class="rg-lbl">2 · La ocasión</div>
         <div id="rg-plantillas" class="rg-chips"></div>
         <div class="rg-lbl">3 · Tu dedicatoria</div>
@@ -1693,7 +1707,7 @@ const RE_DURACION = /^\s*(\d+\s*h)?\s*(\d+\s*min)?\s*$/i;
   if (activa) filterSvcByCat(activa.textContent.trim());
 })();
 // ═══ Tarjeta regalo ═══
-const RG = { tipo:'importe', importe:50, servicio:null, bono:null, plantilla:'cumple', servicios:[] };
+const RG = { tipo:'importe', importe:50, servicio:null, bono:null, plantilla:'cumple', servicios:[], productos:[], cesta:{}, presentacion:'cesta' };
 const bonosDeServicio = s => (Array.isArray(s?.bonos) ? s.bonos.filter(b => b && b.sesiones > 1 && b.precio > 0).sort((a,b) => a.sesiones - b.sesiones) : []);
 function montarRegalo(data){
   const R = window.DIVAS_REGALO; if (!R || !document.getElementById('rg-prev')) return;
@@ -1712,6 +1726,9 @@ function montarRegalo(data){
   sel.onchange = () => { leerSel(); pintarRegalo(); };
   leerSel();
   document.querySelectorAll('.rg-tipo button').forEach(b => b.onclick = () => regaloTipo(b.dataset.t));
+  cargarProductosRegalo();
+  document.getElementById('rg-pq').oninput = pintarProductosRegalo;
+  document.querySelectorAll('#rg-pres button').forEach(b => b.onclick = () => { RG.presentacion = b.dataset.p; document.querySelectorAll('#rg-pres button').forEach(x => x.classList.toggle('on', x===b)); pintarRegalo(); });
   const pl = document.getElementById('rg-plantillas');
   pl.innerHTML = Object.entries(R.plantillas).map(([k,p]) => `<button type="button" data-k="${k}" class="${k===RG.plantilla?'on':''}">${p.icono} ${p.nombre}</button>`).join('');
   pl.querySelectorAll('button').forEach(b => b.onclick = () => { RG.plantilla = b.dataset.k; pl.querySelectorAll('button').forEach(x => x.classList.toggle('on', x===b)); pintarRegalo(); });
@@ -1726,26 +1743,42 @@ function montarRegalo(data){
   });
   pintarRegalo();
 }
+async function cargarProductosRegalo(){
+  const { data } = await sb.from('tienda_web').select('id,nombre,marca,precio,imagen_url,disponible,bajo_pedido').eq('disponible', true).order('marca',{nullsFirst:false}).order('nombre');
+  RG.productos = (data||[]).filter(p => !p.bajo_pedido && Number(p.precio) > 0);
+  pintarProductosRegalo();
+}
+function pintarProductosRegalo(){
+  const box = document.getElementById('rg-plist'); if (!box) return;
+  const q = normCat(document.getElementById('rg-pq').value);
+  const l = RG.productos.filter(p => !q || normCat(p.nombre + ' ' + (p.marca||'')).includes(q));
+  box.innerHTML = l.map(p => { const n = RG.cesta[p.id] || 0; return `<div class="rg-pi ${n?'on':''}">${p.imagen_url?`<img src="${escWeb(p.imagen_url)}" alt="" loading="lazy">`:'<div class="ph"></div>'}<div class="tx">${escWeb(p.nombre)}<small>${escWeb(p.marca||'')} · ${precioWeb(p.precio)}</small></div><div class="q">${n?`<button type="button" data-id="${p.id}" data-d="-1">−</button><b>${n}</b>`:''}<button type="button" data-id="${p.id}" data-d="1">+</button></div></div>`; }).join('') || '<p class="rg-nota" style="padding:10px">No hay productos con ese nombre.</p>';
+  box.querySelectorAll('button[data-id]').forEach(b => b.onclick = () => { const id = b.dataset.id, n = Math.max(0, Math.min(5, (RG.cesta[id]||0) + +b.dataset.d)); if (n) RG.cesta[id] = n; else delete RG.cesta[id]; if (Object.keys(RG.cesta).length > 12) { delete RG.cesta[id]; } pintarProductosRegalo(); pintarRegalo(); });
+}
 function regaloTipo(t){
   RG.tipo = t; document.querySelectorAll('.rg-tipo button').forEach(x => x.classList.toggle('on', x.dataset.t===t));
   document.getElementById('rg-importes').style.display = t==='importe' ? '' : 'none';
   document.getElementById('rg-servicio').style.display = t==='servicio' ? '' : 'none';
+  document.getElementById('rg-productos').style.display = t==='productos' ? '' : 'none';
   if (t==='servicio' && !RG.servicio) { const [id, n] = String(document.getElementById('rg-servicio').value || '').split('|'); RG.servicio = id || null; RG.bono = n ? +n : null; }
   pintarRegalo();
 }
 function pintarRegalo(){
   const R = window.DIVAS_REGALO, s = RG.servicios.find(x => x.id === RG.servicio);
   const bono = RG.tipo==='servicio' && RG.bono ? bonosDeServicio(s).find(b => b.sesiones === RG.bono) : null;
-  const precio = RG.tipo==='servicio' ? (bono ? Number(bono.precio) : s ? Number(s.precio_oferta ?? s.precio) : 0) : RG.importe;
-  const que = RG.tipo==='servicio' ? (s ? (bono ? `Bono ${bono.sesiones} sesiones · ${s.nombre}` : s.nombre) : 'Elige un tratamiento') : `Tarjeta regalo de ${R.euros(RG.importe)}`;
+  const elegidos = RG.productos.filter(p => RG.cesta[p.id]);
+  const nProd = elegidos.reduce((a,p) => a + RG.cesta[p.id], 0);
+  const precio = RG.tipo==='productos' ? Math.round(elegidos.reduce((a,p) => a + Number(p.precio)*RG.cesta[p.id], 0)*100)/100 : RG.tipo==='servicio' ? (bono ? Number(bono.precio) : s ? Number(s.precio_oferta ?? s.precio) : 0) : RG.importe;
+  const que = RG.tipo==='productos' ? (nProd ? `${RG.presentacion==='cesta'?'Cesta regalo':'Regalo envuelto'} · ${nProd} producto${nProd>1?'s':''}` : 'Elige los productos') : RG.tipo==='servicio' ? (s ? (bono ? `Bono ${bono.sesiones} sesiones · ${s.nombre}` : s.nombre) : 'Elige un tratamiento') : `Tarjeta regalo de ${R.euros(RG.importe)}`;
   document.getElementById('rg-prev').innerHTML = R.html({ plantilla:RG.plantilla, para:document.getElementById('rg-para').value, de:document.getElementById('rg-de').value, mensaje:document.getElementById('rg-msg').value, que });
   document.getElementById('rg-total').textContent = R.euros(precio);
 }
 async function pagarRegalo(){
   const b = document.getElementById('rg-pagar'), err = document.getElementById('rg-err');
   if (RG.tipo==='servicio' && !RG.servicio) { err.textContent = 'Elige el tratamiento que quieres regalar.'; return; }
+  if (RG.tipo==='productos' && !Object.keys(RG.cesta).length) { err.textContent = 'Añade al menos un producto con el botón +.'; return; }
   b.disabled = true; err.textContent = ''; const txt = b.innerHTML; b.textContent = 'Abriendo el pago seguro…';
-  const { data, error } = await sb.functions.invoke('checkout-regalo', { body:{ tipo:RG.tipo, servicio_id:RG.servicio, bono_sesiones:RG.tipo==='servicio'?RG.bono:null, importe:RG.importe, plantilla:RG.plantilla,
+  const { data, error } = await sb.functions.invoke('checkout-regalo', { body:{ tipo:RG.tipo, servicio_id:RG.servicio, bono_sesiones:RG.tipo==='servicio'?RG.bono:null, productos:RG.tipo==='productos'?Object.entries(RG.cesta).map(([id,qty])=>({id,qty})):null, presentacion:RG.presentacion, importe:RG.importe, plantilla:RG.plantilla,
     para:document.getElementById('rg-para').value, de:document.getElementById('rg-de').value, mensaje:document.getElementById('rg-msg').value } });
   if (error || !data?.url) { let m = 'No se pudo abrir el pago. Inténtalo de nuevo o escríbenos por WhatsApp.'; try { const j = await error?.context?.json?.(); if (j?.error) m = j.error; } catch(e) {} err.textContent = m; b.disabled = false; b.innerHTML = txt; return; }
   location.href = data.url;

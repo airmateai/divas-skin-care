@@ -1911,7 +1911,7 @@ function posSwitchTab(tab){
 let POS_VISIBLE=[];
 // ═══════════════ TARJETAS REGALO ═══════════════
 const ESTADOS_REGALO={pagada:['Por canjear','tag-ok'],canjeada:['Canjeada','tag-info'],anulada:['Anulada','tag-danger']};
-const queRegalo=t=>t.tipo==='servicio'?(t.servicio_nombre||'Tratamiento'):'Importe '+fmtE(t.importe);
+const queRegalo=t=>t.tipo==='importe'?'Importe '+fmtE(t.importe):(t.servicio_nombre||'Tratamiento');
 const urlRegalo=t=>`${location.origin}${location.pathname.replace(/[^/]*$/,'')}regalo.html?id=${t.id}&t=${t.token}`;
 function renderRegalos(){
   const tb=document.getElementById('regalos-tbody'); if(!tb) return;
@@ -1961,7 +1961,7 @@ async function venderRegaloCabina(){
 }
 // Canje en el punto de venta: importe → se descuenta del total; tratamiento → el servicio sale a 0 €
 let POS_REGALOS=[];
-const saldoRegalo=t=>t.tipo==='servicio'?0:Number(t.saldo??t.importe)||0;
+const saldoRegalo=t=>t.tipo!=='importe'?0:Number(t.saldo??t.importe)||0;
 // Las tarjetas de importe pagan como mucho lo que cuesta el resto de la venta; lo que sobra queda de saldo
 function posAjustarRegalos(){
   let resto=POS_CART.filter(c=>c.type!=='regalo_canje').reduce((a,c)=>a+c.price*c.qty,0);
@@ -1978,9 +1978,10 @@ function posCanjearRegalo(codigo){
   if(!t) return fallo('No existe ninguna tarjeta con ese código.');
   if(t.estado!=='pagada') return fallo('Esta tarjeta está '+(ESTADOS_REGALO[t.estado]?.[0]||t.estado).toLowerCase()+'.');
   if(t.caduca && t.caduca<dayKey(new Date())) return fallo('Esta tarjeta caducó el '+new Date(t.caduca+'T12:00:00').toLocaleDateString('es-ES')+'.');
-  if(t.tipo!=='servicio' && saldoRegalo(t)<=0) return fallo('Esta tarjeta ya no tiene saldo.');
+  if(t.tipo==='importe' && saldoRegalo(t)<=0) return fallo('Esta tarjeta ya no tiene saldo.');
   if(POS_REGALOS.includes(t.id)) return fallo('Ya está en esta venta.');
   POS_REGALOS.push(t.id); closeModal();
+  if(t.tipo==='productos'){ (t.productos||[]).forEach(p=>posAddLinea({ type:'regalo_producto', name:(p.qty>1?p.qty+'× ':'')+p.nombre+' · regalo '+t.codigo, price:0, precioBase:0, precioAntes:Number(p.precio)*(p.qty||1), regaloId:t.id })); toast(`🎁 ${t.presentacion==='cesta'?'Cesta':'Regalo envuelto'} ${t.codigo}: entrégalo y cobra para marcarlo como recogido (ya estaba pagado)`); return; }
   if(t.tipo==='servicio' && t.servicio_id && t.sesiones>1){ posAddLinea({ type:'regalo_bono', servicioId:t.servicio_id, name:t.servicio_nombre+' · regalo '+t.codigo, price:0, precioBase:0, precioAntes:Number(t.importe), regaloId:t.id, sesiones:t.sesiones, regaloImporte:Number(t.importe) }); if(!POS_CLIENTA) toast('Elige la clienta: el bono regalado se guarda en su ficha'); }
   else if(t.tipo==='servicio' && t.servicio_id){ const s=servicioDe(t.servicio_id); posAddLinea({ type:'servicio', servicioId:t.servicio_id, name:(s?.name||t.servicio_nombre)+' · regalo '+t.codigo, price:0, precioBase:0, precioAntes:Number(t.importe), regaloId:t.id }); }
   else posAddLinea({ type:'regalo_canje', name:'Tarjeta regalo '+t.codigo, price:0, precioBase:0, regaloId:t.id, regaloSaldo:saldoRegalo(t) });
@@ -3531,7 +3532,7 @@ async function posPay(method){
     POS_CART.filter(c=>c.type==='regalo_bono').forEach(c=>bonos.push({ clienta_id:clientaVenta.id, servicio_id:c.servicioId, nombre:c.name.replace(/ · regalo .*/,''), sesiones_total:c.sesiones, precio:c.regaloImporte, venta_id:ventaId, notas:'Tarjeta regalo '+(c.name.match(/DIVAS-[A-Z0-9-]+/)||[''])[0] }));
     if(bonos.length){ const { data:bd, error:be } = await sb.from('bonos_clienta').insert(bonos).select('id'); if(be||!bd?.length) toast('⚠ La venta se guardó, pero el bono NO se guardó en la ficha: '+(be?.message||'sin permiso')+'. Avisa a Airmate.'); else toast(`🎟️ Bono guardado en la ficha de ${clientaVenta.name}`); }
   }
-  const lineasRegalo=POS_CART.filter(c=>c.regaloId);
+  const lineasRegalo=POS_CART.filter((c,i,arr)=>c.regaloId && arr.findIndex(x=>x.regaloId===c.regaloId)===i);
   for(const c of lineasRegalo){
     const cambios=c.type==='regalo_canje'
       ? (()=>{ const queda=Math.round((c.regaloSaldo-(c.usa||0))*100)/100; return queda>0?{ saldo:queda }:{ saldo:0, estado:'canjeada', canjeada_en:new Date().toISOString(), canjeada_venta_id:ventaId }; })()

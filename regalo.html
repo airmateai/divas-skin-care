@@ -61,9 +61,10 @@ async function cargar(intento = 0) {
   }
   if (t.estado === 'anulada') { est.innerHTML = 'Esta tarjeta regalo está anulada. Escríbenos por WhatsApp si tienes dudas.'; return; }
   T = t;
-  const que = t.tipo === 'servicio' ? t.servicio_nombre : `Tarjeta regalo de ${R.euros(t.importe)}`;
+  const que = t.tipo === 'importe' ? `Tarjeta regalo de ${R.euros(t.importe)}` : t.servicio_nombre;
   document.getElementById('tarjeta').innerHTML = R.html({ plantilla: t.plantilla, para: t.para, de: t.de, mensaje: t.mensaje, que, codigo: t.codigo, caduca: t.caduca });
   est.style.display = 'none'; document.getElementById('ok').style.display = '';
+  if (t.tipo === 'productos' && t.estado === 'pagada') document.querySelector('.hd p').textContent = 'Lo preparamos con mucho cariño. Se recoge en cabina (Calle Arguijón 1, La Laguna) presentando el código de la tarjeta. Descárgala para imprimirla o enviarla.';
   if (t.estado === 'canjeada') document.querySelector('.hd p').textContent = 'Esta tarjeta ya se ha canjeado. ¡Esperamos que la hayas disfrutado!';
   else if (t.tipo === 'importe' && t.saldo != null && Number(t.saldo) < Number(t.importe)) document.querySelector('.hd p').textContent = `Saldo disponible: ${R.euros(t.saldo)} de ${R.euros(t.importe)}. Puedes seguir usándola hasta la fecha de validez.`;
 }
