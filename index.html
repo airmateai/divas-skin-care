@@ -226,28 +226,58 @@ footer{background:var(--primary-dk);color:var(--cream);padding:0 0 34px;}
 .foot-bottom{border-top:1px solid rgba(255,255,255,.1);padding-top:26px;display:flex;justify-content:space-between;font-size:11px;color:rgba(243,241,232,.45);flex-wrap:wrap;gap:10px;letter-spacing:.03em;}
 </style>
 <style>
-.rg-grid{display:grid;grid-template-columns:1fr 1.15fr;gap:40px;align-items:start;}
-.rg-form{background:#fff;border:1px solid var(--border);border-radius:18px;padding:26px;}
-.rg-lbl{font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);margin:18px 0 10px;}.rg-lbl:first-child{margin-top:0}
-.rg-tipo{display:flex;gap:6px;margin-bottom:12px;}.rg-tipo button{flex:1;padding:11px;border-radius:30px;border:1px solid var(--border);background:#fff;font:inherit;font-size:13.5px;cursor:pointer;color:var(--ink2)}
-.rg-tipo button.on{background:var(--primary);border-color:var(--primary);color:#fff}
-.rg-chips{display:flex;flex-wrap:wrap;gap:8px;}
-.rg-chips button{padding:9px 14px;border-radius:30px;border:1px solid var(--border);background:#fff;font:inherit;font-size:13px;cursor:pointer;color:var(--ink)}
-.rg-chips button.on{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,#fff);font-weight:600}
-.rg-in{width:100%;padding:12px 14px;border:1px solid var(--border);border-radius:10px;font:inherit;font-size:14px;background:#fff;margin-bottom:10px;color:var(--ink)}
-.rg-2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
-.rg-nota{font-size:12px;color:var(--ink2);margin:8px 0 0;line-height:1.5}
-.rg-tipo button{font-size:12.5px;padding:11px 6px}
-.rg-plist{max-height:300px;overflow:auto;border:1px solid var(--border);border-radius:10px;}
-.rg-pi{display:flex;align-items:center;gap:10px;padding:8px 10px;border-bottom:1px solid var(--border);}
-.rg-pi:last-child{border-bottom:0}.rg-pi img,.rg-pi .ph{width:42px;height:42px;border-radius:8px;object-fit:cover;background:var(--cream);flex:none}
-.rg-pi .tx{flex:1;min-width:0;font-size:13px;line-height:1.3}.rg-pi .tx small{display:block;color:var(--ink2);font-size:11.5px}
-.rg-pi .q{display:flex;align-items:center;gap:6px}.rg-pi .q button{width:28px;height:28px;border-radius:50%;border:1px solid var(--border);background:#fff;cursor:pointer;font-size:15px;line-height:1}
-.rg-pi.on{background:color-mix(in srgb,var(--accent) 8%,#fff)}
-#rg-err{color:#b3441e}
-.svc-regalar{background:none;border:none;padding:0;margin-right:12px;cursor:pointer;font:inherit;font-size:12.5px;color:var(--accent);text-decoration:underline;text-underline-offset:3px}
-@media(max-width:860px){.rg-grid{grid-template-columns:1fr;gap:24px}.rg-grid>div:last-child{order:-1}}
+.enc-guia{margin-top:16px;border:1px solid #d9d4c7;border-radius:8px;background:#fff;padding:12px 14px;font-size:13px}
+.enc-guia summary{cursor:pointer;font-weight:600;letter-spacing:.02em}
+.enc-guia table{width:100%;border-collapse:collapse;margin-top:10px;font-size:12.5px}
+.enc-guia th{text-align:left;font-weight:600;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;opacity:.7;padding:6px 6px;border-bottom:1px solid #d9d4c7}
+.enc-guia td{padding:7px 6px;border-bottom:1px solid #eee8dc}
+.enc-guia p{font-size:12px;line-height:1.55;opacity:.8;margin:10px 0 0}
+.rg-sec{background:linear-gradient(180deg,var(--bg) 0%,var(--cream) 16%,var(--cream) 84%,var(--bg) 100%);}
+.rg-grid{display:grid;grid-template-columns:1fr 1.08fr;gap:56px;align-items:start;}
+.rg-form{background:#fff;border:1px solid var(--border);border-radius:4px;padding:36px 34px 28px;box-shadow:0 30px 60px -40px rgba(27,33,24,.35);}
+.rg-step{display:flex;gap:18px;padding:0 0 26px;margin-bottom:26px;border-bottom:1px solid var(--border);}
+.rg-n{flex:none;width:30px;font-family:var(--font-serif);font-style:italic;font-size:22px;color:var(--accent);line-height:1.1;}
+.rg-step>div{flex:1;min-width:0}
+.rg-lbl{font-size:11px;font-weight:600;letter-spacing:.22em;text-transform:uppercase;color:var(--primary-dk);margin:3px 0 14px;}
+.rg-tipo{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px;}
+.rg-tipo button,.rg-pres button{display:flex;flex-direction:column;align-items:flex-start;gap:3px;text-align:left;padding:14px 14px 12px;border:1px solid var(--border);border-radius:3px;background:#fff;cursor:pointer;font:inherit;color:var(--ink);transition:border-color .25s,background .25s}
+.rg-tipo button svg{width:22px;height:22px;color:var(--accent);margin-bottom:6px}
+.rg-tipo button b,.rg-pres button b{font-size:14px;font-weight:600}.rg-tipo button small,.rg-pres button small{font-size:11.5px;color:var(--ink2);line-height:1.35}
+.rg-tipo button:hover,.rg-pres button:hover{border-color:var(--primary-lt)}
+.rg-tipo button.on,.rg-pres button.on{border-color:var(--primary);background:color-mix(in srgb,var(--primary-lt) 14%,#fff);box-shadow:inset 0 0 0 1px var(--primary)}
+.rg-amts{display:grid;grid-template-columns:repeat(5,1fr);border:1px solid var(--border);border-radius:3px;overflow:hidden}
+.rg-amts button{padding:14px 0;border:0;border-right:1px solid var(--border);background:#fff;cursor:pointer;font-family:var(--font-serif);font-size:22px;color:var(--ink);transition:background .25s,color .25s}
+.rg-amts button:last-child{border-right:0}.rg-amts button span{font-size:14px;margin-left:2px;opacity:.6}
+.rg-amts button.on{background:var(--primary);color:#fff}
+.rg-occ{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.rg-occ button{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--border);border-radius:3px;background:#fff;cursor:pointer;font:inherit;font-size:13px;color:var(--ink);text-align:left;transition:border-color .25s}
+.rg-occ button i{flex:none;width:22px;height:22px;border-radius:50%}
+.rg-occ button.on{border-color:var(--primary);box-shadow:inset 0 0 0 1px var(--primary)}
+.rg-in{width:100%;padding:13px 14px;border:1px solid var(--border);border-radius:3px;font:inherit;font-size:14px;background:#fff;margin-bottom:10px;color:var(--ink)}
+.rg-2{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
+.rg-f{display:block;margin-bottom:14px}.rg-f span{display:block;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink2);margin-bottom:4px}
+.rg-f input,.rg-f textarea{width:100%;border:0;border-bottom:1px solid var(--border);padding:8px 0;font-family:var(--font-serif);font-size:19px;background:transparent;color:var(--ink);resize:none;outline:none;transition:border-color .25s}
+.rg-f input:focus,.rg-f textarea:focus{border-color:var(--accent)}
+.rg-pay{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-top:4px}
+.rg-pay small{display:block;font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--ink2)}.rg-pay b{font-family:var(--font-serif);font-size:36px;font-weight:500;color:var(--primary-dk)}
+.rg-btn{border:0;background:var(--primary-dk);color:#fff;font:inherit;font-size:12.5px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;padding:18px 28px;border-radius:2px;cursor:pointer;transition:background .25s,transform .2s}
+.rg-btn:hover{background:var(--accent)}.rg-btn:active{transform:scale(.98)}.rg-btn[disabled]{opacity:.6}
+.rg-nota{font-size:12px;color:var(--ink2);margin:10px 0 0;line-height:1.55}#rg-err{color:#b3441e}
+.rg-safe{display:flex;align-items:center;gap:8px}.rg-safe svg{width:15px;height:15px;flex:none}
+.rg-side{position:sticky;top:110px}
+.rg-stage{perspective:1400px;padding:14px}.rg-stage #rg-prev{transition:transform .5s cubic-bezier(.16,1,.3,1);transform-style:preserve-3d}
+.rg-plist{max-height:300px;overflow:auto;border:1px solid var(--border);border-radius:3px;margin-bottom:12px}
+.rg-pi{display:flex;align-items:center;gap:12px;padding:10px 12px;border-bottom:1px solid var(--border)}.rg-pi:last-child{border-bottom:0}
+.rg-pi img,.rg-pi .ph{width:44px;height:44px;border-radius:2px;object-fit:cover;background:var(--cream);flex:none}
+.rg-pi .tx{flex:1;min-width:0;font-size:13px;line-height:1.3}.rg-pi .tx small{display:block;color:var(--ink2);font-size:11.5px;letter-spacing:.04em}
+.rg-pi .q{display:flex;align-items:center;gap:8px}.rg-pi .q button{width:28px;height:28px;border-radius:50%;border:1px solid var(--border);background:#fff;cursor:pointer;font-size:15px;line-height:1;color:var(--ink)}
+.rg-pi.on{background:color-mix(in srgb,var(--primary-lt) 12%,#fff)}
+.rg-pres{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.svc-regalar{background:none;border:none;padding:0;margin-right:14px;cursor:pointer;font:inherit;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink2);border-bottom:1px solid currentColor}
+.svc-regalar:hover{color:var(--accent)}
+@media(max-width:860px){.rg-grid{grid-template-columns:1fr;gap:20px}.rg-side{position:static;order:-1}.rg-form{padding:24px 18px}.rg-tipo,.rg-occ{grid-template-columns:1fr 1fr}.rg-tipo button:last-child{grid-column:1/-1}.rg-amts button{font-size:18px}.rg-step{gap:10px}.rg-2{grid-template-columns:1fr;gap:0}.rg-pay b{font-size:30px}.rg-stage{padding:0}}
 </style>
+
 </head>
 <body>
 
@@ -257,8 +287,8 @@ footer{background:var(--primary-dk);color:var(--cream);padding:0 0 34px;}
       <div class="logo"><img src="img/logo-divas-silueta.jpeg" alt="Divas Skin Care">Divas Skin Care</div>
       <div class="nav-links">
         <a href="#servicios">Servicios</a>
-        <a href="#tienda">Tienda</a>
-        <a href="#regalo">Regalar</a>
+        <a href="#tienda">Tienda online</a>
+        <a href="#regalo">Bono regalo</a>
         <a href="#nosotros">Nosotras</a>
         <a href="#contacto">Contacto</a>
       </div>
@@ -782,36 +812,40 @@ footer{background:var(--primary-dk);color:var(--cream);padding:0 0 34px;}
   </div>
 </section>
 
-<section class="section" id="regalo" style="background:var(--cream);">
+<section class="section rg-sec" id="regalo">
   <div class="wrap">
     <div class="section-head center">
-      <div class="eyebrow">Tarjeta regalo</div>
+      <div class="eyebrow">Bono regalo</div>
       <h2>Regala un momento <em>Divas</em></h2>
-      <p>Elige un tratamiento o un importe, la ocasión y tu dedicatoria. Se paga al momento y la descargas en PDF para imprimirla o enviarla.</p>
+      <p>Un tratamiento, un importe o una selección de productos. Se paga al momento y llega lista para imprimir o enviar.</p>
     </div>
     <div class="rg-grid">
       <div class="rg-form">
-        <div class="rg-lbl">1 · ¿Qué regalas?</div>
-        <div class="rg-tipo"><button type="button" class="on" data-t="importe">Un importe</button><button type="button" data-t="servicio">Un tratamiento</button><button type="button" data-t="productos">Productos</button></div>
-        <div id="rg-importes" class="rg-chips"></div>
-        <select id="rg-servicio" class="rg-in" style="display:none"></select>
-        <div id="rg-productos" style="display:none">
-          <input id="rg-pq" class="rg-in" placeholder="Buscar producto…" autocomplete="off">
-          <div id="rg-plist" class="rg-plist"></div>
-          <div class="rg-lbl" style="margin-top:14px">Lo preparamos</div>
-          <div class="rg-chips" id="rg-pres"><button type="button" class="on" data-p="cesta">🧺 En cesta</button><button type="button" data-p="envuelto">🎀 Envuelto para regalo</button></div>
-          <p class="rg-nota">Se recoge en cabina (Calle Arguijón 1, La Laguna) presentando el código de la tarjeta.</p>
-        </div>
-        <div class="rg-lbl">2 · La ocasión</div>
-        <div id="rg-plantillas" class="rg-chips"></div>
-        <div class="rg-lbl">3 · Tu dedicatoria</div>
-        <div class="rg-2"><input id="rg-para" class="rg-in" maxlength="60" placeholder="Para (ej. Marta)"><input id="rg-de" class="rg-in" maxlength="60" placeholder="De parte de"></div>
-        <textarea id="rg-msg" class="rg-in" maxlength="240" rows="2" placeholder="Mensaje (opcional)"></textarea>
-        <button type="button" class="btn btn-primary" id="rg-pagar" style="width:100%;margin-top:6px;">Pagar y descargar · <span id="rg-total">50 €</span></button>
+        <div class="rg-step"><span class="rg-n">I</span><div><div class="rg-lbl">Qué regalas</div>
+          <div class="rg-tipo">
+            <button type="button" class="on" data-t="importe"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="12" rx="2"/><path d="M3 11h18M7 15h3"/></svg><b>Importe</b><small>Lo gasta en lo que quiera</small></button>
+            <button type="button" data-t="servicio"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3c-3 4-3 8 0 11 3-3 3-7 0-11z"/><path d="M5 12c3 0 5 2 7 5 2-3 4-5 7-5M12 17v4"/></svg><b>Tratamiento</b><small>Faciales, láser, corporales</small></button>
+            <button type="button" data-t="productos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 9h14l-1.2 10.2a2 2 0 0 1-2 1.8H8.2a2 2 0 0 1-2-1.8z"/><path d="M9 9V7a3 3 0 0 1 6 0v2"/></svg><b>Productos</b><small>En cesta o envueltos</small></button>
+          </div>
+          <div id="rg-importes" class="rg-amts"></div>
+          <div style="display:none" id="rg-servicio-w"><select id="rg-servicio" class="rg-in"></select></div>
+          <div id="rg-productos" style="display:none">
+            <input id="rg-pq" class="rg-in" placeholder="Buscar producto o marca" autocomplete="off">
+            <div id="rg-plist" class="rg-plist"></div>
+            <div class="rg-pres" id="rg-pres"><button type="button" class="on" data-p="cesta"><b>En cesta</b><small>Presentada en cesta de regalo</small></button><button type="button" data-p="envuelto"><b>Envuelto</b><small>Con papel y lazo</small></button></div>
+            <p class="rg-nota">Se recoge en cabina · Calle Arguijón 1, La Laguna · presentando el código.</p>
+          </div>
+        </div></div>
+        <div class="rg-step"><span class="rg-n">II</span><div><div class="rg-lbl">La ocasión</div><div id="rg-plantillas" class="rg-occ"></div></div></div>
+        <div class="rg-step"><span class="rg-n">III</span><div><div class="rg-lbl">Dedicatoria</div>
+          <div class="rg-2"><label class="rg-f"><span>Para</span><input id="rg-para" maxlength="60" placeholder="Nombre"></label><label class="rg-f"><span>De parte de</span><input id="rg-de" maxlength="60" placeholder="Tu nombre"></label></div>
+          <label class="rg-f"><span>Mensaje · opcional</span><textarea id="rg-msg" maxlength="240" rows="2" placeholder="Unas palabras para acompañar el regalo"></textarea></label>
+        </div></div>
+        <div class="rg-pay"><div><small>Total</small><b id="rg-total">50 €</b></div><button type="button" class="rg-btn" id="rg-pagar">Pagar y descargar</button></div>
         <p class="rg-nota" id="rg-err"></p>
-        <p class="rg-nota">Pago seguro con tarjeta. Válida 4 meses. Al pagar te llevamos a tu tarjeta para descargarla.</p>
+        <p class="rg-nota rg-safe"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg> Pago seguro con tarjeta · válida 4 meses · la recibes al instante en PDF</p>
       </div>
-      <div><div id="rg-prev"></div><p class="rg-nota" style="text-align:center">Vista previa · el código se genera al pagar</p></div>
+      <div class="rg-side"><div class="rg-stage"><div id="rg-prev"></div></div><p class="rg-nota" style="text-align:center">Vista previa · el código se genera al pagar</p></div>
     </div>
   </div>
 </section>
@@ -823,7 +857,7 @@ footer{background:var(--primary-dk);color:var(--cream);padding:0 0 34px;}
       <h2>Continúa el cuidado en casa</h2>
       <p>Productos profesionales seleccionados por nosotras. Compra online y recoge tu pedido en cabina — sin gastos de envío. <a href="condiciones.html" style="color:inherit;text-decoration:underline;opacity:.8;">Condiciones de venta y devoluciones</a></p>
     </div>
-    <div class="section-head center" style="margin-bottom:22px;"><p style="color:var(--cream);opacity:.8;">Marcas Utsukusy, Kelaya, Herbalife, Kefus y fajas Fájate — catálogo completo en cabina.</p></div>
+    <div class="section-head center" style="margin-bottom:22px;"><p style="color:var(--cream);opacity:.8;">Utsukusy, Kelaya, Herbalife, Kefus y Fájate Tenerife · catálogo completo en cabina.</p></div>
     <div class="cat-tabs" id="shop-tabs" style="border-bottom-color:rgba(255,255,255,.15);"></div>
     <div id="shop-marca-heading" style="padding:18px 4px 4px;"><h3 style="font-family:var(--font-serif);color:var(--accent-lt);font-size:20px;"></h3></div>
     <div style="position:relative;">
@@ -1251,7 +1285,7 @@ footer{background:var(--primary-dk);color:var(--cream);padding:0 0 34px;}
         <div class="shop-img"><img src="img/productos/prod-30aad6f9.jpeg" alt="Serum Facial Hidratante y Reparadora con Vit. C+CICA+AH 40ml" loading="lazy"></div>
         <div class="shop-body"><h4>Serum Facial Hidratante y Reparadora con Vit. C+CICA+AH 40ml</h4><div class="price">58,60€</div><a class="svc-book" style="display:block;margin-top:8px;" href="https://buy.stripe.com/14A00ccYm8Ya48M7Wf1VK2i" target="_blank" rel="noopener">Comprar →</a></div>
       </div>
-      <div class="shop-marca-title" style="grid-column:1/-1;padding:18px 20px 4px;"><h3 style="font-family:var(--font-serif);color:var(--accent-lt);font-size:20px;">OTROS (marca por confirmar)</h3></div>
+      <div class="shop-marca-title" style="grid-column:1/-1;padding:18px 20px 4px;"><h3 style="font-family:var(--font-serif);color:var(--accent-lt);font-size:20px;">OTROS</h3></div>
       <div class="shop-card">
         <div class="shop-img"><img src="img/productos/prod-9bd726c9.jpeg" alt="Glicolic Acid 7% Exfoliating Toner" loading="lazy"></div>
         <div class="shop-body"><h4>Glicolic Acid 7% Exfoliating Toner</h4><div class="price">27,50€</div><a class="svc-book" style="display:block;margin-top:8px;" href="https://buy.stripe.com/5kQ7sE7E2deqaxa4K31VK3l" target="_blank" rel="noopener">Comprar →</a></div>
@@ -1714,7 +1748,7 @@ function montarRegalo(data){
   if (!document.getElementById('rg-css')) { const st = document.createElement('style'); st.id = 'rg-css'; st.textContent = R.css; document.head.appendChild(st); }
   RG.servicios = (data||[]).filter(s => s.reservable === true && s.visible_web !== false && Number(s.precio_oferta ?? s.precio) > 0);
   const imp = document.getElementById('rg-importes');
-  imp.innerHTML = [25,50,75,100,150].map(v => `<button type="button" data-v="${v}" class="${v===RG.importe?'on':''}">${v} €</button>`).join('');
+  imp.innerHTML = [25,50,75,100,150].map(v => `<button type="button" data-v="${v}" class="${v===RG.importe?'on':''}">${v}<span>€</span></button>`).join('');
   imp.querySelectorAll('button').forEach(b => b.onclick = () => { RG.importe = +b.dataset.v; imp.querySelectorAll('button').forEach(x => x.classList.toggle('on', x===b)); pintarRegalo(); });
   const sel = document.getElementById('rg-servicio');
   const cats = {}; RG.servicios.slice().sort((a,b) => (a.orden ?? 9999) - (b.orden ?? 9999)).forEach(s => (cats[s.categoria||'Otros'] = cats[s.categoria||'Otros'] || []).push(s));
@@ -1730,17 +1764,22 @@ function montarRegalo(data){
   document.getElementById('rg-pq').oninput = pintarProductosRegalo;
   document.querySelectorAll('#rg-pres button').forEach(b => b.onclick = () => { RG.presentacion = b.dataset.p; document.querySelectorAll('#rg-pres button').forEach(x => x.classList.toggle('on', x===b)); pintarRegalo(); });
   const pl = document.getElementById('rg-plantillas');
-  pl.innerHTML = Object.entries(R.plantillas).map(([k,p]) => `<button type="button" data-k="${k}" class="${k===RG.plantilla?'on':''}">${p.icono} ${p.nombre}</button>`).join('');
+  pl.innerHTML = Object.entries(R.plantillas).map(([k,p]) => `<button type="button" data-k="${k}" class="${k===RG.plantilla?'on':''}"><i style="background:linear-gradient(135deg,${p.bg},${p.bg2});box-shadow:inset 0 0 0 1px ${p.acento}66"></i>${p.nombre}</button>`).join('');
   pl.querySelectorAll('button').forEach(b => b.onclick = () => { RG.plantilla = b.dataset.k; pl.querySelectorAll('button').forEach(x => x.classList.toggle('on', x===b)); pintarRegalo(); });
   ['rg-para','rg-de','rg-msg'].forEach(id => document.getElementById(id).addEventListener('input', pintarRegalo));
   document.getElementById('rg-pagar').onclick = pagarRegalo;
   // botón «Regalar» en cada tratamiento
   document.querySelectorAll('.svc-book[data-servicio-id]').forEach(btn => {
     const s = RG.servicios.find(x => x.id === btn.dataset.servicioId); if (!s || btn.parentElement.querySelector('.svc-regalar')) return;
-    const r = document.createElement('button'); r.type = 'button'; r.className = 'svc-regalar'; r.textContent = '🎁 Regalar';
+    const r = document.createElement('button'); r.type = 'button'; r.className = 'svc-regalar'; r.textContent = 'Regalar';
     r.onclick = e => { e.stopPropagation(); e.preventDefault(); regaloTipo('servicio'); sel.value = s.id; RG.servicio = s.id; RG.bono = null; pintarRegalo(); document.getElementById('regalo').scrollIntoView({ behavior:'smooth' }); };
     btn.parentElement.insertBefore(r, btn);
   });
+  const st = document.querySelector('.rg-stage'), pv = document.getElementById('rg-prev');
+  if (st && matchMedia('(hover:hover)').matches) {
+    st.addEventListener('pointermove', e => { const r = st.getBoundingClientRect(), x = (e.clientX-r.left)/r.width-.5, y = (e.clientY-r.top)/r.height-.5; pv.style.transform = `rotateY(${x*7}deg) rotateX(${-y*7}deg)`; });
+    st.addEventListener('pointerleave', () => pv.style.transform = '');
+  }
   pintarRegalo();
 }
 async function cargarProductosRegalo(){
@@ -1758,7 +1797,7 @@ function pintarProductosRegalo(){
 function regaloTipo(t){
   RG.tipo = t; document.querySelectorAll('.rg-tipo button').forEach(x => x.classList.toggle('on', x.dataset.t===t));
   document.getElementById('rg-importes').style.display = t==='importe' ? '' : 'none';
-  document.getElementById('rg-servicio').style.display = t==='servicio' ? '' : 'none';
+  document.getElementById('rg-servicio-w').style.display = t==='servicio' ? '' : 'none';
   document.getElementById('rg-productos').style.display = t==='productos' ? '' : 'none';
   if (t==='servicio' && !RG.servicio) { const [id, n] = String(document.getElementById('rg-servicio').value || '').split('|'); RG.servicio = id || null; RG.bono = n ? +n : null; }
   pintarRegalo();
@@ -1826,7 +1865,7 @@ async function ordenarServiciosWeb(data){
   window._tiendaWeb=Object.fromEntries(data.map(p=>[p.id,p]));
   const grupos={};
   const LINEAS_KELAYA=/^(kelaya|ceutical k|ceut\.? ?k sun|equilibrium k|perpetual k|preliminar k|k body|k p[eé]ptido|infusi[oó]n 7c)/i;
-  const marcaWeb=m=>{ m=String(m||'').replace(/^kelaya\s*·\s*/i,'').trim(); if(!m) return 'OTROS'; return LINEAS_KELAYA.test(m)?'KELAYA':m.toUpperCase(); };
+  const marcaWeb=m=>{ m=String(m||'').replace(/^kelaya\s*·\s*/i,'').trim(); if(!m||/^otros/i.test(m)) return 'OTROS'; if(/^f[aá]jate/i.test(m)) return 'FÁJATE TENERIFE'; return LINEAS_KELAYA.test(m)?'KELAYA':m.toUpperCase(); };
   data.forEach(p=>{ const m=marcaWeb(p.marca); (grupos[m]=grupos[m]||[]).push(p); });
   let ordM={}; try{ const { data:om } = await sb.from('orden_categorias').select('nombre,orden').eq('tipo','marca'); (om||[]).forEach(o=>ordM[o.nombre]=o.orden); }catch(e){}
   const claves=Object.keys(grupos);
@@ -1850,6 +1889,19 @@ function tallasDe(t){
   }
   return t?[t.charAt(0)+t.slice(1).toLowerCase()]:[];
 }
+// Guías de medidas oficiales de Fájate (enviadas por Louie)
+const GUIAS_FAJATE={
+  brasier:{t:'Guía de medidas · Brasier',h:['Base del busto (cm)','Talla'],f:[['70 – 76','34'],['77 – 83','36'],['84 – 90','38'],['91 – 96','40'],['97 – 103','42']]},
+  hombre:{t:'Guía de medidas · Fajas hombre (Fájate For Men)',h:['Talla','Cintura','Cadera','Pecho'],f:[['XS','75 – 79','87 – 92','85 – 89'],['S','80 – 84','93 – 98','90 – 94'],['M','85 – 89','99 – 104','95 – 99'],['L','90 – 94','105 – 109','100 – 104'],['XL','95 – 99','110 – 114','105 – 109']],
+    nota:'<b>Alta inflamación</b>: talla para los días 1 a 8 tras la intervención. <b>Mediana</b>: días 9 a 30. <b>Baja</b>: a partir del día 30 o para uso diario.'},
+  mentonera:{t:'Guía de medidas · Mentonera',h:['Mentón a cabeza (cm)','Contorno de cuello (cm)','Talla'],f:[['59 – 62','32 – 34','XS'],['62 – 65','34 – 36','S'],['65 – 68','36 – 38','M'],['68 – 71','38 – 40','L'],['71 – 74','40 – 42','XL'],['74 – 77','42 – 44','2XL']],nota:'Mide con un metro que rodee la cabeza pasando por el mentón.'}
+};
+function guiaDe(p){ const n=String(p.nombre||'').toLowerCase(); if(/mentonera/.test(n)) return 'mentonera'; if(/masculin|hombre/.test(n)) return 'hombre'; if(/^bra|brasier|sujetador/.test(n)||/^\d{2}\s*-\s*\d{2}$/.test(String(p.tallas||'').trim())) return 'brasier'; return null; }
+function guiaHTML(k){
+  const g=GUIAS_FAJATE[k];
+  if(!g) return `<details class="enc-guia"><summary>¿Qué talla elijo?</summary><p style="font-size:13px;line-height:1.6;margin:10px 0 0;">Te tomamos las medidas en cabina en un momento, o escríbenos por WhatsApp con tu contorno de cintura y cadera y te decimos tu talla. Si estás entre dos tallas, elige la más grande.</p></details>`;
+  return `<details class="enc-guia"><summary>${escWeb(g.t)}</summary><table><thead><tr>${g.h.map(x=>`<th>${escWeb(x)}</th>`).join('')}</tr></thead><tbody>${g.f.map(r=>`<tr>${r.map(x=>`<td>${escWeb(x)}</td>`).join('')}</tr>`).join('')}</tbody></table>${g.nota?`<p>${g.nota}</p>`:''}<p>Si estás entre dos tallas, te recomendamos la más grande.</p></details>`;
+}
 function encargarProducto(id){
   const p=(window._tiendaWeb||{})[id]; if(!p) return;
   const tallas=tallasDe(p.tallas), colores=String(p.colores||'').split(/\s*-\s*/).filter(Boolean);
@@ -1858,7 +1910,7 @@ function encargarProducto(id){
   const sel=(id,ops)=>`<select id="${id}" style="width:100%;padding:12px;border:1px solid #d9d4c7;border-radius:8px;font:inherit;background:#fff;margin-top:6px;">${ops.map(o=>`<option>${escWeb(o)}</option>`).join('')}</select>`;
   ov.innerHTML=`<div style="background:#fbf9f4;color:#2b3128;width:100%;max-width:520px;max-height:90vh;overflow:auto;border-radius:16px 16px 0 0;padding:24px 22px 28px;">
     <div style="display:flex;gap:14px;align-items:flex-start;">${p.imagen_url?`<img src="${escWeb(p.imagen_url)}" alt="" style="width:110px;height:110px;object-fit:cover;border-radius:8px;flex:none;">`:''}
-      <div><div style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;opacity:.6;">Fájate · Ref. ${escWeb(p.referencia||'')}</div>
+      <div><div style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;opacity:.6;">Fájate Tenerife · Ref. ${escWeb(p.referencia||'')}</div>
       <h4 style="font-family:var(--font-serif);font-size:20px;line-height:1.2;margin:4px 0 6px;">${escWeb(p.nombre)}</h4><div style="font-size:18px;font-weight:600;">${precioWeb(p.precio)}</div></div></div>
     ${p.descripcion?`<p style="font-size:13.5px;line-height:1.6;opacity:.85;margin:16px 0 0;">${escWeb(p.descripcion)}</p>`:''}
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:18px;">
@@ -1868,6 +1920,7 @@ function encargarProducto(id){
     <label style="display:block;font-size:12px;font-weight:600;margin-top:14px;">Tu nombre<input id="enc-nombre" autocomplete="name" maxlength="80" style="width:100%;padding:12px;border:1px solid #d9d4c7;border-radius:8px;font:inherit;background:#fff;margin-top:6px;"></label>
     <label style="display:block;font-size:12px;font-weight:600;margin-top:12px;">Tu teléfono (WhatsApp)<input id="enc-tel" type="tel" autocomplete="tel" inputmode="tel" maxlength="20" style="width:100%;padding:12px;border:1px solid #d9d4c7;border-radius:8px;font:inherit;background:#fff;margin-top:6px;"></label>
     <label style="display:flex;gap:8px;align-items:flex-start;font-size:12px;line-height:1.5;margin-top:12px;opacity:.85;"><input type="checkbox" id="enc-priv" style="margin-top:3px;"> Acepto que Divas Skin Care use mis datos para gestionar este encargo y contactarme por WhatsApp (<a href="privacidad.html" target="_blank" style="text-decoration:underline;">privacidad</a>).</label>
+    ${guiaHTML(guiaDe(p))}
     <p style="font-size:12px;opacity:.7;margin:12px 0 0;">Producto bajo pedido: te lo encargamos y te escribimos por WhatsApp para confirmarlo. Se paga y recoge en cabina.</p>
     <div id="enc-err" style="display:none;color:#b3441e;font-size:13px;margin-top:10px;"></div>
     <button type="button" id="enc-ok" style="width:100%;margin-top:14px;background:#3d4a3a;color:#fff;border:none;border-radius:10px;padding:15px;font:inherit;font-weight:600;cursor:pointer;">Solicitar encargo</button>
