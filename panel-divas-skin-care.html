@@ -3589,6 +3589,51 @@ function resumenMetodos(ventas){
   ventas.forEach(v=>{ const m=String(v.metodo_pago||'otros').toLowerCase().replace('apple pay','tarjeta'); r[m]=(r[m]||0)+Number(v.total||0); });
   return r;
 }
+// ═══════════════ DEVOLUCIONES ═══════════════
+const yaDevuelto=(ventaId)=>(CONFIG.ventasReales||[]).filter(x=>x.devolucion_de===ventaId).flatMap(x=>Array.isArray(x.items)?x.items:[]);
+function abrirBuscarVenta(){
+  const ult=(CONFIG.ventasReales||[]).filter(v=>Number(v.total)>0).sort((a,b)=>new Date(b.created_at)-new Date(a.created_at)).slice(0,60);
+  abrirModal('Devolver una venta', `<input id="bv-q" placeholder="Buscar por producto, clienta o importe…" oninput="filtrarVentasDev()" style="${INP}width:100%;margin-bottom:10px;">
+    <div id="bv-list" style="max-height:420px;overflow:auto;">${ult.map(v=>filaVentaDev(v)).join('')||'<p style="color:var(--txt3)">No hay ventas.</p>'}</div>`);
+}
+function filaVentaDev(v){ const cl=(CONFIG.clients||[]).find(c=>String(c.id)===String(v.clienta_id)); const its=(Array.isArray(v.items)?v.items:[]).map(i=>(i.qty>1?i.qty+'× ':'')+i.name).join(', ');
+  return `<div class="bv-it" data-t="${esc(normTxt(its+' '+(cl?.name||'')+' '+v.total))}" style="display:flex;justify-content:space-between;gap:10px;align-items:center;padding:10px 4px;border-bottom:1px solid var(--border2);"><div style="min-width:0"><b style="font-size:13px">${new Date(v.created_at).toLocaleString('es-ES',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})} · ${fmt2(v.total)}</b><div style="font-size:12px;color:var(--txt3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:380px">${esc(its)}${cl?' · '+esc(cl.name):''}</div></div><button class="ord-b" onclick="abrirDevolucion('${v.id}')">Devolver</button></div>`; }
+function filtrarVentasDev(){ const q=normTxt(document.getElementById('bv-q').value); document.querySelectorAll('.bv-it').forEach(e=>e.style.display=!q||e.dataset.t.includes(q)?'':'none'); }
+let DEV={};
+function abrirDevolucion(id){
+  const v=(CONFIG.ventasReales||[]).find(x=>String(x.id)===String(id)); if(!v) return;
+  const devs=yaDevuelto(v.id);
+  const items=(Array.isArray(v.items)?v.items:[]).map((it,i)=>{ const dev=devs.filter(d=>d.name===it.name).reduce((a,d)=>a+Number(d.qty||0),0); return { ...it, i, max:Math.max(0,Number(it.qty||1)-dev) }; });
+  DEV={ venta:v, items };
+  abrirModal('Devolución · venta de '+new Date(v.created_at).toLocaleString('es-ES',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}), `
+    <p style="font-size:13px;color:var(--txt2);margin:0 0 10px;">Marca lo que se devuelve. Si es un producto, vuelve al stock.</p>
+    ${items.map(it=>`<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border2);${it.max?'':'opacity:.45'}">
+      <input type="checkbox" id="dv-c${it.i}" ${it.max?'':'disabled'} onchange="devTotal()" style="width:18px;height:18px;">
+      <div style="flex:1;min-width:0"><b style="font-size:13px">${esc(it.name)}</b><div style="font-size:11.5px;color:var(--txt3)">${fmt2(it.price)} / ud.${it.max<Number(it.qty||1)?` · ya devuelto ${Number(it.qty||1)-it.max}`:''}</div></div>
+      ${it.max>1?`<input type="number" id="dv-q${it.i}" min="1" max="${it.max}" value="${it.max}" oninput="devTotal()" style="${INP}width:60px;padding:5px;">`:`<input type="hidden" id="dv-q${it.i}" value="1">`}
+    </div>`).join('')}
+    <div class="two-col" style="margin-top:12px;">
+      ${campo('Devolver el dinero en',`<select id="dv-met" style="${INP}">${Object.entries(METODOS_PAGO).map(([k,t])=>`<option value="${k}" ${k===String(v.metodo_pago).toLowerCase()?'selected':''}>${t}</option>`).join('')}</select>`)}
+      ${campo('Motivo',`<select id="dv-mot" style="${INP}"><option>Producto equivocado</option><option>Error al cobrar</option><option>Producto defectuoso</option><option>La clienta cambia de opinión</option><option>Otro</option></select>`)}
+    </div>
+    <label style="display:flex;gap:8px;align-items:center;font-size:12.5px;color:var(--txt2);margin-top:10px;"><input type="checkbox" id="dv-stock" checked> Volver a meter los productos en el stock</label>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:14px;padding-top:12px;border-top:1px solid var(--border);"><span>A devolver</span><b id="dv-total" style="font-family:var(--font-serif);font-size:24px;color:#b3441e">0,00€</b></div>
+    <p id="dv-err" style="color:#b3441e;font-size:12px;margin-top:6px;"></p>
+    <div style="display:flex;gap:8px;margin-top:10px;"><button class="btn btn-ghost" style="flex:1" onclick="closeModal()">Cancelar</button><button class="btn btn-accent" style="flex:1" id="dv-btn" onclick="confirmarDevolucion()">Hacer devolución</button></div>`);
+}
+function devSeleccion(){ return DEV.items.filter(it=>document.getElementById('dv-c'+it.i)?.checked).map(it=>({ ...it, qty:Math.max(1,Math.min(it.max,parseInt(document.getElementById('dv-q'+it.i).value)||1)) })); }
+function devTotal(){ document.getElementById('dv-total').textContent=fmt2(devSeleccion().reduce((a,it)=>a+Number(it.price)*it.qty,0)); }
+async function confirmarDevolucion(){
+  const sel=devSeleccion(), err=document.getElementById('dv-err'), btn=document.getElementById('dv-btn');
+  if(!sel.length){ err.textContent='Marca al menos un artículo.'; return; }
+  const reponer=document.getElementById('dv-stock').checked;
+  const items=sel.map(it=>({ type:it.type, stock_id:it.stock_id||null, servicio_id:it.servicio_id||null, name:it.name, qty:it.qty, price:Number(it.price), tipo_impuesto:it.tipo_impuesto, porcentaje_impuesto:it.porcentaje_impuesto, reponer }));
+  btn.disabled=true; err.textContent='Guardando…';
+  const { data, error } = await sb.rpc('registrar_devolucion', { p_venta:DEV.venta.id, p_items:items, p_metodo:document.getElementById('dv-met').value, p_usuario:CURRENT_USER.nombre||null, p_motivo:document.getElementById('dv-mot').value });
+  if(error||!data){ btn.disabled=false; err.textContent='No se pudo: '+(/registrar_devolucion/.test(error?.message||'')?'falta activar las devoluciones en la base de datos (avisa a Airmate)':(error?.message||'').replace(/^.*DEVOLUCION: /,'')); return; }
+  await recargarTodo(); closeModal();
+  toast('↩︎ Devolución hecha: '+fmt2(items.reduce((a,i)=>a+i.price*i.qty,0))+(reponer&&items.some(i=>i.type==='producto')?' · stock repuesto':''));
+}
 function renderCaja(){
   const host=document.getElementById('caja-host'); if(!host) return;
   const ab=cajaAbierta();
@@ -3624,8 +3669,9 @@ function renderCaja(){
           ${Object.keys(METODOS_PAGO).concat(Object.keys(met).filter(k=>!METODOS_PAGO[k])).map(k=>`<div class="caja-linea"><span>${METODOS_PAGO[k]||k}</span><strong>${fmt2(met[k]||0)}</strong></div>`).join('')}
           <div class="caja-linea caja-total"><span>Total vendido</span><strong>${fmt2(total)}</strong></div>
         </div>
-        <div class="table-wrap" style="max-height:300px;overflow:auto;"><table><thead><tr><th>Hora</th><th>Usuario</th><th>Método</th><th>Total</th></tr></thead><tbody>
-          ${ventas.length?ventas.map(v=>`<tr><td>${new Date(v.created_at).toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'})}</td><td>${esc(v.usuario||'—')}</td><td>${esc(METODOS_PAGO[String(v.metodo_pago).toLowerCase()]||v.metodo_pago)}</td><td><strong>${fmt2(v.total)}</strong></td></tr>`).join(''):'<tr><td colspan="4" style="text-align:center;color:var(--txt3);padding:18px;">Sin ventas en este turno</td></tr>'}
+        <div style="padding:0 18px 10px;"><button class="btn btn-ghost" style="width:100%;font-size:12px;" onclick="abrirBuscarVenta()">↩︎ Devolver una venta anterior</button></div>
+        <div class="table-wrap" style="max-height:300px;overflow:auto;"><table><thead><tr><th>Hora</th><th>Usuario</th><th>Método</th><th>Total</th><th></th></tr></thead><tbody>
+          ${ventas.length?ventas.map(v=>`<tr style="${Number(v.total)<0?'color:#b3441e':''}"><td>${new Date(v.created_at).toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'})}</td><td>${esc(v.usuario||'—')}</td><td>${esc(METODOS_PAGO[String(v.metodo_pago).toLowerCase()]||v.metodo_pago)}${v.devolucion_de?' · devolución':''}</td><td><strong>${fmt2(v.total)}</strong></td><td>${Number(v.total)>0?`<button class="ord-b" onclick="abrirDevolucion('${v.id}')">↩︎ Devolver</button>`:''}</td></tr>`).join(''):'<tr><td colspan="4" style="text-align:center;color:var(--txt3);padding:18px;">Sin ventas en este turno</td></tr>'}
         </tbody></table></div>
       </div>
     </div>`;
