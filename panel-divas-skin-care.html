@@ -2431,6 +2431,29 @@ function renderKanban(){
 
 // ═══════════════ RECORDATORIOS DE CITA (WhatsApp) ═══════════════
 // Mensaje con la política de 48 h. Se abre WhatsApp con el texto escrito; Louie solo pulsa enviar.
+function textoConfirmacion(c){
+  const ini=new Date(c.fecha);
+  const dia=ini.toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long'});
+  const nombre=(c.cliente||'').split(' ')[0]||'';
+  return `Hola ${nombre} 💛 Tu cita en Divas Skin Care está confirmada:\n\n`+
+    `📅 ${dia.charAt(0).toUpperCase()+dia.slice(1)} a las ${minToHHMM(minDelDia(ini))}\n`+
+    `✨ ${nombreServicioCita(c)}\n📍 Calle Arguijón 1, La Laguna\n\n`+
+    `Si necesitas cambiarla o cancelarla, avísanos con al menos 48 horas de antelación. ¡Te esperamos!`;
+}
+function ofrecerConfirmacion(id){
+  const c=(CONFIG.citasWeb||[]).find(x=>String(x.id)===String(id));
+  if(!c||!c.fecha) return false;
+  abrirModal('Cita confirmada ✓', `<p style="font-size:14px;color:var(--txt2);margin:0 0 12px;">Avisa a <strong>${esc(c.cliente||'la clienta')}</strong> de que su cita está confirmada. Se abre WhatsApp con el mensaje escrito; solo tienes que darle a enviar.</p>
+    <div style="white-space:pre-line;font-size:13px;background:var(--bg);border:1px solid var(--border2);border-radius:10px;padding:12px 14px;color:var(--txt);">${esc(textoConfirmacion(c))}</div>
+    <div style="display:flex;gap:8px;margin-top:16px;"><button class="btn btn-ghost" style="flex:1" onclick="closeModal()">Ahora no</button><button class="btn btn-accent" style="flex:1" onclick="enviarConfirmacionCita('${c.id}');closeModal()">💬 Enviar confirmación</button></div>`);
+  return true;
+}
+function telCita(c){ if(c.telefono) return c.telefono; const cl=clientaDeCita(c); return cl&&cl.phone&&cl.phone!=='—'?cl.phone:''; }
+function enviarConfirmacionCita(citaId){
+  const c=(CONFIG.citasWeb||[]).find(x=>String(x.id)===String(citaId));
+  if(!c||!c.fecha){ toast('Esta cita no tiene fecha'); return; }
+  enviarWhatsApp(telCita(c), textoConfirmacion(c));
+}
 function textoRecordatorio(c){
   const ini=new Date(c.fecha);
   const dia=ini.toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long'});
@@ -2445,7 +2468,7 @@ function textoRecordatorio(c){
 function enviarRecordatorioCita(citaId){
   const c=(CONFIG.citasWeb||[]).find(x=>String(x.id)===String(citaId));
   if(!c||!c.fecha){ toast('Esta cita no tiene fecha'); return; }
-  enviarWhatsApp(c.telefono, textoRecordatorio(c));
+  enviarWhatsApp(telCita(c), textoRecordatorio(c));
 }
 function citasDeManana(){
   const m=new Date(); m.setDate(m.getDate()+1); const k=dayKey(m);
@@ -2498,6 +2521,7 @@ function abrirDetalleCita(citaId){
     </div>`:''}
     <div style="display:flex;gap:8px;margin-top:18px;flex-wrap:wrap;">
       ${cl?`<button class="btn btn-ghost" onclick="showClientById('${cl.id}')">Ver ficha de la clienta</button>`:''}
+      ${activa&&c.fecha?`<button class="btn btn-ghost" onclick="enviarConfirmacionCita('${c.id}')">✅ Confirmación WhatsApp</button>`:''}
       ${activa&&c.fecha?`<button class="btn btn-ghost" onclick="enviarRecordatorioCita('${c.id}')">📲 Recordatorio WhatsApp</button>`:''}
       ${activa?`<button class="btn btn-ghost" onclick="openBookingForm({citaId:'${c.id}'})">✎ Modificar cita</button>`:''}
       ${activa?`<button class="btn btn-ghost" id="btn-cancelar-cita" style="color:#b3441e;" onclick="pedirConfirmacionCancelar('${c.id}')">Cancelar cita</button>`:''}
@@ -2514,6 +2538,7 @@ async function cambiarEstadoCita(id, estado){
   if(error || !data?.length){ toast('No se pudo actualizar: '+textoError(error?.message||'sin permiso')); return; }
   await recargarTodo();
   toast('✓ Cita: '+(ESTADOS_CITA[estado]?.t||estado));
+  if(estado==='confirmada'&&ofrecerConfirmacion(id)) return;
   if(estado==='cancelada') mostrarCompatiblesHueco(id);
   else if(document.getElementById('modal-host').classList.contains('open') && document.getElementById('modal-title').textContent==='Detalle de la cita') abrirDetalleCita(id);
 }
@@ -2793,6 +2818,7 @@ async function submitBookingForm(){
   if(error||!data?.length){ err.textContent='No se pudo guardar: '+textoError(error?.message||'sin permiso'); return; }
   if(BF.listaEsperaId) await sb.from('lista_espera').update({ estado:'agendada' }).eq('id', BF.listaEsperaId);
   await recargarTodo(); closeModal(); toast('✓ Cita guardada');
+  ofrecerConfirmacion(data[0].id);
 }
 
 // ═══════════════ CLIENTAS ═══════════════
