@@ -51,29 +51,55 @@ Deno.serve(async (req) => {
       importe = Number(bono.precio); sesiones = n; servicioNombre = `Bono ${n} sesiones · ${s.nombre}`;
     }
   } else if (tipo === "productos") {
-    const pedidos = (Array.isArray(b.productos) ? b.productos : []) as { id: string; qty: number }[];
+    // Cesta personalizada: productos (con stock o bajo pedido) + tratamientos o bonos
+    const reqP = (Array.isArray(b.productos) ? b.productos : []) as { id: string; qty: number }[];
+    const reqS = (Array.isArray(b.servicios) ? b.servicios : []) as { id: string; qty: number; bono?: number }[];
     const qty = new Map<string, number>();
-    for (const x of pedidos) { const id = String(x?.id || ""); const q = Math.floor(Number(x?.qty)); if (/^[0-9a-f-]{36}$/i.test(id) && q > 0) qty.set(id, Math.min(5, (qty.get(id) || 0) + q)); }
-    if (!qty.size || qty.size > 12) return json({ error: "Elige entre 1 y 12 productos" }, 400, origin);
-    const { data: ps, error } = await supabase.from("stock").select("id, nombre, precio, cantidad, visible_web, bajo_pedido").in("id", [...qty.keys()]);
-    if (error || !ps || ps.length !== qty.size) return json({ error: "Algún producto ya no está disponible" }, 404, origin);
+    for (const x of reqP) { const id = String(x?.id || ""); const q = Math.floor(Number(x?.qty)); if (/^[0-9a-f-]{36}$/i.test(id) && q > 0) qty.set(id, Math.min(5, (qty.get(id) || 0) + q)); }
+    const sv = new Map<string, { qty: number; bono: number }>();
+    for (const x of reqS) { const id = String(x?.id || ""); const q = Math.floor(Number(x?.qty)); const bn = Math.floor(Number(x?.bono || 0)); if (/^[0-9a-f-]{36}$/i.test(id) && q > 0) sv.set(id + "|" + bn, { qty: Math.min(5, q), bono: bn }); }
+    if (!qty.size && !sv.size) return json({ error: "Añade al menos un producto o tratamiento" }, 400, origin);
+    if (qty.size + sv.size > 15) return json({ error: "Máximo 15 artículos distintos" }, 400, origin);
     productos = [];
-    for (const p of ps) {
-      const q = qty.get(p.id)!;
-      if (!p.visible_web || p.bajo_pedido) return json({ error: `${p.nombre} no se puede regalar online` }, 409, origin);
-      if ((p.cantidad ?? 0) < q) return json({ error: `No queda stock suficiente de ${p.nombre}` }, 409, origin);
-      if (!(Number(p.precio) > 0)) return json({ error: `${p.nombre} no tiene precio` }, 409, origin);
-      productos.push({ id: p.id, nombre: p.nombre, qty: q, precio: Number(p.precio) });
-      importe += Number(p.precio) * q;
+    if (qty.size) {
+      const { data: ps, error } = await supabase.from("stock").select("id, nombre, precio, cantidad, visible_web, bajo_pedido").in("id", [...qty.keys()]);
+      if (error || !ps || ps.length !== qty.size) return json({ error: "Algún producto ya no está disponible" }, 404, origin);
+      for (const p of ps) {
+        const q = qty.get(p.id)!;
+        if (!p.visible_web) return json({ error: `${p.nombre} no se puede regalar online` }, 409, origin);
+        if (!p.bajo_pedido && (p.cantidad ?? 0) < q) return json({ error: `No queda stock suficiente de ${p.nombre}` }, 409, origin);
+        if (!(Number(p.precio) > 0)) return json({ error: `${p.nombre} no tiene precio` }, 409, origin);
+        productos.push({ id: p.id, nombre: p.nombre, qty: q, precio: Number(p.precio), ...(p.bajo_pedido ? { bajo_pedido: true } : {}) } as never);
+        importe += Number(p.precio) * q;
+      }
+    }
+    if (sv.size) {
+      const ids = [...new Set([...sv.keys()].map((k) => k.split("|")[0]))];
+      const { data: ss, error } = await supabase.from("servicios").select("id, nombre, precio, precio_oferta, reservable, bonos").in("id", ids);
+      if (error || !ss || ss.length !== ids.length) return json({ error: "Algún tratamiento ya no está disponible" }, 404, origin);
+      for (const [k, v] of sv) {
+        const s = ss.find((x) => x.id === k.split("|")[0])!;
+        if (s.reservable === false) return json({ error: `${s.nombre} no se puede regalar ahora` }, 409, origin);
+        let precio = Number(s.precio_oferta ?? s.precio), nombre = s.nombre;
+        if (v.bono) {
+          const bono = (Array.isArray(s.bonos) ? s.bonos : []).find((x: { sesiones: number }) => Number(x?.sesiones) === v.bono);
+          if (!bono) return json({ error: `Ese bono de ${s.nombre} ya no está disponible` }, 404, origin);
+          precio = Number(bono.precio); nombre = `Bono ${v.bono} sesiones · ${s.nombre}`;
+        }
+        if (!(precio > 0)) return json({ error: `${s.nombre} no tiene precio` }, 409, origin);
+        productos.push({ id: s.id, nombre, qty: v.qty, precio, tipo: "servicio", ...(v.bono ? { sesiones: v.bono } : {}) } as never);
+        importe += precio * v.qty;
+      }
     }
     importe = Math.round(importe * 100) / 100;
     presentacion = b.presentacion === "envuelto" ? "envuelto" : "cesta";
     const n = productos.reduce((a, p) => a + p.qty, 0);
-    servicioNombre = `${presentacion === "cesta" ? "Cesta regalo" : "Regalo envuelto"} · ${n} producto${n > 1 ? "s" : ""}: ` + productos.map((p) => (p.qty > 1 ? p.qty + "× " : "") + p.nombre).join(", ");
+    const hayProd = productos.some((p) => (p as { tipo?: string }).tipo !== "servicio");
+    servicioNombre = `${hayProd ? (presentacion === "cesta" ? "Cesta regalo" : "Regalo envuelto") : "Regalo"} · ${n} artículo${n > 1 ? "s" : ""}: ` + productos.map((p) => (p.qty > 1 ? p.qty + "× " : "") + p.nombre).join(", ");
     if (servicioNombre.length > 300) servicioNombre = servicioNombre.slice(0, 297) + "…";
   } else {
     importe = Math.round(Number(b.importe) * 100) / 100;
-    if (!(importe >= 10 && importe <= 500)) return json({ error: "El importe tiene que estar entre 10 € y 500 €" }, 400, origin);
+    if (!(importe >= 10 && importe <= 1000)) return json({ error: "El importe tiene que estar entre 10 € y 1.000 €" }, 400, origin);
   }
   const centimos = Math.round(importe * 100);
   if (!(centimos >= 50)) return json({ error: "Este servicio no tiene precio" }, 409, origin);

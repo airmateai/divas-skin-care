@@ -245,7 +245,7 @@ footer{background:var(--primary-dk);color:var(--cream);padding:0 0 34px;}
 .rg-tipo button b,.rg-pres button b{font-size:14px;font-weight:600}.rg-tipo button small,.rg-pres button small{font-size:11.5px;color:var(--ink2);line-height:1.35}
 .rg-tipo button:hover,.rg-pres button:hover{border-color:var(--primary-lt)}
 .rg-tipo button.on,.rg-pres button.on{border-color:var(--primary);background:color-mix(in srgb,var(--primary-lt) 14%,#fff);box-shadow:inset 0 0 0 1px var(--primary)}
-.rg-amts{display:grid;grid-template-columns:repeat(5,1fr);border:1px solid var(--border);border-radius:3px;overflow:hidden}
+.rg-amts{display:grid;grid-template-columns:repeat(6,1fr);border:1px solid var(--border);border-radius:3px;overflow:hidden}
 .rg-amts button{padding:14px 0;border:0;border-right:1px solid var(--border);background:#fff;cursor:pointer;font-family:var(--font-serif);font-size:22px;color:var(--ink);transition:background .25s,color .25s}
 .rg-amts button:last-child{border-right:0}.rg-amts button span{font-size:14px;margin-left:2px;opacity:.6}
 .rg-amts button.on{background:var(--primary);color:#fff}
@@ -272,10 +272,13 @@ footer{background:var(--primary-dk);color:var(--cream);padding:0 0 34px;}
 .rg-pi .tx{flex:1;min-width:0;font-size:13px;line-height:1.3}.rg-pi .tx small{display:block;color:var(--ink2);font-size:11.5px;letter-spacing:.04em}
 .rg-pi .q{display:flex;align-items:center;gap:8px}.rg-pi .q button{width:28px;height:28px;border-radius:50%;border:1px solid var(--border);background:#fff;cursor:pointer;font-size:15px;line-height:1;color:var(--ink)}
 .rg-pi.on{background:color-mix(in srgb,var(--primary-lt) 12%,#fff)}
+.rg-otro{display:flex;align-items:center;justify-content:center;gap:2px;background:#fff;font-family:var(--font-serif);font-size:18px;color:var(--ink)}.rg-otro input{width:58px;border:0;background:transparent;font:inherit;text-align:right;outline:none;color:inherit}.rg-otro input::placeholder{color:var(--ink2);font-size:15px}.rg-otro span{font-size:14px;opacity:.6}.rg-otro.on{background:var(--primary);color:#fff}.rg-otro.on input::placeholder{color:#fff}
+.rg-gh{position:sticky;top:0;z-index:1;background:var(--cream);font-size:10.5px;font-weight:600;letter-spacing:.22em;text-transform:uppercase;color:var(--primary-dk);padding:8px 12px;border-bottom:1px solid var(--border)}
+.rg-pi .ph-s{background:linear-gradient(135deg,var(--primary-lt),var(--cream))}
 .rg-pres{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .svc-regalar{background:none;border:none;padding:0;margin-right:14px;cursor:pointer;font:inherit;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink2);border-bottom:1px solid currentColor}
 .svc-regalar:hover{color:var(--accent)}
-@media(max-width:860px){.rg-grid{grid-template-columns:1fr;gap:20px}.rg-side{position:static;order:-1}.rg-form{padding:24px 18px}.rg-tipo,.rg-occ{grid-template-columns:1fr 1fr}.rg-tipo button:last-child{grid-column:1/-1}.rg-amts button{font-size:18px}.rg-step{gap:10px}.rg-2{grid-template-columns:1fr;gap:0}.rg-pay b{font-size:30px}.rg-stage{padding:0}}
+@media(max-width:860px){.rg-amts{grid-template-columns:repeat(3,1fr)}.rg-amts button:nth-child(3){border-right:0}.rg-amts>*:nth-child(-n+3){border-bottom:1px solid var(--border)}.rg-grid{grid-template-columns:1fr;gap:20px}.rg-side{position:static;order:-1}.rg-form{padding:24px 18px}.rg-tipo,.rg-occ{grid-template-columns:1fr 1fr}.rg-tipo button:last-child{grid-column:1/-1}.rg-amts button{font-size:18px}.rg-step{gap:10px}.rg-2{grid-template-columns:1fr;gap:0}.rg-pay b{font-size:30px}.rg-stage{padding:0}}
 </style>
 
 </head>
@@ -825,12 +828,12 @@ footer{background:var(--primary-dk);color:var(--cream);padding:0 0 34px;}
           <div class="rg-tipo">
             <button type="button" class="on" data-t="importe"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="12" rx="2"/><path d="M3 11h18M7 15h3"/></svg><b>Importe</b><small>Lo gasta en lo que quiera</small></button>
             <button type="button" data-t="servicio"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3c-3 4-3 8 0 11 3-3 3-7 0-11z"/><path d="M5 12c3 0 5 2 7 5 2-3 4-5 7-5M12 17v4"/></svg><b>Tratamiento</b><small>Faciales, láser, corporales</small></button>
-            <button type="button" data-t="productos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 9h14l-1.2 10.2a2 2 0 0 1-2 1.8H8.2a2 2 0 0 1-2-1.8z"/><path d="M9 9V7a3 3 0 0 1 6 0v2"/></svg><b>Productos</b><small>En cesta o envueltos</small></button>
+            <button type="button" data-t="productos" title="Productos y tratamientos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 9h14l-1.2 10.2a2 2 0 0 1-2 1.8H8.2a2 2 0 0 1-2-1.8z"/><path d="M9 9V7a3 3 0 0 1 6 0v2"/></svg><b>Cesta a medida</b><small>Productos y tratamientos juntos</small></button>
           </div>
           <div id="rg-importes" class="rg-amts"></div>
           <div style="display:none" id="rg-servicio-w"><select id="rg-servicio" class="rg-in"></select></div>
           <div id="rg-productos" style="display:none">
-            <input id="rg-pq" class="rg-in" placeholder="Buscar producto o marca" autocomplete="off">
+            <input id="rg-pq" class="rg-in" placeholder="Buscar tratamiento, producto o marca" autocomplete="off">
             <div id="rg-plist" class="rg-plist"></div>
             <div class="rg-pres" id="rg-pres"><button type="button" class="on" data-p="cesta"><b>En cesta</b><small>Presentada en cesta de regalo</small></button><button type="button" data-p="envuelto"><b>Envuelto</b><small>Con papel y lazo</small></button></div>
             <p class="rg-nota">Se recoge en el centro · Calle Arguijón 1, La Laguna · presentando el código.</p>
@@ -1748,8 +1751,9 @@ function montarRegalo(data){
   if (!document.getElementById('rg-css')) { const st = document.createElement('style'); st.id = 'rg-css'; st.textContent = R.css; document.head.appendChild(st); }
   RG.servicios = (data||[]).filter(s => s.reservable === true && s.visible_web !== false && Number(s.precio_oferta ?? s.precio) > 0);
   const imp = document.getElementById('rg-importes');
-  imp.innerHTML = [25,50,75,100,150].map(v => `<button type="button" data-v="${v}" class="${v===RG.importe?'on':''}">${v}<span>€</span></button>`).join('');
-  imp.querySelectorAll('button').forEach(b => b.onclick = () => { RG.importe = +b.dataset.v; imp.querySelectorAll('button').forEach(x => x.classList.toggle('on', x===b)); pintarRegalo(); });
+  imp.innerHTML = [25,50,75,100,150].map(v => `<button type="button" data-v="${v}" class="${v===RG.importe?'on':''}">${v}<span>€</span></button>`).join('')+`<label class="rg-otro"><input id="rg-otro" type="number" min="10" max="1000" step="5" placeholder="Otro"><span>€</span></label>`;
+  imp.querySelectorAll('button').forEach(b => b.onclick = () => { RG.importe = +b.dataset.v; document.getElementById('rg-otro').value=''; imp.querySelectorAll('button,.rg-otro').forEach(x => x.classList.toggle('on', x===b)); pintarRegalo(); });
+  document.getElementById('rg-otro').oninput = e => { const v=Math.round(parseFloat(e.target.value)); if(v>0){ RG.importe=v; imp.querySelectorAll('button').forEach(x=>x.classList.remove('on')); e.target.parentElement.classList.add('on'); } pintarRegalo(); };
   const sel = document.getElementById('rg-servicio');
   const cats = {}; RG.servicios.slice().sort((a,b) => (a.orden ?? 9999) - (b.orden ?? 9999)).forEach(s => (cats[s.categoria||'Otros'] = cats[s.categoria||'Otros'] || []).push(s));
   const oc = window._ordCatServ || {}, claves = Object.keys(cats);
@@ -1782,17 +1786,35 @@ function montarRegalo(data){
   }
   pintarRegalo();
 }
+// Grupos de la cesta, en el orden que pidió Louie
+const GRUPOS_CESTA=[['Cosmética',/utsukusy|kelaya|ceutical|equilibrium k|perpetual k|preliminar k|k body|k p[eé]ptido|infusi[oó]n 7c|the ordinary|beauty of joseon|melaxin|kefus/i],['Control de peso',/herbalife/i],['Fajas Fájate',/f[aá]jate/i]];
+const ORDEN_MARCA=['utsukusy','kelaya','the ordinary','beauty of joseon','melaxin'];
+function grupoCesta(m){ const i=GRUPOS_CESTA.findIndex(g=>g[1].test(m||'')); return i<0?GRUPOS_CESTA.length:i; }
+function ordenMarca(m){ m=String(m||'').toLowerCase(); const i=ORDEN_MARCA.findIndex(x=>m.includes(x)); return i<0?(/kelaya|ceutical|k body/i.test(m)?1:99):i; }
 async function cargarProductosRegalo(){
-  const { data } = await sb.from('tienda_web').select('id,nombre,marca,precio,imagen_url,disponible,bajo_pedido').eq('disponible', true).order('marca',{nullsFirst:false}).order('nombre');
-  RG.productos = (data||[]).filter(p => !p.bajo_pedido && Number(p.precio) > 0);
+  const { data } = await sb.from('tienda_web').select('id,nombre,marca,precio,imagen_url,disponible,bajo_pedido');
+  RG.productos = (data||[]).filter(p => (p.disponible || p.bajo_pedido) && Number(p.precio) > 0)
+    .sort((a,b) => grupoCesta(a.marca)-grupoCesta(b.marca) || ordenMarca(a.marca)-ordenMarca(b.marca) || String(a.nombre).localeCompare(b.nombre,'es'));
   pintarProductosRegalo();
+}
+const RG_SV = {}; // 'id|bono' -> cantidad
+function filaCesta(key, nombre, sub, img, n, kind){
+  return `<div class="rg-pi ${n?'on':''}">${img?`<img src="${escWeb(img)}" alt="" loading="lazy">`:`<div class="ph ${kind==='s'?'ph-s':''}"></div>`}<div class="tx">${escWeb(nombre)}<small>${sub}</small></div><div class="q">${n?`<button type="button" data-k="${kind}" data-id="${key}" data-d="-1">−</button><b>${n}</b>`:''}<button type="button" data-k="${kind}" data-id="${key}" data-d="1">+</button></div></div>`;
 }
 function pintarProductosRegalo(){
   const box = document.getElementById('rg-plist'); if (!box) return;
   const q = normCat(document.getElementById('rg-pq').value);
-  const l = RG.productos.filter(p => !q || normCat(p.nombre + ' ' + (p.marca||'')).includes(q));
-  box.innerHTML = l.map(p => { const n = RG.cesta[p.id] || 0; return `<div class="rg-pi ${n?'on':''}">${p.imagen_url?`<img src="${escWeb(p.imagen_url)}" alt="" loading="lazy">`:'<div class="ph"></div>'}<div class="tx">${escWeb(p.nombre)}<small>${escWeb(p.marca||'')} · ${precioWeb(p.precio)}</small></div><div class="q">${n?`<button type="button" data-id="${p.id}" data-d="-1">−</button><b>${n}</b>`:''}<button type="button" data-id="${p.id}" data-d="1">+</button></div></div>`; }).join('') || '<p class="rg-nota" style="padding:10px">No hay productos con ese nombre.</p>';
-  box.querySelectorAll('button[data-id]').forEach(b => b.onclick = () => { const id = b.dataset.id, n = Math.max(0, Math.min(5, (RG.cesta[id]||0) + +b.dataset.d)); if (n) RG.cesta[id] = n; else delete RG.cesta[id]; if (Object.keys(RG.cesta).length > 12) { delete RG.cesta[id]; } pintarProductosRegalo(); pintarRegalo(); });
+  let html='';
+  // Tratamientos (y sus bonos)
+  const svs=[]; (RG.servicios||[]).forEach(s=>{ svs.push({k:s.id+'|0',n:s.nombre,p:Number(s.precio_oferta??s.precio),c:s.categoria}); bonosDeServicio(s).forEach(b=>svs.push({k:s.id+'|'+b.sesiones,n:`Bono ${b.sesiones} sesiones · ${s.nombre}`,p:Number(b.precio),c:s.categoria})); });
+  const sv=svs.filter(x=>!q||normCat(x.n+' '+(x.c||'')).includes(q));
+  if(sv.length) html+=`<div class="rg-gh">Tratamientos</div>`+sv.map(x=>filaCesta(x.k,x.n,`${escWeb(x.c||'')} · ${precioWeb(x.p)}`,'',RG_SV[x.k]||0,'s')).join('');
+  let g=-1;
+  RG.productos.filter(p => !q || normCat(p.nombre + ' ' + (p.marca||'')).includes(q)).forEach(p=>{ const gi=grupoCesta(p.marca); if(gi!==g){ g=gi; html+=`<div class="rg-gh">${GRUPOS_CESTA[gi]?.[0]||'Otros'}</div>`; }
+    html+=filaCesta(p.id,p.nombre,`${escWeb(p.marca||'')} · ${precioWeb(p.precio)}${p.bajo_pedido?' · bajo pedido, en su talla':''}`,p.imagen_url,RG.cesta[p.id]||0,'p'); });
+  box.innerHTML = html || '<p class="rg-nota" style="padding:10px">No hay nada con ese nombre.</p>';
+  box.querySelectorAll('button[data-id]').forEach(b => b.onclick = () => { const st=b.dataset.k==='s'?RG_SV:RG.cesta, id=b.dataset.id, n=Math.max(0,Math.min(5,(st[id]||0)+ +b.dataset.d)); if(n) st[id]=n; else delete st[id];
+    if(Object.keys(RG.cesta).length+Object.keys(RG_SV).length>15){ delete st[id]; } pintarProductosRegalo(); pintarRegalo(); });
 }
 function regaloTipo(t){
   RG.tipo = t; document.querySelectorAll('.rg-tipo button').forEach(x => x.classList.toggle('on', x.dataset.t===t));
@@ -1806,18 +1828,21 @@ function pintarRegalo(){
   const R = window.DIVAS_REGALO, s = RG.servicios.find(x => x.id === RG.servicio);
   const bono = RG.tipo==='servicio' && RG.bono ? bonosDeServicio(s).find(b => b.sesiones === RG.bono) : null;
   const elegidos = RG.productos.filter(p => RG.cesta[p.id]);
-  const nProd = elegidos.reduce((a,p) => a + RG.cesta[p.id], 0);
-  const precio = RG.tipo==='productos' ? Math.round(elegidos.reduce((a,p) => a + Number(p.precio)*RG.cesta[p.id], 0)*100)/100 : RG.tipo==='servicio' ? (bono ? Number(bono.precio) : s ? Number(s.precio_oferta ?? s.precio) : 0) : RG.importe;
-  const que = RG.tipo==='productos' ? (nProd ? `${RG.presentacion==='cesta'?'Cesta regalo':'Regalo envuelto'} · ${nProd} producto${nProd>1?'s':''}` : 'Elige los productos') : RG.tipo==='servicio' ? (s ? (bono ? `Bono ${bono.sesiones} sesiones · ${s.nombre}` : s.nombre) : 'Elige un tratamiento') : `Tarjeta regalo de ${R.euros(RG.importe)}`;
+  const svPrecio = k => { const [id,bn]=k.split('|'), s=(RG.servicios||[]).find(x=>x.id===id); if(!s) return 0; if(+bn){ const b=bonosDeServicio(s).find(x=>x.sesiones===+bn); return b?Number(b.precio):0; } return Number(s.precio_oferta??s.precio); };
+  const nSv = Object.values(RG_SV).reduce((a,n)=>a+n,0), totSv = Object.entries(RG_SV).reduce((a,[k,n])=>a+svPrecio(k)*n,0);
+  const nProd = elegidos.reduce((a,p) => a + RG.cesta[p.id], 0) + nSv;
+  const precio = RG.tipo==='productos' ? Math.round((elegidos.reduce((a,p) => a + Number(p.precio)*RG.cesta[p.id], 0)+totSv)*100)/100 : RG.tipo==='servicio' ? (bono ? Number(bono.precio) : s ? Number(s.precio_oferta ?? s.precio) : 0) : RG.importe;
+  const que = RG.tipo==='productos' ? (nProd ? `${elegidos.length?(RG.presentacion==='cesta'?'Cesta regalo':'Regalo envuelto'):'Regalo'} · ${nProd} artículo${nProd>1?'s':''}` : 'Elige productos o tratamientos') : RG.tipo==='servicio' ? (s ? (bono ? `Bono ${bono.sesiones} sesiones · ${s.nombre}` : s.nombre) : 'Elige un tratamiento') : `Tarjeta regalo de ${R.euros(RG.importe)}`;
   document.getElementById('rg-prev').innerHTML = R.html({ plantilla:RG.plantilla, para:document.getElementById('rg-para').value, de:document.getElementById('rg-de').value, mensaje:document.getElementById('rg-msg').value, que });
   document.getElementById('rg-total').textContent = R.euros(precio);
 }
 async function pagarRegalo(){
   const b = document.getElementById('rg-pagar'), err = document.getElementById('rg-err');
   if (RG.tipo==='servicio' && !RG.servicio) { err.textContent = 'Elige el tratamiento que quieres regalar.'; return; }
-  if (RG.tipo==='productos' && !Object.keys(RG.cesta).length) { err.textContent = 'Añade al menos un producto con el botón +.'; return; }
+  if (RG.tipo==='productos' && !Object.keys(RG.cesta).length && !Object.keys(RG_SV).length) { err.textContent = 'Añade al menos un producto o tratamiento con el botón +.'; return; }
+  if (RG.tipo==='importe' && !(RG.importe>=10 && RG.importe<=1000)) { err.textContent = 'El importe tiene que estar entre 10 € y 1.000 €.'; return; }
   b.disabled = true; err.textContent = ''; const txt = b.innerHTML; b.textContent = 'Abriendo el pago seguro…';
-  const { data, error } = await sb.functions.invoke('checkout-regalo', { body:{ tipo:RG.tipo, servicio_id:RG.servicio, bono_sesiones:RG.tipo==='servicio'?RG.bono:null, productos:RG.tipo==='productos'?Object.entries(RG.cesta).map(([id,qty])=>({id,qty})):null, presentacion:RG.presentacion, importe:RG.importe, plantilla:RG.plantilla,
+  const { data, error } = await sb.functions.invoke('checkout-regalo', { body:{ tipo:RG.tipo, servicio_id:RG.servicio, bono_sesiones:RG.tipo==='servicio'?RG.bono:null, productos:RG.tipo==='productos'?Object.entries(RG.cesta).map(([id,qty])=>({id,qty})):null, servicios:RG.tipo==='productos'?Object.entries(RG_SV).map(([k,qty])=>({id:k.split('|')[0],bono:+k.split('|')[1]||0,qty})):null, presentacion:RG.presentacion, importe:RG.importe, plantilla:RG.plantilla,
     para:document.getElementById('rg-para').value, de:document.getElementById('rg-de').value, mensaje:document.getElementById('rg-msg').value } });
   if (error || !data?.url) { let m = 'No se pudo abrir el pago. Inténtalo de nuevo o escríbenos por WhatsApp.'; try { const j = await error?.context?.json?.(); if (j?.error) m = j.error; } catch(e) {} err.textContent = m; b.disabled = false; b.innerHTML = txt; return; }
   location.href = data.url;

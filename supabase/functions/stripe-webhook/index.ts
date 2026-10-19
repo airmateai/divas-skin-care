@@ -52,7 +52,7 @@ Deno.serve(async (req) => {
         });
         if (eN) console.error("Error creando notificación:", eN.message);
         // Regalo de productos: pedido para preparar (cesta o envuelto) y se descuenta el stock
-        for (const p of (Array.isArray(t.productos) ? t.productos : []) as { id: string; nombre: string; qty: number }[]) {
+        for (const p of ((Array.isArray(t.productos) ? t.productos : []) as { id: string; nombre: string; qty: number; tipo?: string; bajo_pedido?: boolean }[]).filter((x) => x.tipo !== "servicio")) {
           const { error: eP } = await supabase.from("pedidos").insert({
             cliente_nombre: session.customer_details?.name || "Regalo",
             cliente_telefono: session.customer_details?.phone || null,
@@ -60,10 +60,10 @@ Deno.serve(async (req) => {
             producto_id: p.id,
             estado: "pendiente_preparar",
             origen: "regalo",
-            notas: `🎁 REGALO ${t.presentacion === "cesta" ? "EN CESTA" : "ENVUELTO"} · ${p.qty > 1 ? p.qty + " unidades · " : ""}código ${t.codigo}${t.para ? " · para " + t.para : ""}. Pagado online. Se recoge en cabina con el código.`,
+            notas: `🎁 REGALO ${t.presentacion === "cesta" ? "EN CESTA" : "ENVUELTO"}${p.bajo_pedido ? " · BAJO PEDIDO (encargar en su talla)" : ""} · ${p.qty > 1 ? p.qty + " unidades · " : ""}código ${t.codigo}${t.para ? " · para " + t.para : ""}. Pagado online. Se recoge en cabina con el código.`,
           });
           if (eP) console.error("Error creando pedido de regalo:", eP.message);
-          const { data: art } = await supabase.from("stock").select("cantidad").eq("id", p.id).maybeSingle();
+          const { data: art } = p.bajo_pedido ? { data: null } : await supabase.from("stock").select("cantidad").eq("id", p.id).maybeSingle();
           if (art) {
             const { error: eS } = await supabase.from("stock").update({ cantidad: Math.max(0, (art.cantidad ?? 0) - (p.qty || 1)) }).eq("id", p.id);
             if (eS) console.error("Error descontando stock (regalo):", eS.message);

@@ -1981,7 +1981,12 @@ function posCanjearRegalo(codigo){
   if(t.tipo==='importe' && saldoRegalo(t)<=0) return fallo('Esta tarjeta ya no tiene saldo.');
   if(POS_REGALOS.includes(t.id)) return fallo('Ya está en esta venta.');
   POS_REGALOS.push(t.id); closeModal();
-  if(t.tipo==='productos'){ (t.productos||[]).forEach(p=>posAddLinea({ type:'regalo_producto', name:(p.qty>1?p.qty+'× ':'')+p.nombre+' · regalo '+t.codigo, price:0, precioBase:0, precioAntes:Number(p.precio)*(p.qty||1), regaloId:t.id })); toast(`🎁 ${t.presentacion==='cesta'?'Cesta':'Regalo envuelto'} ${t.codigo}: entrégalo y cobra para marcarlo como recogido (ya estaba pagado)`); return; }
+  if(t.tipo==='productos'){ (t.productos||[]).forEach(p=>{
+      if(p.tipo==='servicio' && p.sesiones>1){ for(let k=0;k<(p.qty||1);k++) posAddLinea({ type:'regalo_bono', servicioId:p.id, name:p.nombre+' · regalo '+t.codigo, price:0, precioBase:0, precioAntes:Number(p.precio), regaloId:t.id, sesiones:p.sesiones, regaloImporte:Number(p.precio) }); }
+      else if(p.tipo==='servicio') posAddLinea({ type:'servicio', servicioId:p.id, name:(p.qty>1?p.qty+'× ':'')+p.nombre+' · regalo '+t.codigo, price:0, precioBase:0, precioAntes:Number(p.precio)*(p.qty||1), regaloId:t.id });
+      else posAddLinea({ type:'regalo_producto', name:(p.qty>1?p.qty+'× ':'')+p.nombre+(p.bajo_pedido?' (bajo pedido)':'')+' · regalo '+t.codigo, price:0, precioBase:0, precioAntes:Number(p.precio)*(p.qty||1), regaloId:t.id });
+    });
+    if((t.productos||[]).some(p=>p.tipo==='servicio'&&p.sesiones>1) && !POS_CLIENTA) toast('Elige la clienta: el bono regalado se guarda en su ficha'); toast(`🎁 ${t.presentacion==='cesta'?'Cesta':'Regalo envuelto'} ${t.codigo}: entrégalo y cobra para marcarlo como recogido (ya estaba pagado)`); return; }
   if(t.tipo==='servicio' && t.servicio_id && t.sesiones>1){ posAddLinea({ type:'regalo_bono', servicioId:t.servicio_id, name:t.servicio_nombre+' · regalo '+t.codigo, price:0, precioBase:0, precioAntes:Number(t.importe), regaloId:t.id, sesiones:t.sesiones, regaloImporte:Number(t.importe) }); if(!POS_CLIENTA) toast('Elige la clienta: el bono regalado se guarda en su ficha'); }
   else if(t.tipo==='servicio' && t.servicio_id){ const s=servicioDe(t.servicio_id); posAddLinea({ type:'servicio', servicioId:t.servicio_id, name:(s?.name||t.servicio_nombre)+' · regalo '+t.codigo, price:0, precioBase:0, precioAntes:Number(t.importe), regaloId:t.id }); }
   else posAddLinea({ type:'regalo_canje', name:'Tarjeta regalo '+t.codigo, price:0, precioBase:0, regaloId:t.id, regaloSaldo:saldoRegalo(t) });
