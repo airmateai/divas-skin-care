@@ -1395,11 +1395,12 @@ footer{background:var(--primary-dk);color:var(--cream);padding:0 0 34px;}
 </button>
 
 <script>
+function normCatF(t){ return String(t||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim(); }
 function filterSvcByCat(cat){
   document.querySelectorAll('.svc-card').forEach(card=>{
     const cardCat=card.querySelector('.svc-cat').textContent.trim();
     // Los servicios desactivados en el CRM no vuelven a aparecer al cambiar de pestaña
-    card.style.display=(cardCat===cat && card.dataset.inactivo!=='1' && card.dataset.grupoRol!=='opcion')?'':'none';
+    card.style.display=(normCatF(cardCat)===normCatF(cat) && card.dataset.inactivo!=='1' && card.dataset.grupoRol!=='opcion')?'':'none';
   });
 }
 function conectarPestanaServicio(tab){
@@ -1858,7 +1859,7 @@ async function ordenarServiciosWeb(data){
   const tabs = document.getElementById('svc-tabs'), grid = document.querySelector('.svc-grid');
   if (!tabs || !grid) return;
   let ordC = {};
-  try { const { data: oc } = await sb.from('orden_categorias').select('tipo,nombre,orden').eq('tipo','servicio'); (oc||[]).forEach(o => ordC[normCat(o.nombre)] = o.orden); } catch(e) {}
+  try { const { data: oc } = await sb.from('orden_categorias').select('tipo,nombre,orden').eq('tipo','servicio'); (oc||[]).forEach(o => { const k = normCat(o.nombre); ordC[k] = Math.min(ordC[k] ?? 1e9, o.orden); }); } catch(e) {}
   window._ordCatServ = ordC;
   const ordS = {}; (data||[]).forEach(s => ordS[s.id] = s.orden ?? 9999);
   const cards = [...grid.querySelectorAll('.svc-card')];
