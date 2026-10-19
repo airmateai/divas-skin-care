@@ -594,7 +594,7 @@ tbody tr:hover{background:rgba(0,0,0,.02);}
       </div>
       <div class="nav-item" onclick="goPage('stock',this)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 7l-8-4-8 4v10l8 4 8-4V7z"/><path d="M12 11 4 7"/><path d="M12 11l8-4"/><path d="M12 11v10"/></svg>
-        Stock
+        Productos
       </div>
       <div class="nav-item" onclick="goPage('pedidos',this)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
@@ -1004,7 +1004,7 @@ tbody tr:hover{background:rgba(0,0,0,.02);}
     <div id="page-stock" class="page">
       <div class="page-hd">
         <div>
-          <h1 class="page-title">Stock</h1>
+          <h1 class="page-title">Productos</h1>
           <div class="page-sub">Inventario · Impuesto por producto · Pulsa un artículo para editarlo o añadir unidades</div>
         </div>
         <div style="display:flex;gap:8px;">
@@ -4200,7 +4200,7 @@ function goPage(id,el,isBottom){
   document.querySelectorAll('.bnav-btn').forEach(n=>n.classList.remove('active'));
   const bn=document.getElementById('bnav-'+id); if(bn) bn.classList.add('active');
   const sn=[...document.querySelectorAll('.nav-item')].find(x=>(x.getAttribute('onclick')||'').includes("'"+id+"'")); if(sn) sn.classList.add('active');
-  const titles={dashboard:'Panel',schedule:'Citas',pipeline:'En cabina',salas:'Cabina',clients:'Clientas',catalog:'Servicios',invoices:'Facturas',reports:'Informes',waitlist:'Lista de espera',caja:'Cierre de caja',notificaciones:'Notificaciones',stock:'Stock',pos:'Punto de venta',team:'Equipo',gastos:'Gastos',pedidos:'Pedidos',regalos:'Tarjetas regalo',accounting:'Contabilidad',followups:'Seguimientos'};
+  const titles={dashboard:'Panel',schedule:'Citas',pipeline:'En cabina',salas:'Cabina',clients:'Clientas',catalog:'Servicios',invoices:'Facturas',reports:'Informes',waitlist:'Lista de espera',caja:'Cierre de caja',notificaciones:'Notificaciones',stock:'Productos',pos:'Punto de venta',team:'Equipo',gastos:'Gastos',pedidos:'Pedidos',regalos:'Tarjetas regalo',accounting:'Contabilidad',followups:'Seguimientos'};
   document.getElementById('topbar-title').textContent=titles[id]||id;
   document.getElementById('sidebar').classList.remove('open');
   document.getElementById('mob-overlay').classList.remove('open');
