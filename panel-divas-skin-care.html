@@ -3397,7 +3397,22 @@ function openArticuloForm(id){
     <div style="display:flex;gap:8px;margin-top:18px;">
       <button class="btn btn-ghost" style="flex:1" onclick="closeModal()">Cancelar</button>
       <button class="btn btn-accent" style="flex:1" onclick="submitArticuloForm(${s?`'${s.id}'`:''})">Guardar artículo</button>
-    </div>`);
+    </div>
+    ${s?`<button class="btn btn-ghost" id="af-borrar" style="width:100%;margin-top:10px;color:#b3441e;border-color:#e8c4b8;" onclick="borrarArticulo('${s.id}')">🗑 Eliminar producto</button>`:''}`);
+}
+async function borrarArticulo(id){
+  const b=document.getElementById('af-borrar'); const err=document.getElementById('af-error');
+  if(b && b.dataset.confirmar!=='1'){ b.dataset.confirmar='1'; b.textContent='¿Seguro? Pulsa otra vez para eliminarlo'; b.style.background='#fbeae4'; return; }
+  err.textContent='Eliminando...';
+  const { data, error } = await sb.from('stock').delete().eq('id', id).select('id');
+  if(error && error.code==='23503'){
+    // Tiene pedidos de la tienda enlazados: no se puede borrar del historial, así que se retira de la venta
+    const r = await sb.from('stock').update({ visible_web:false, cantidad:0 }).eq('id', id).select('id');
+    if(r.error||!r.data?.length){ err.textContent='No se pudo retirar: '+(r.error?.message||'sin permiso'); return; }
+    await recargarTodo(); closeModal(); toast('Este producto tiene pedidos online, así que no se puede borrar: lo he quitado de la tienda y puesto el stock a 0'); return;
+  }
+  if(error||!data?.length){ err.textContent='No se pudo eliminar: '+(error?.message||'sin permiso'); return; }
+  await recargarTodo(); closeModal(); toast('✓ Producto eliminado');
 }
 async function submitArticuloForm(id){
   const num=(elId)=>{ const v=String(document.getElementById(elId)?.value??'').trim().replace(',','.'); return v===''?null:Number(v); };
