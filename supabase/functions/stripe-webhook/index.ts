@@ -168,7 +168,12 @@ Deno.serve(async (req) => {
       } else {
         console.log(`Pedido creado para ${nombre} (${email}) — producto ${productoId}`);
         // Descontar 1 unidad del stock (venta online, recogida en cabina)
-        const { data: art } = await supabase.from("stock").select("cantidad").eq("id", productoId).maybeSingle();
+        const { data: art } = await supabase.from("stock").select("cantidad,nombre").eq("id", productoId).maybeSingle();
+        const { error: eNp } = await supabase.from("notificaciones").insert({
+          tipo: "compra_online",
+          mensaje: `🛍️ Compra online: ${art?.nombre ?? "producto"} · ${nombre} (recoge en cabina)`,
+        });
+        if (eNp) console.error("Error creando notificación de pedido:", eNp.message);
         if (art) {
           const { error: stockError } = await supabase.from("stock")
             .update({ cantidad: Math.max(0, (art.cantidad ?? 0) - 1) }).eq("id", productoId);
