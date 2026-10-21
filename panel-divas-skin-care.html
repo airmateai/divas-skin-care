@@ -604,6 +604,10 @@ tbody tr:hover{background:rgba(0,0,0,.02);}
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="8" width="18" height="13" rx="1"/><path d="M12 8v13M3 12h18M7.5 8a2.5 2.5 0 1 1 4.5-1.5V8M16.5 8A2.5 2.5 0 1 0 12 6.5V8"/></svg>
         Tarjetas regalo
       </div>
+      <div class="nav-item" onclick="goPage('actualizaciones',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg>
+        Actualizaciones <span id="upd-badge" style="display:none;margin-left:auto;background:#3BE29A;color:#08281a;font-size:10px;font-weight:900;padding:2px 7px;border-radius:999px">NUEVO</span>
+      </div>
       <div class="nav-section">Finanzas</div>
       <div class="nav-item" onclick="goPage('invoices',this)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
@@ -1033,6 +1037,8 @@ tbody tr:hover{background:rgba(0,0,0,.02);}
         <div class="table-wrap"><table><thead><tr><th>Código</th><th>Regalo</th><th>Para</th><th>Compró</th><th>Estado</th><th>Caduca</th><th></th></tr></thead><tbody id="regalos-tbody"></tbody></table></div>
       </div>
     </div>
+
+    <div id="page-actualizaciones" class="page"><div id="upd-host"></div></div>
 
     <div id="page-pedidos" class="page">
       <div class="page-hd">
@@ -4308,12 +4314,13 @@ function goPage(id,el,isBottom){
   document.querySelectorAll('.bnav-btn').forEach(n=>n.classList.remove('active'));
   const bn=document.getElementById('bnav-'+id); if(bn) bn.classList.add('active');
   const sn=[...document.querySelectorAll('.nav-item')].find(x=>(x.getAttribute('onclick')||'').includes("'"+id+"'")); if(sn) sn.classList.add('active');
-  const titles={dashboard:'Panel',schedule:'Citas',pipeline:'En cabina',salas:'Cabina',clients:'Clientas',catalog:'Servicios',invoices:'Facturas',reports:'Informes',waitlist:'Lista de espera',caja:'Cierre de caja',notificaciones:'Notificaciones',stock:'Productos',pos:'Punto de venta',team:'Equipo',gastos:'Gastos',pedidos:'Pedidos',regalos:'Tarjetas regalo',accounting:'Contabilidad',followups:'Seguimientos'};
+  const titles={dashboard:'Panel',schedule:'Citas',pipeline:'En cabina',salas:'Cabina',clients:'Clientas',catalog:'Servicios',invoices:'Facturas',reports:'Informes',waitlist:'Lista de espera',caja:'Cierre de caja',notificaciones:'Notificaciones',stock:'Productos',pos:'Punto de venta',team:'Equipo',gastos:'Gastos',pedidos:'Pedidos',regalos:'Tarjetas regalo',accounting:'Contabilidad',followups:'Seguimientos',actualizaciones:'Actualizaciones'};
   document.getElementById('topbar-title').textContent=titles[id]||id;
   document.getElementById('sidebar').classList.remove('open');
   document.getElementById('mob-overlay').classList.remove('open');
   if(id==='salas') renderSalas();
   if(id==='dashboard') renderDashboard();
+  if(id==='actualizaciones') montarActualizaciones();
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
@@ -4769,5 +4776,13 @@ async function enviarFacturaPDF(idx, soloDescargar){
 })();
 </script>
 
+<!-- Airmate · apartado Actualizaciones (catálogo central en airmate.es, sin precios) -->
+<script src="https://airmate.es/actualizaciones/core.js" defer></script>
+<script src="https://airmate.es/actualizaciones/actualizaciones.js" defer></script>
+<script>
+const UPD_CFG={ cliente:'Divas Skin Care', instalados:[] };
+function montarActualizaciones(){ if(!window.AirmateActualizaciones){ setTimeout(montarActualizaciones,300); return; } AirmateActualizaciones.mount(document.getElementById('upd-host'),{ ...UPD_CFG, contacto:(typeof CURRENT_USER!=='undefined'&&CURRENT_USER?.nombre)||'' }); const b=document.getElementById('upd-badge'); if(b) b.style.display='none'; }
+window.addEventListener('load',()=>setTimeout(async()=>{ if(!window.AirmateActualizaciones) return; const n=await AirmateActualizaciones.hayNuevos(UPD_CFG); const b=document.getElementById('upd-badge'); if(b&&n) b.style.display='inline-block'; },1500));
+</script>
 </body>
 </html>
