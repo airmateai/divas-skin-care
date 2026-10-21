@@ -1895,7 +1895,10 @@ async function ordenarServiciosWeb(data){
   data.forEach(p=>{ const m=marcaWeb(p.marca); (grupos[m]=grupos[m]||[]).push(p); });
   let ordM={}; try{ const { data:om } = await sb.from('orden_categorias').select('nombre,orden').eq('tipo','marca'); (om||[]).forEach(o=>ordM[o.nombre]=o.orden); }catch(e){}
   const claves=Object.keys(grupos);
-  grid.innerHTML=Object.entries(grupos).sort((a,b)=>((ordM[a[0]]??(1000+claves.indexOf(a[0])))-(ordM[b[0]]??(1000+claves.indexOf(b[0]))))).map(([m,ps])=>`<div class="shop-marca-title" style="grid-column:1/-1;padding:18px 20px 4px;"><h3 style="font-family:var(--font-serif);color:var(--accent-lt);font-size:20px;">${escWeb(m)}</h3></div>`+
+  // Orden pedido por Louie: cosmética (Utsukusy, Kelaya…) → control de peso (Herbalife) → fajas (Fájate) → otros
+  const ORDEN_TIENDA=['UTSUKUSY','KELAYA','THE ORDINARY','BEAUTY OF JOSEON','MELAXIN','KEFUS'];
+  const rangoMarca=m=>{ if(/^HERBALIFE/.test(m)) return 2000; if(/^F[ÁA]JATE/.test(m)) return 3000; if(/^OTROS/.test(m)) return 4000; const i=ORDEN_TIENDA.findIndex(x=>m.startsWith(x)); return (ordM[m]??(i<0?500+claves.indexOf(m):i)); };
+  grid.innerHTML=Object.entries(grupos).sort((a,b)=>rangoMarca(a[0])-rangoMarca(b[0])).map(([m,ps])=>`<div class="shop-marca-title" style="grid-column:1/-1;padding:18px 20px 4px;"><h3 style="font-family:var(--font-serif);color:var(--accent-lt);font-size:20px;">${escWeb(m)}</h3></div>`+
     ps.map(p=>`<div class="shop-card">
         <div class="shop-img">${p.imagen_url?`<img src="${escWeb(p.imagen_url)}" alt="${escWeb(p.nombre)}" loading="lazy">`:''}</div>
         <div class="shop-body"><h4>${escWeb(p.nombre)}</h4><div class="price">${precioWeb(p.precio)}</div>${p.bajo_pedido?`<div style="font-size:11px;opacity:.75;margin-top:4px;">Bajo pedido${p.tallas?` · ${escWeb(p.tallas)}`:''}</div><button class="svc-book" type="button" style="display:block;margin-top:8px;background:none;border:none;padding:0;cursor:pointer;font:inherit;" onclick="encargarProducto('${p.id}')">Encargar →</button>`:p.disponible?`<button class="svc-book" type="button" style="display:block;margin-top:8px;background:none;border:none;padding:0;cursor:pointer;font:inherit;" onclick="comprarProducto('${p.id}',this)">Comprar · recoger en el centro →</button>`:'<div style="font-size:11px;opacity:.7;margin-top:8px;">Sin stock ahora · pregúntanos</div>'}</div>

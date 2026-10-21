@@ -707,6 +707,7 @@ tbody tr:hover{background:rgba(0,0,0,.02);}
           <div class="page-sub">Calendario · Día, semana y mes · Colores por servicio</div>
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <div class="bf-cl" style="position:relative;"><input id="ag-cl-q" placeholder="🔍 Buscar clienta" autocomplete="off" oninput="agBuscarClienta()" onfocus="agBuscarClienta()" onblur="setTimeout(()=>document.getElementById('ag-cl-res')?.classList.remove('on'),150)" style="padding:9px 12px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--txt);font-size:13px;width:210px;"><div id="ag-cl-res" class="bf-cl-res" style="z-index:30;min-width:260px;"></div></div>
           <button class="btn btn-ghost" onclick="openWaitlistForm()">+ Lista de espera</button>
           <button class="btn btn-ghost" onclick="abrirBloqueoForm()">🔒 Bloquear horas</button>
           <button class="btn btn-accent" onclick="openBookingForm()">+ Nueva cita</button>
@@ -2525,6 +2526,7 @@ function abrirDetalleCita(citaId){
       </div>
     </div>`:''}
     <div style="display:flex;gap:8px;margin-top:18px;flex-wrap:wrap;">
+      ${c.estado!=='cancelada'?`<button class="btn btn-accent" onclick="cobrarCita('${c.id}')">💶 Cobrar</button>`:''}
       ${cl?`<button class="btn btn-ghost" onclick="showClientById('${cl.id}')">Ver ficha de la clienta</button>`:''}
       ${activa&&c.fecha?`<button class="btn btn-ghost" onclick="enviarConfirmacionCita('${c.id}')">✅ Confirmación WhatsApp</button>`:''}
       ${activa&&c.fecha?`<button class="btn btn-ghost" onclick="enviarRecordatorioCita('${c.id}')">📲 Recordatorio WhatsApp</button>`:''}
@@ -2910,7 +2912,8 @@ function showClientById(id){
       <button class="btn btn-ghost" onclick="enviarWhatsApp('${esc(tel)}','Hola ${esc(c.name.split(' ')[0])}, te escribimos desde Divas Skin Care 💛')">💬 WhatsApp</button>
       <button class="btn btn-ghost" onclick="openWaitlistForm({clientaId:'${c.id}'})">+ Lista de espera</button>
       <button class="btn btn-accent" onclick="openBookingForm({clientaId:'${c.id}'})">+ Nueva cita</button>
-    </div>`);
+    </div>
+    <button class="btn btn-ghost" id="cl-borrar" style="width:100%;margin-top:12px;color:#b3441e;border-color:#e8c4b8;" onclick="borrarClienta('${c.id}')">🗑 Eliminar clienta</button>`);
 }
 function bonosDe(clientaId){ return (CONFIG.bonosClienta||[]).filter(b=>String(b.clienta_id)===String(clientaId)); }
 function bonosFichaHTML(clientaId){
@@ -3144,7 +3147,8 @@ function openServicioForm(id){
     <div style="display:flex;gap:8px;margin-top:18px;">
       <button class="btn btn-ghost" style="flex:1" onclick="closeModal()">Cancelar</button>
       <button class="btn btn-accent" style="flex:1" onclick="submitServicioForm(${s?`'${s.id}'`:''})">Guardar servicio</button>
-    </div>`);
+    </div>
+    ${s?`<button class="btn btn-ghost" id="sf-borrar" style="width:100%;margin-top:10px;color:#b3441e;border-color:#e8c4b8;" onclick="borrarServicio('${s.id}')">🗑 Eliminar servicio</button>`:''}`);
   SF_BONOS=(s?.bonos||[]).map(b=>({...b})); sfPintarBonos();
   document.getElementById('sf-precio').addEventListener('input',sfPintarBonos);
 }
@@ -3414,6 +3418,62 @@ async function borrarArticulo(id){
   if(error||!data?.length){ err.textContent='No se pudo eliminar: '+(error?.message||'sin permiso'); return; }
   await recargarTodo(); closeModal(); toast('✓ Producto eliminado');
 }
+async function borrarServicio(id){
+  const b=document.getElementById('sf-borrar');
+  if(b && b.dataset.confirmar!=='1'){ b.dataset.confirmar='1'; b.textContent='¿Seguro? Pulsa otra vez para eliminarlo'; b.style.background='#fbeae4'; return; }
+  const { data, error } = await sb.from('servicios').delete().eq('id', id).select('id');
+  if(error && error.code==='23503'){
+    // Tiene citas o lista de espera: no se borra para no romper el historial, se retira de la web y de las reservas
+    const r = await sb.from('servicios').update({ reservable:false, visible_web:false }).eq('id', id).select('id');
+    if(r.error||!r.data?.length){ toast('No se pudo retirar: '+textoError(r.error?.message||'sin permiso')); return; }
+    await recargarTodo(); closeModal(); toast('Este servicio tiene citas guardadas, así que no se borra del historial: lo he quitado de la web y de las reservas'); return;
+  }
+  if(error||!data?.length){ toast('No se pudo eliminar: '+textoError(error?.message||'sin permiso')); return; }
+  await recargarTodo(); closeModal(); toast('✓ Servicio eliminado');
+}
+async function borrarClienta(id){
+  const c=(CONFIG.clients||[]).find(x=>String(x.id)===String(id)); if(!c) return;
+  const vivos=bonosDe(id).filter(x=>x.sesiones_usadas<x.sesiones_total);
+  if(vivos.length){ toast('Tiene un bono con sesiones pendientes: no se puede eliminar hasta que lo gaste o se anule'); return; }
+  const b=document.getElementById('cl-borrar');
+  if(b && b.dataset.confirmar!=='1'){ b.dataset.confirmar='1'; b.textContent='¿Seguro? Se borra la ficha (sus citas y ventas se conservan). Pulsa otra vez'; b.style.background='#fbeae4'; return; }
+  const { data, error } = await sb.from('clientas').delete().eq('id', id).select('id');
+  if(error||!data?.length){ toast('No se pudo eliminar: '+textoError(error?.message||'sin permiso')); return; }
+  await recargarTodo(); closeModal(); toast('✓ Clienta eliminada');
+}
+let POS_CITA=null;
+function cobrarCita(citaId){
+  const c=(CONFIG.citasWeb||[]).find(x=>String(x.id)===String(citaId)); if(!c) return;
+  const cl=clientaDeCita(c), svc=servicioDe(c.servicioId);
+  closeModal();
+  const nav=document.querySelector(`[onclick*="goPage('pos'"]`); goPage('pos',nav);
+  setTimeout(()=>{
+    POS_CART=[]; POS_REGALOS=[]; POS_CITA=c.id;
+    posSetClienta(cl?cl.id:null);
+    if(c.bonoId) toast('Esta cita va con bono: el tratamiento no se cobra. Añade productos si se lleva algo');
+    else if(svc){ const unit=svc.precioOferta??svc.price; posAddLinea({ key:'servicios:'+svc.id, type:'servicio', servicioId:svc.id, name:svc.name, price:Number(unit)||0, precioBase:Number(unit)||0, precioAntes:svc.precioOferta!=null?Number(svc.price):null }); }
+    posRedrawCart();
+    toast('Cobrando la cita de '+(cl?cl.name:(c.cliente||'la clienta'))+(cl?'':' · no tiene ficha, elígela arriba si quieres que quede registrado'));
+  },60);
+}
+function agBuscarClienta(){
+  const q=normTxt(document.getElementById('ag-cl-q').value.trim()), qd=q.replace(/\D/g,''), pal=q.split(/\s+/).filter(Boolean);
+  const box=document.getElementById('ag-cl-res'); if(!q){ box.classList.remove('on'); return; }
+  const res=(CONFIG.clients||[]).filter(c=>pal.every(w=>normTxt(c.name).includes(w))||(qd.length>=3&&String(c.phone||'').replace(/\D/g,'').includes(qd))).sort((a,b)=>a.name.localeCompare(b.name,'es')).slice(0,20);
+  box.innerHTML=res.map(c=>`<div data-id="${c.id}">${esc(c.name)}${c.phone&&c.phone!=='—'?`<small>${esc(c.phone)}</small>`:''}</div>`).join('')||'<div style="color:var(--txt3)">Sin resultados</div>';
+  box.querySelectorAll('[data-id]').forEach(el=>el.onmousedown=e=>{ e.preventDefault(); box.classList.remove('on'); agVerCitasClienta(el.dataset.id); });
+  box.classList.add('on');
+}
+function agVerCitasClienta(id){
+  const c=(CONFIG.clients||[]).find(x=>String(x.id)===String(id)); if(!c) return;
+  const citas=(CONFIG.citasWeb||[]).filter(ct=>ct.fecha && String(clientaDeCita(ct)?.id)===String(id)).sort((a,b)=>new Date(b.fecha)-new Date(a.fecha));
+  const ahora=Date.now(), prox=citas.filter(ct=>new Date(ct.fecha)>=ahora&&!ESTADOS_INACTIVOS.includes(ct.estado)).reverse(), pas=citas.filter(ct=>new Date(ct.fecha)<ahora).slice(0,8);
+  const fila=ct=>`<div onclick="abrirDetalleCita('${ct.id}')" style="cursor:pointer;display:flex;justify-content:space-between;gap:10px;padding:9px 10px;border-radius:8px;border:1px solid var(--border2);margin-bottom:6px;"><span><b>${new Date(ct.fecha).toLocaleDateString('es-ES',{weekday:'short',day:'numeric',month:'short'})} · ${minToHHMM(minDelDia(new Date(ct.fecha)))}</b><br><span style="font-size:12px;color:var(--txt3)">${esc(nombreServicioCita(ct))}${ct.profesional?' · '+esc(ct.profesional):''}</span></span>${estadoTag(ct.estado)}</div>`;
+  abrirModal(c.name, `
+    <div style="${LBL}margin-bottom:6px;">Próximas citas</div>${prox.length?prox.map(fila).join(''):'<p style="font-size:13px;color:var(--txt3);">No tiene citas próximas.</p>'}
+    <div style="${LBL}margin:14px 0 6px;">Últimas citas</div>${pas.length?pas.map(fila).join(''):'<p style="font-size:13px;color:var(--txt3);">Sin citas anteriores.</p>'}
+    <div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap;"><button class="btn btn-ghost" onclick="showClientById('${c.id}')">Ver ficha</button><button class="btn btn-ghost" onclick="venderAClienta('${c.id}')">🛒 Vender</button><button class="btn btn-accent" onclick="openBookingForm({clientaId:'${c.id}'})">+ Nueva cita</button></div>`);
+}
 async function submitArticuloForm(id){
   const num=(elId)=>{ const v=String(document.getElementById(elId)?.value??'').trim().replace(',','.'); return v===''?null:Number(v); };
   const nombre=document.getElementById('af-nombre').value.trim();
@@ -3590,6 +3650,8 @@ async function posPay(method){
     else if(c.type==='regalo_canje' && cambios.saldo>0) toast(`🎁 A la tarjeta le quedan ${fmtE(cambios.saldo)} para otra vez`);
   }
   POS_REGALOS=[];
+  if(POS_CITA){ const cid=POS_CITA; POS_CITA=null; const ct=(CONFIG.citasWeb||[]).find(x=>String(x.id)===String(cid));
+    if(ct && !['completada','cancelada','no_show'].includes(ct.estado)){ const { data:cd, error:ce } = await sb.from('citas').update({ estado:'completada' }).eq('id',cid).select('id'); if(ce||!cd?.length) toast('Venta guardada, pero no se pudo marcar la cita como completada'); } }
   await recargarTodo();
   const num='RCP-'+String(ventaId).slice(0,8).toUpperCase();
   ULTIMO_RECIBO={ numero:num, fecha:new Date().toLocaleString('es-ES'), metodo:METODOS_PAGO[method], usuario:usuario||'', lineas:items.map(c=>[c.qty+' × '+c.name, fmt2(c.price*c.qty)]), total:fmt2(t.total) };
