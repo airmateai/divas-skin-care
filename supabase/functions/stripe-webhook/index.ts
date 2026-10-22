@@ -183,5 +183,26 @@ Deno.serve(async (req) => {
     }
   }
 
+  // Cobro presencial con tarjeta (Tap to Pay en la app de Stripe): queda pendiente para registrarlo en la caja del panel
+  if (event.type === "payment_intent.succeeded") {
+    const pi = event.data.object as Stripe.PaymentIntent;
+    const presencial = (pi.payment_method_types || []).some((t) => t === "card_present" || t === "interac_present");
+    if (presencial && !pi.metadata?.tipo) {
+      let tarjeta: string | null = null;
+      try {
+        const ch = pi.latest_charge ? await stripe.charges.retrieve(String(pi.latest_charge)) : null;
+        const cp = ch?.payment_method_details?.card_present;
+        if (cp) tarjeta = `${(cp.brand || "tarjeta").toUpperCase()} ···· ${cp.last4 || ""}`.trim();
+      } catch { /* sin detalle de tarjeta */ }
+      const importe = (pi.amount_received || pi.amount || 0) / 100;
+      const { error } = await supabase.from("cobros_tpv").upsert({ stripe_pi: pi.id, importe, tarjeta }, { onConflict: "stripe_pi", ignoreDuplicates: true });
+      if (error) console.error("Error guardando cobro TPV:", error.message);
+      else {
+        await supabase.from("notificaciones").insert({ tipo: "cobro_tpv", mensaje: `💳 Cobro con tarjeta de ${importe.toFixed(2).replace(".", ",")} € (Tap to Pay): regístralo en la caja` });
+        console.log(`Cobro TPV ${pi.id} guardado (${importe} €)`);
+      }
+    }
+  }
+
   return new Response(JSON.stringify({ received: true }), { status: 200 });
 });

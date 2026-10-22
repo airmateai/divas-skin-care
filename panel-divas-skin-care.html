@@ -927,6 +927,7 @@ tbody tr:hover{background:rgba(0,0,0,.02);}
           <div class="card-body">
             <button class="btn btn-ghost" style="width:100%;margin-bottom:8px;font-size:12px;" onclick="posCanjearRegalo()">🎁 Canjear tarjeta regalo</button>
             <div class="bf-cl" style="margin-bottom:10px;"><input id="pos-cl-q" autocomplete="off" placeholder="👤 Clienta (obligatoria para bonos)" oninput="posBuscarCl()" onfocus="this.select();posBuscarCl()" style="padding:9px 11px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--txt);font-size:13px;width:100%;"><div class="bf-cl-res" id="pos-cl-res"></div></div>
+            <div id="pos-tpv"></div>
             <div id="pos-cart" style="max-height:280px;overflow-y:auto;"></div>
             <div style="margin-top:10px;font-size:11.5px;color:var(--txt3);">Venta registrada a nombre de <strong class="js-usuario-actual" style="color:var(--txt);"></strong></div>
             <hr style="margin:14px 0;border:none;border-top:1px solid var(--border);">
@@ -1363,6 +1364,7 @@ async function loadRealData(){
   CONFIG.cierresCaja = cierresCaja || [];
   CONFIG.notificacionesReales = notif || [];
   try{ const r=await sb.from('movimientos_caja').select('*').order('created_at',{ascending:false}).limit(200); CONFIG.movCaja=r.error?[]:(r.data||[]); }catch(e){ CONFIG.movCaja=[]; }
+  try{ const r=await sb.from('cobros_tpv').select('*').eq('estado','pendiente').order('created_at',{ascending:false}).limit(50); CONFIG.cobrosTPV=r.error?[]:(r.data||[]); }catch(e){ CONFIG.cobrosTPV=[]; }
   try{ const r=await sb.from('bloqueos').select('*').gte('inicio', new Date(Date.now()-90*864e5).toISOString()).order('inicio'); CONFIG.bloqueos=r.error?[]:(r.data||[]); }catch(e){ CONFIG.bloqueos=[]; }
   try{ const r=await sb.from('orden_categorias').select('*'); CONFIG.ordenCat=r.error?[]:(r.data||[]); }catch(e){ CONFIG.ordenCat=[]; }
   try{ const r=await sb.from('tarjetas_regalo').select('*').neq('estado','pendiente_pago').order('creado_en',{ascending:false}).limit(500); CONFIG.regalos=r.error?[]:(r.data||[]); }catch(e){ CONFIG.regalos=[]; }
@@ -2179,7 +2181,7 @@ const HORARIO_CENTRO = {
 };
 const PALETA_SERVICIOS = ['#A9B6A2','#8FA07E','#9CAF88','#BC916A','#C7A17A','#D9A6A6','#E8B4C8','#C58FB0','#9FB7D9','#7C8F94','#B0B0A0','#E0C07A'];
 const IMPUESTOS = { IGIC:[0,3,7,9.5,15], IVA:[0,4,10,21], EXENTO:[0] };
-const METODOS_PAGO = { efectivo:'Efectivo', tarjeta:'Tarjeta', bizum:'Bizum', stripe:'Tarjeta (QR)' };
+const METODOS_PAGO = { efectivo:'Efectivo', tarjeta:'Tarjeta', bizum:'Bizum', stripe:'Tarjeta (QR)', tap:'Tarjeta (Tap to Pay)' };
 
 let CURRENT_USER = { nombre:'', rol:'', email:'', id:null };
 
@@ -3624,7 +3626,32 @@ function posTotales(){
   });
   return { total:Math.round(total*100)/100, base:Math.round(base*100)/100, impuestos:Math.round((total-base)*100)/100, porTipo };
 }
+// ═══ Cobros hechos con Tap to Pay (app de Stripe): llegan por el webhook y se registran aquí con el carrito ═══
+let POS_TPV=null;
+function renderCobrosTPV(){ const box=document.getElementById('pos-tpv'); if(!box) return; const l=CONFIG.cobrosTPV||[];
+  box.innerHTML=l.length?`<div style="border:1px solid var(--accent);border-radius:10px;padding:10px 12px;margin-bottom:10px;background:color-mix(in srgb,var(--accent) 7%,transparent);">
+    <div style="font-size:12px;font-weight:700;margin-bottom:6px;">💳 Cobros con tarjeta pendientes de registrar (${l.length})</div>
+    ${l.map(c=>`<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-top:1px solid var(--border2);font-size:12.5px;">
+      <div style="flex:1;min-width:0"><b>${fmt2(c.importe)}</b> · ${new Date(c.created_at).toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'})}${c.tarjeta?`<div style="font-size:11px;color:var(--txt3)">${esc(c.tarjeta)}</div>`:''}</div>
+      <button class="btn btn-accent" style="padding:5px 10px;font-size:11.5px;" onclick="registrarCobroTPV('${c.id}')">Registrar</button>
+      <button class="btn btn-ghost" style="padding:5px 8px;font-size:11.5px;" title="No es una venta del centro" onclick="descartarCobroTPV('${c.id}')">✕</button></div>`).join('')}
+    <div style="font-size:11px;color:var(--txt3);margin-top:4px;">Añade al carrito lo que ha pagado, elige la clienta y pulsa «Registrar».</div></div>`:''; }
+async function registrarCobroTPV(id){
+  const c=(CONFIG.cobrosTPV||[]).find(x=>String(x.id)===String(id)); if(!c) return;
+  if(!POS_CART.length){ toast('Primero añade al carrito lo que ha pagado ('+fmt2(c.importe)+')'); return; }
+  const tot=posTotales().total, dif=Math.round((tot-Number(c.importe))*100)/100;
+  if(Math.abs(dif)>=0.01 && !confirm(`El carrito suma ${fmt2(tot)} y el cobro fue de ${fmt2(c.importe)}. ¿Registrar igualmente?`)) return;
+  POS_TPV=c.id; await posPay('tap');
+}
+async function descartarCobroTPV(id){
+  if(!confirm('¿Descartar este cobro? No se registrará como venta (por ejemplo, si fue una prueba).')) return;
+  const { data, error } = await sb.from('cobros_tpv').update({ estado:'descartado', registrado_por:CURRENT_USER.nombre||null }).eq('id',id).select('id');
+  if(error||!data?.length){ toast('No se pudo descartar: '+(error?.message||'sin permiso')); return; }
+  CONFIG.cobrosTPV=(CONFIG.cobrosTPV||[]).filter(x=>String(x.id)!==String(id)); renderCobrosTPV(); toast('Cobro descartado');
+}
+setInterval(async()=>{ if(!document.getElementById('page-pos')?.classList.contains('active')) return; try{ const r=await sb.from('cobros_tpv').select('*').eq('estado','pendiente').order('created_at',{ascending:false}).limit(50); if(!r.error){ const antes=(CONFIG.cobrosTPV||[]).length; CONFIG.cobrosTPV=r.data||[]; renderCobrosTPV(); if(CONFIG.cobrosTPV.length>antes) toast('💳 Ha entrado un cobro con tarjeta: regístralo en la caja'); } }catch(e){} },20000);
 function posRedrawCart(soloTotales){
+  renderCobrosTPV();
   posAjustarRegalos();
   const cart=document.getElementById('pos-cart');
   if(!soloTotales){
@@ -3715,6 +3742,7 @@ async function posPay(method){
     else if(c.type==='regalo_canje' && cambios.saldo>0) toast(`🎁 A la tarjeta le quedan ${fmtE(cambios.saldo)} para otra vez`);
   }
   POS_REGALOS=[];
+  if(POS_TPV){ const tid=POS_TPV; POS_TPV=null; const { data:td, error:te } = await sb.from('cobros_tpv').update({ estado:'registrado', venta_id:ventaId, registrado_por:usuario }).eq('id',tid).select('id'); if(te||!td?.length) toast('Venta guardada, pero revisa el cobro con tarjeta: no se pudo marcar como registrado'); else CONFIG.cobrosTPV=(CONFIG.cobrosTPV||[]).filter(x=>String(x.id)!==String(tid)); }
   if(POS_CITA){ const ids=[].concat(POS_CITA); POS_CITA=null;
     const pend=ids.filter(cid=>{ const ct=(CONFIG.citasWeb||[]).find(x=>String(x.id)===String(cid)); return ct && !['completada','cancelada','no_show'].includes(ct.estado); });
     if(pend.length){ const { data:cd, error:ce } = await sb.from('citas').update({ estado:'completada' }).in('id',pend).select('id'); if(ce||(cd?.length||0)<pend.length) toast('Venta guardada, pero no se pudo marcar alguna cita como completada'); } }
@@ -3929,7 +3957,7 @@ async function cerrarCaja(){
 }
 
 // ═══════════════ NOTIFICACIONES ═══════════════
-const TIPOS_NOTIF={ nueva_cita:['📅','Nueva reserva'], cita_modificada:['✎','Cita modificada'], cita_cancelada:['✕','Cita cancelada'], deposito_pagado:['💳','Depósito pagado'], lista_espera:['⏳','Lista de espera'] };
+const TIPOS_NOTIF={ nueva_cita:['📅','Nueva reserva'], cita_modificada:['✎','Cita modificada'], cita_cancelada:['✕','Cita cancelada'], deposito_pagado:['💳','Depósito pagado'], lista_espera:['⏳','Lista de espera'], cobro_tpv:['💳','Cobro con tarjeta'], compra_online:['🛍️','Compra online'] };
 function renderNotificaciones(){
   const rows=CONFIG.notificacionesReales||[];
   const sinLeer=rows.filter(n=>!n.leida).length;
