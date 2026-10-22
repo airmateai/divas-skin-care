@@ -2602,6 +2602,7 @@ function openBookingForm(opts={}){
   const svcs=(CONFIG.catalog||[]).filter(s=>s.id && (s.bookable!==false || String(s.id)===String(BF.servicioId)))
     .sort((a,b)=>(_co.indexOf(a.categoria||'Sin categoría')-_co.indexOf(b.categoria||'Sin categoría'))||((a.orden??9999)-(b.orden??9999)));
   const clIni=clientas.find(c=>String(c.id)===selCl);
+  BF._opts=svcs.map(s=>`<option value="${s.id}">${esc(s.name)} · ${s.duracionMin} min · ${s.precioOferta!=null?fmt(s.precioOferta)+' (oferta)':fmt(s.price)}</option>`).join('');
   abrirModal(edit?'Modificar cita':'Añadir al calendario', `
     <div style="display:flex;flex-direction:column;gap:14px;">
       ${edit?'':`<div class="bf-tabs"><button class="on">Cita</button><button onclick="abrirBloqueoForm({fecha:document.getElementById('bf-date').value,hora:BF.hora})">🔒 Bloqueo</button></div>`}
@@ -2616,6 +2617,8 @@ function openBookingForm(opts={}){
       ${campo(CONFIG.labels.catalog||'Tratamiento',`<select id="bf-svc" style="${INP}" onchange="bfPintarHoras()">
         ${svcs.map(s=>`<option value="${s.id}" ${String(s.id)===String(BF.servicioId)?'selected':''}>${esc(s.name)} · ${s.duracionMin} min · ${s.precioOferta!=null?fmt(s.precioOferta)+' (oferta)':fmt(s.price)}${s.bookable===false?' (desactivado)':''}</option>`).join('')}
       </select>`)}
+      ${edit?'':`<div id="bf-extra" style="display:flex;flex-direction:column;gap:8px;margin-top:-6px;"></div>
+      <a href="#" onclick="bfAddSvc();return false;" style="font-size:13px;color:var(--accent);font-weight:600;margin-top:-6px;">+ Añadir otro servicio</a>`}
       <div class="two-col">
         ${campo('Fecha',`<input type="date" id="bf-date" value="${BF.fecha||dayKey(new Date())}" style="${INP}" onchange="bfPintarHoras()">`)}
         ${campo('Hora (solo huecos libres)',`<select id="bf-time" style="${INP}"></select>`)}
@@ -2631,6 +2634,18 @@ function openBookingForm(opts={}){
     </div>`);
   bfPintarHoras();
 }
+// Varios servicios en la misma cita: se guardan como citas seguidas (una por servicio)
+function bfAddSvc(){
+  const box=document.getElementById('bf-extra'); if(!box) return;
+  const row=document.createElement('div'); row.style.cssText='display:flex;gap:8px;align-items:center;';
+  row.innerHTML=`<select class="bf-svc-extra" style="${INP}flex:1;" onchange="bfPintarHoras()">${BF._opts||''}</select><button type="button" class="btn btn-ghost" style="padding:8px 12px;" title="Quitar" onclick="this.parentNode.remove();bfPintarHoras()">✕</button>`;
+  box.appendChild(row); bfPintarHoras();
+}
+function bfServicios(){
+  const ids=[document.getElementById('bf-svc')?.value, ...[...document.querySelectorAll('.bf-svc-extra')].map(x=>x.value)].filter(Boolean);
+  return ids.map(id=>servicioDe(id)).filter(Boolean);
+}
+function bfDuracionTotal(){ const l=bfServicios(); return l.length?l.reduce((t,s)=>t+(s.duracionMin||60),0):60; }
 function bfToggleNueva(){ const v=document.getElementById('bf-client').value; document.getElementById('bf-nueva').style.display=v==='__nueva'?'grid':'none'; }
 // Buscador de clienta: escribe parte del nombre (sin importar tildes) o del teléfono
 const normTxt=t=>String(t||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
@@ -2751,8 +2766,7 @@ async function quitarBloqueo(id, serie){
   }catch(e){ err.textContent='No se pudo quitar: '+e.message; }
 }
 function bfPintarHoras(){
-  const svc=servicioDe(document.getElementById('bf-svc').value);
-  const dur=svc?.duracionMin||60;
+  const dur=bfDuracionTotal();
   const fecha=document.getElementById('bf-date').value;
   const sel=document.getElementById('bf-time');
   const info=document.getElementById('bf-horas-info');
@@ -2790,7 +2804,8 @@ async function submitBookingForm(){
   if(!svc){ err.textContent='Elige un servicio.'; return; }
   if(!fecha||!hora){ err.textContent='No hay ninguna hora libre elegida para ese día.'; return; }
   const inicio=new Date(fecha+'T'+hora+':00');
-  const dur=svc.duracionMin||60;
+  const lista=edit?[svc]:bfServicios();
+  const dur=edit?(svc.duracionMin||60):bfDuracionTotal();
   const choca=citaQueSolapa(inicio, dur, BF.citaId);
   if(choca){ err.textContent=`Se solapa con la cita de ${choca.cliente} (${new Date(choca.fecha).toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'})}). Elige otra hora.`; return; }
   err.textContent='Guardando...';
@@ -2816,21 +2831,23 @@ async function submitBookingForm(){
     clienta=(CONFIG.clients||[]).find(c=>String(c.id)===clSel);
     if(!clienta){ err.textContent='Elige una clienta (o «+ Clienta nueva»).'; return; }
   }
-  const { data, error } = await sb.from('citas').insert({
+  let t0=inicio.getTime();
+  const filas=lista.map((sv,k)=>{ const d=sv.duracionMin||60; const f={
     cliente_nombre: clienta.name,
     cliente_telefono: clienta.phone&&clienta.phone!=='—'?clienta.phone:null,
     cliente_email: clienta.email||null,
     clienta_id: clienta.id,
-    fecha: inicio.toISOString(),
-    servicio_id: servicioId,
-    duracion_min: dur,
+    fecha: new Date(t0).toISOString(),
+    servicio_id: sv.id,
+    duracion_min: d,
     estado: 'confirmada',
-    notas, origen:'panel', profesional,
+    notas: k===0?notas:(lista.length>1?'Continúa la cita anterior':null), origen:'panel', profesional,
     creado_por: CURRENT_USER.nombre||null
-  }).select('id');
-  if(error||!data?.length){ err.textContent='No se pudo guardar: '+textoError(error?.message||'sin permiso'); return; }
+  }; t0+=d*60000; return f; });
+  const { data, error } = await sb.from('citas').insert(filas).select('id');
+  if(error||!data?.length||data.length!==filas.length){ err.textContent='No se pudo guardar: '+textoError(error?.message||'sin permiso'); return; }
   if(BF.listaEsperaId) await sb.from('lista_espera').update({ estado:'agendada' }).eq('id', BF.listaEsperaId);
-  await recargarTodo(); closeModal(); toast('✓ Cita guardada');
+  await recargarTodo(); closeModal(); toast(filas.length>1?`✓ Cita guardada con ${filas.length} servicios seguidos`:'✓ Cita guardada');
   ofrecerConfirmacion(data[0].id);
 }
 
@@ -3454,10 +3471,14 @@ function cobrarCita(citaId){
   closeModal();
   const nav=document.querySelector(`[onclick*="goPage('pos'"]`); goPage('pos',nav);
   setTimeout(()=>{
-    POS_CART=[]; POS_REGALOS=[]; POS_CITA=c.id;
+    // la cita y las demás de la misma clienta ese día que sigan pendientes (citas con varios servicios)
+    const mismas=cl?(CONFIG.citasWeb||[]).filter(x=>x.fecha && dayKey(x.fecha)===dayKey(c.fecha) && String(clientaDeCita(x)?.id)===String(cl.id) && !['completada','cancelada','no_show'].includes(x.estado)):[];
+    const todas=[c, ...mismas.filter(x=>String(x.id)!==String(c.id))].sort((a,b)=>new Date(a.fecha)-new Date(b.fecha));
+    POS_CART=[]; POS_REGALOS=[]; POS_CITA=todas.map(x=>x.id);
     posSetClienta(cl?cl.id:null);
-    if(c.bonoId) toast('Esta cita va con bono: el tratamiento no se cobra. Añade productos si se lleva algo');
-    else if(svc){ const unit=svc.precioOferta??svc.price; posAddLinea({ key:'servicios:'+svc.id, type:'servicio', servicioId:svc.id, name:svc.name, price:Number(unit)||0, precioBase:Number(unit)||0, precioAntes:svc.precioOferta!=null?Number(svc.price):null }); }
+    let conBono=0;
+    todas.forEach(x=>{ const sv=servicioDe(x.servicioId); if(x.bonoId){ conBono++; return; } if(sv){ const unit=sv.precioOferta??sv.price; posAddLinea({ key:'servicios:'+sv.id, type:'servicio', servicioId:sv.id, name:sv.name, price:Number(unit)||0, precioBase:Number(unit)||0, precioAntes:sv.precioOferta!=null?Number(sv.price):null }); } });
+    if(conBono) toast(conBono===todas.length?'Esta cita va con bono: el tratamiento no se cobra. Añade productos si se lleva algo':'Los servicios que van con bono no se cobran');
     posRedrawCart();
     toast('Cobrando la cita de '+(cl?cl.name:(c.cliente||'la clienta'))+(cl?'':' · no tiene ficha, elígela arriba si quieres que quede registrado'));
   },60);
@@ -3656,8 +3677,9 @@ async function posPay(method){
     else if(c.type==='regalo_canje' && cambios.saldo>0) toast(`🎁 A la tarjeta le quedan ${fmtE(cambios.saldo)} para otra vez`);
   }
   POS_REGALOS=[];
-  if(POS_CITA){ const cid=POS_CITA; POS_CITA=null; const ct=(CONFIG.citasWeb||[]).find(x=>String(x.id)===String(cid));
-    if(ct && !['completada','cancelada','no_show'].includes(ct.estado)){ const { data:cd, error:ce } = await sb.from('citas').update({ estado:'completada' }).eq('id',cid).select('id'); if(ce||!cd?.length) toast('Venta guardada, pero no se pudo marcar la cita como completada'); } }
+  if(POS_CITA){ const ids=[].concat(POS_CITA); POS_CITA=null;
+    const pend=ids.filter(cid=>{ const ct=(CONFIG.citasWeb||[]).find(x=>String(x.id)===String(cid)); return ct && !['completada','cancelada','no_show'].includes(ct.estado); });
+    if(pend.length){ const { data:cd, error:ce } = await sb.from('citas').update({ estado:'completada' }).in('id',pend).select('id'); if(ce||(cd?.length||0)<pend.length) toast('Venta guardada, pero no se pudo marcar alguna cita como completada'); } }
   await recargarTodo();
   const num='RCP-'+String(ventaId).slice(0,8).toUpperCase();
   ULTIMO_RECIBO={ numero:num, fecha:new Date().toLocaleString('es-ES'), metodo:METODOS_PAGO[method], usuario:usuario||'', lineas:items.map(c=>[c.qty+' × '+c.name, fmt2(c.price*c.qty)]), total:fmt2(t.total) };
