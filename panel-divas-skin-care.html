@@ -414,6 +414,23 @@ tbody tr:hover{background:rgba(0,0,0,.02);}
 .cal-seg button:last-child{border-right:none;}
 .cal-on,.cal-seg button.cal-on{background:var(--accent)!important;color:#fff!important;}
 .cal-label{font-family:var(--font-serif);font-size:17px;color:var(--txt);margin-left:6px;text-transform:capitalize;}
+.cal-label-btn{background:none;border:1px solid transparent;border-radius:8px;padding:4px 10px;cursor:pointer;}
+.cal-label-btn:hover{border-color:var(--border2);}
+.cal-label-btn::after{content:' ▾';font-size:12px;color:var(--txt3);}
+.calpk-bg{position:fixed;inset:0;z-index:900;}
+.calpk{position:fixed;z-index:901;width:330px;max-width:calc(100vw - 24px);max-height:min(520px,calc(100vh - 24px));display:flex;flex-direction:column;background:var(--surface,#fff);border:1px solid var(--border);border-radius:14px;box-shadow:0 18px 50px rgba(0,0,0,.18);overflow:hidden;}
+.calpk-dow{display:grid;grid-template-columns:repeat(7,1fr);padding:10px 12px 6px;font-size:11px;color:var(--txt3);text-align:center;border-bottom:1px solid var(--border2);}
+.calpk-scroll{overflow-y:auto;padding:4px 12px 10px;}
+.calpk-mes{text-align:center;font-size:13.5px;font-weight:600;margin:12px 0 6px;text-transform:capitalize;}
+.calpk-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;}
+.calpk-d{aspect-ratio:1;border:none;background:none;border-radius:50%;font:inherit;font-size:13px;color:var(--txt);cursor:pointer;}
+.calpk-d:hover{background:var(--bg);}
+.calpk-d.hoy{font-weight:700;color:var(--accent);}
+.calpk-d.sel{background:var(--accent);color:#fff;}
+.calpk-d.cerr{color:var(--txt3);}
+.calpk-ft{display:flex;justify-content:space-between;gap:4px;padding:8px 10px;border-top:1px solid var(--border2);}
+.calpk-ft button{flex:1;border:none;background:none;font:inherit;font-size:12.5px;color:var(--txt2,#555);padding:7px 4px;border-radius:8px;cursor:pointer;}
+.calpk-ft button:hover{background:var(--bg);color:var(--txt);}
 .cal-prof{padding:7px 10px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--txt);font-size:12px;font-family:inherit;}
 .cal-scroll{overflow:auto;max-height:78vh;}
 .cal-grid{display:grid;min-width:0;}
@@ -731,7 +748,7 @@ tbody tr:hover{background:rgba(0,0,0,.02);}
             <button class="btn btn-ghost" style="padding:6px 12px;" onclick="calMover(-1)" aria-label="Anterior">‹</button>
             <button class="btn btn-ghost" style="padding:6px 12px;" onclick="calHoy()">Hoy</button>
             <button class="btn btn-ghost" style="padding:6px 12px;" onclick="calMover(1)" aria-label="Siguiente">›</button>
-            <span id="cal-label" class="cal-label"></span>
+            <button type="button" id="cal-label" class="cal-label cal-label-btn" onclick="calPickerAbrir(event)" aria-haspopup="dialog" title="Elegir fecha"></button>
           </div>
           <select onchange="calSetProf(this.value)" class="cal-prof">
             <option value="">Todas las profesionales</option>
@@ -2298,6 +2315,35 @@ const CAL_INI=9*60, CAL_FIN=20*60, CAL_PX=1.25; // px por minuto
 function calSetVista(v){ CAL.vista=v; renderCalendario(); }
 function calSetProf(p){ CAL.prof=p; renderCalendario(); }
 function calHoy(){ CAL.ref=new Date(); renderCalendario(); }
+// Selector de fecha (al pulsar el mes/semana): meses seguidos con scroll + atajos Hoy / 2·4·6 semanas
+function calPickerCerrar(){ document.getElementById('calpk-bg')?.remove(); document.getElementById('calpk')?.remove(); }
+function calPickerIr(d){ CAL.ref=d; calPickerCerrar(); renderCalendario(); }
+function calPickerSemanas(n){ const d=new Date(); d.setDate(d.getDate()+7*n); calPickerIr(d); }
+function calPickerAbrir(ev){
+  calPickerCerrar();
+  const hoy=new Date(), sel=new Date(CAL.ref), mismo=(a,b)=>a.getFullYear()===b.getFullYear()&&a.getMonth()===b.getMonth()&&a.getDate()===b.getDate();
+  const ini=new Date(sel.getFullYear(), sel.getMonth()-1, 1);
+  let meses='';
+  for(let m=0;m<14;m++){
+    const pm=new Date(ini.getFullYear(), ini.getMonth()+m, 1), dias=new Date(pm.getFullYear(), pm.getMonth()+1, 0).getDate(), hueco=(pm.getDay()+6)%7;
+    let celdas=''.padStart(0); for(let i=0;i<hueco;i++) celdas+='<span></span>';
+    for(let d=1;d<=dias;d++){ const f=new Date(pm.getFullYear(), pm.getMonth(), d);
+      celdas+=`<button type="button" class="calpk-d${mismo(f,hoy)?' hoy':''}${mismo(f,sel)?' sel':''}${f.getDay()===0?' cerr':''}" data-f="${f.getFullYear()}-${f.getMonth()+1}-${d}">${d}</button>`; }
+    meses+=`<div class="calpk-mes" ${pm.getFullYear()===sel.getFullYear()&&pm.getMonth()===sel.getMonth()?'id="calpk-actual"':''}>${pm.toLocaleDateString('es-ES',{month:'long'})} ${pm.getFullYear()}</div><div class="calpk-grid">${celdas}</div>`;
+  }
+  const bg=document.createElement('div'); bg.id='calpk-bg'; bg.className='calpk-bg'; bg.onclick=calPickerCerrar;
+  const box=document.createElement('div'); box.id='calpk'; box.className='calpk'; box.setAttribute('role','dialog'); box.setAttribute('aria-label','Elegir fecha');
+  box.innerHTML=`<div class="calpk-dow"><span>L</span><span>M</span><span>X</span><span>J</span><span>V</span><span>S</span><span>D</span></div>
+    <div class="calpk-scroll">${meses}</div>
+    <div class="calpk-ft"><button type="button" onclick="calPickerIr(new Date())">Hoy</button><button type="button" onclick="calPickerSemanas(2)">2 semanas</button><button type="button" onclick="calPickerSemanas(4)">4 semanas</button><button type="button" onclick="calPickerSemanas(6)">6 semanas</button></div>`;
+  box.querySelector('.calpk-scroll').addEventListener('click',e=>{ const b=e.target.closest('.calpk-d'); if(!b) return; const [y,m,d]=b.dataset.f.split('-').map(Number); calPickerIr(new Date(y,m-1,d)); });
+  document.body.append(bg,box);
+  const r=(ev?.currentTarget||document.getElementById('cal-label')).getBoundingClientRect(), w=box.offsetWidth, h=box.offsetHeight;
+  box.style.left=Math.max(12,Math.min(r.left+r.width/2-w/2, innerWidth-w-12))+'px';
+  box.style.top=Math.max(12,Math.min(r.bottom+8, innerHeight-h-12))+'px';
+  const ac=box.querySelector('#calpk-actual'); if(ac) box.querySelector('.calpk-scroll').scrollTop=ac.offsetTop-box.querySelector('.calpk-scroll').offsetTop-4;
+}
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') calPickerCerrar(); });
 function calMover(n){
   const d=new Date(CAL.ref);
   if(CAL.vista==='dia') d.setDate(d.getDate()+n);
