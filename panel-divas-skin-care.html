@@ -1361,6 +1361,7 @@ async function loadRealData(){
   CONFIG.waitlist = waitlist || [];
   CONFIG.cierresCaja = cierresCaja || [];
   CONFIG.notificacionesReales = notif || [];
+  try{ const r=await sb.from('movimientos_caja').select('*').order('created_at',{ascending:false}).limit(200); CONFIG.movCaja=r.error?[]:(r.data||[]); }catch(e){ CONFIG.movCaja=[]; }
   try{ const r=await sb.from('bloqueos').select('*').gte('inicio', new Date(Date.now()-90*864e5).toISOString()).order('inicio'); CONFIG.bloqueos=r.error?[]:(r.data||[]); }catch(e){ CONFIG.bloqueos=[]; }
   try{ const r=await sb.from('orden_categorias').select('*'); CONFIG.ordenCat=r.error?[]:(r.data||[]); }catch(e){ CONFIG.ordenCat=[]; }
   try{ const r=await sb.from('tarjetas_regalo').select('*').neq('estado','pendiente_pago').order('creado_en',{ascending:false}).limit(500); CONFIG.regalos=r.error?[]:(r.data||[]); }catch(e){ CONFIG.regalos=[]; }
@@ -3711,6 +3712,36 @@ async function posPay(method){
 // ═══════════════ CAJA ═══════════════
 function cajaAbierta(){ return (CONFIG.cierresCaja||[]).find(c=>c.estado==='abierta'); }
 // Ventas del turno: desde la apertura (o desde el último cierre de hoy / inicio del día)
+// Retiradas / entradas de efectivo del turno (se restan / suman al efectivo esperado)
+function movimientosDelTurno(desde){ return (CONFIG.movCaja||[]).filter(m=>new Date(m.created_at)>=desde).sort((a,b)=>new Date(b.created_at)-new Date(a.created_at)); }
+function netoMovimientos(movs){ return Math.round(movs.reduce((a,m)=>a+(m.tipo==='entrada'?1:-1)*Number(m.importe||0),0)*100)/100; }
+function efectivoEsperadoTurno(){
+  const ab=cajaAbierta(); const { desde, ventas }=ventasDelTurno(); const met=resumenMetodos(ventas);
+  const movs=movimientosDelTurno(desde);
+  return { movs, retirado:-netoMovimientos(movs), esperado:Math.round((Number(ab?.fondo_inicial||0)+(met.efectivo||0)+netoMovimientos(movs))*100)/100 };
+}
+function abrirRetirada(tipo='retirada'){
+  const { esperado }=efectivoEsperadoTurno(); const dep=tipo==='entrada';
+  abrirModal(dep?'💶 Depósito en efectivo':'💸 Retiro de efectivo', `
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      ${campo(dep?'Importe que metes en el cajón (€)':'Importe que sacas del cajón (€)',`<input id="rt-imp" type="number" step="0.01" min="0" placeholder="0,00" style="${INP}font-size:18px;">`)}
+      <div class="caja-linea"><span>Efectivo disponible</span><strong>${fmt2(esperado)}</strong></div>
+      ${campo('Notas',`<input id="rt-notas" placeholder="${dep?'Ej.: cambio traído del banco…':'Ej.: pago a proveedor, ingreso en el banco…'}" style="${INP}">`)}
+    </div>
+    <p id="rt-err" style="color:#b3441e;font-size:12px;margin-top:8px;"></p>
+    <div style="display:flex;gap:8px;margin-top:14px;"><button class="btn btn-ghost" style="flex:1" onclick="closeModal()">Cancelar</button><button class="btn btn-accent" style="flex:1" id="rt-btn" onclick="guardarRetirada(${esperado},'${tipo}')">${dep?'Registrar depósito':'Registrar retiro'}</button></div>`);
+  setTimeout(()=>document.getElementById('rt-imp')?.focus(),50);
+}
+async function guardarRetirada(disponible, tipo='retirada'){ const dep=tipo==='entrada';
+  const err=document.getElementById('rt-err'), btn=document.getElementById('rt-btn');
+  const imp=Math.round((parseFloat(String(document.getElementById('rt-imp').value).replace(',','.'))||0)*100)/100;
+  if(!(imp>0)){ err.textContent=dep?'Escribe el importe que metes.':'Escribe el importe que sacas.'; return; }
+  if(!dep && imp>disponible+0.001){ err.textContent=`No puedes sacar más de lo que hay en el cajón (${fmt2(disponible)}).`; return; }
+  btn.disabled=true; err.textContent='Guardando…';
+  const { data, error } = await sb.from('movimientos_caja').insert({ tipo, importe:imp, notas:document.getElementById('rt-notas').value.trim()||null, usuario:CURRENT_USER.nombre||null }).select('id');
+  if(error||!data?.length){ btn.disabled=false; err.textContent='No se pudo guardar: '+(/movimientos_caja/.test(error?.message||'')?'falta activar las retiradas en la base de datos (avisa a Airmate).':(error?.message||'sin permiso')); return; }
+  await recargarTodo(); closeModal(); toast(dep?'💶 Depósito de '+fmt2(imp)+' registrado':'💸 Retiro de '+fmt2(imp)+' registrado');
+}
 function ventasDelTurno(){
   const hoy0=new Date(); hoy0.setHours(0,0,0,0);
   const ab=cajaAbierta();
@@ -3777,7 +3808,7 @@ function renderCaja(){
   const met=resumenMetodos(ventas);
   const total=ventas.reduce((a,v)=>a+Number(v.total||0),0);
   const fondo=Number(ab?.fondo_inicial||0);
-  const esperado=Math.round((fondo+(met.efectivo||0))*100)/100;
+  const { movs, retirado, esperado }=efectivoEsperadoTurno();
   host.innerHTML=`
     <div class="two-col" style="align-items:start;">
       <div class="card" style="margin-bottom:0;">
@@ -3791,6 +3822,9 @@ function renderCaja(){
           <div style="${LBL}margin-top:4px;">Cierre</div>
           <div class="caja-linea"><span>Fondo inicial</span><strong>${fmt2(fondo)}</strong></div>
           <div class="caja-linea"><span>Ventas en efectivo</span><strong>${fmt2(met.efectivo||0)}</strong></div>
+          ${movs.length?`<div class="caja-linea"><span>Retiros y depósitos (${movs.length})</span><strong style="color:${retirado>0?'#b3441e':'#16a34a'}">${retirado>0?'−':'+'}${fmt2(Math.abs(retirado))}</strong></div>
+          <div style="font-size:11.5px;color:var(--txt3);margin-top:-6px;">${movs.map(m=>`${new Date(m.created_at).toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'})} · ${m.tipo==='entrada'?'+':'−'}${fmt2(m.importe)} ${m.tipo==='entrada'?'depósito':'retiro'}${m.notas?' · '+esc(m.notas):''}${m.usuario?' · '+esc(m.usuario):''}`).join('<br>')}</div>`:''}
+          <div style="display:flex;gap:8px;"><button class="btn btn-ghost" style="flex:1;font-size:12.5px;" onclick="abrirRetirada('retirada')">💸 Retiro de efectivo</button><button class="btn btn-ghost" style="flex:1;font-size:12.5px;" onclick="abrirRetirada('entrada')">💶 Depósito en efectivo</button></div>
           <div class="caja-linea caja-total"><span>Efectivo esperado en cajón</span><strong id="caja-esperado">${fmt2(esperado)}</strong></div>
           ${campo('Efectivo contado (€)',`<input id="caja-contado" type="number" step="0.01" placeholder="0,00" oninput="cajaDiferencia(${esperado})" style="${INP}font-size:16px;">`)}
           <div class="caja-linea"><span>Diferencia</span><strong id="caja-dif">—</strong></div>
@@ -3846,12 +3880,11 @@ async function cerrarCaja(){
   const ab=cajaAbierta();
   const { ventas }=ventasDelTurno();
   const met=resumenMetodos(ventas);
-  const fondo=Number(ab?.fondo_inicial||0);
-  const esperado=Math.round((fondo+(met.efectivo||0))*100)/100;
+  const { retirado, esperado }=efectivoEsperadoTurno();
   const fila={ estado:'cerrada', usuario:CURRENT_USER.nombre||null, hora_cierre:new Date().toISOString(),
     ventas_total:Math.round(ventas.reduce((a,v)=>a+Number(v.total||0),0)*100)/100, num_ventas:ventas.length,
     efectivo_esperado:esperado, efectivo_contado:contado, diferencia:Math.round((contado-esperado)*100)/100,
-    otros_metodos:met, observaciones:document.getElementById('caja-obs').value.trim()||null };
+    otros_metodos:{ ...met, retiros_efectivo:retirado }, observaciones:document.getElementById('caja-obs').value.trim()||null };
   const q=ab?sb.from('cierres_caja').update(fila).eq('id',ab.id):sb.from('cierres_caja').insert({ ...fila, fecha:dayKey(new Date()), fondo_inicial:0 });
   const { data, error } = await q.select('id');
   if(error||!data?.length){ toast('No se pudo guardar el cierre: '+(error?.message||'sin permiso')); return; }
