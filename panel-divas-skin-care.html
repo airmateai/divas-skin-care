@@ -938,6 +938,7 @@ tbody tr:hover{background:rgba(0,0,0,.02);}
               <button class="btn btn-ghost" style="flex:1" onclick="posPay('tarjeta')">💳 Tarjeta</button>
             </div>
             <button class="btn btn-ghost" style="width:100%" onclick="posPay('bizum')">📱 Bizum</button>
+            <button class="btn btn-ghost" style="width:100%;margin-top:6px" onclick="posPayQR()">📲 Cobrar con tarjeta por QR</button>
           </div>
         </div>
       </div>
@@ -2178,7 +2179,7 @@ const HORARIO_CENTRO = {
 };
 const PALETA_SERVICIOS = ['#A9B6A2','#8FA07E','#9CAF88','#BC916A','#C7A17A','#D9A6A6','#E8B4C8','#C58FB0','#9FB7D9','#7C8F94','#B0B0A0','#E0C07A'];
 const IMPUESTOS = { IGIC:[0,3,7,9.5,15], IVA:[0,4,10,21], EXENTO:[0] };
-const METODOS_PAGO = { efectivo:'Efectivo', tarjeta:'Tarjeta', bizum:'Bizum' };
+const METODOS_PAGO = { efectivo:'Efectivo', tarjeta:'Tarjeta', bizum:'Bizum', stripe:'Tarjeta (QR)' };
 
 let CURRENT_USER = { nombre:'', rol:'', email:'', id:null };
 
@@ -3648,6 +3649,42 @@ function posRedrawCart(soloTotales){
   const ahorro=POS_CART.reduce((a,c)=>a+(c.precioAntes?(c.precioAntes-c.price)*c.qty:0),0);
   let ah=document.getElementById('pos-ahorro'); if(!ah){ ah=document.createElement('div'); ah.id='pos-ahorro'; ah.style.cssText='text-align:right;font-size:12px;font-weight:700;color:#2f7a4d;margin:-8px 0 12px;'; document.getElementById('pos-total').parentElement.after(ah); }
   ah.textContent=ahorro>0?'Ahorra '+fmt2(ahorro):'';
+}
+// ═══ Cobro con tarjeta por QR (Stripe): la clienta escanea con su móvil y paga; al confirmarse se registra la venta ═══
+let _qrCobro=null;
+function cargarLibQR(){ return window.QRCode?Promise.resolve():new Promise((ok,ko)=>{ const sc=document.createElement('script'); sc.src='https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js'; sc.onload=ok; sc.onerror=ko; document.head.appendChild(sc); }); }
+async function posPayQR(){
+  if(!POS_CART.length){ toast('El carrito está vacío'); return; }
+  if(posTotales().total<0){ toast('La tarjeta regalo vale más que la venta'); return; }
+  if(POS_CART.some(c=>c.type==='bono'||c.type==='regalo_bono') && !POS_CLIENTA){ toast('Elige la clienta arriba: el bono se guarda en su ficha'); document.getElementById('pos-cl-q')?.focus(); return; }
+  const total=posTotales().total; if(total<0.5){ toast('El importe mínimo para cobrar con tarjeta es 0,50 €'); return; }
+  toast('Preparando el cobro…');
+  const { data, error } = await sb.functions.invoke('cobro-caja',{ body:{ accion:'crear', importe_cent:Math.round(total*100), concepto:POS_CART.map(c=>c.qty+'× '+c.name).join(', ') } });
+  if(error||!data?.url){ toast('No se pudo crear el cobro: '+(data?.error||error?.message||'inténtalo de nuevo')); return; }
+  _qrCobro={ id:data.id, total };
+  abrirModal('📲 Cobro con tarjeta', `<div style="text-align:center;">
+      <div style="font-family:var(--font-serif);font-size:34px;color:var(--txt);margin-bottom:6px;">${fmt2(total)}</div>
+      <div style="font-size:13px;color:var(--txt2);margin-bottom:14px;">La clienta escanea el código con la cámara del móvil y paga con tarjeta, Apple Pay o Google Pay.</div>
+      <div id="qr-box" style="display:inline-block;padding:14px;background:#fff;border-radius:14px;"></div>
+      <div id="qr-estado" style="margin-top:14px;font-size:13px;color:var(--txt3);">⏳ Esperando el pago…</div>
+      <div style="display:flex;gap:8px;margin-top:16px;"><button class="btn btn-ghost" style="flex:1" onclick="posQRCancelar()">Cancelar cobro</button><button class="btn btn-ghost" style="flex:1" onclick="navigator.clipboard?.writeText('${data.url}').then(()=>toast('Enlace copiado: puedes mandárselo por WhatsApp'))">Copiar enlace</button></div></div>`);
+  try{ await cargarLibQR(); new QRCode(document.getElementById('qr-box'),{ text:data.url, width:230, height:230, correctLevel:QRCode.CorrectLevel.M }); }
+  catch(e){ document.getElementById('qr-box').innerHTML=`<a href="${data.url}" target="_blank" style="color:var(--accent)">Abrir el enlace de pago</a>`; }
+  const id=data.id, t0=Date.now();
+  const tick=async()=>{
+    if(!_qrCobro||_qrCobro.id!==id) return;
+    if(!document.getElementById('qr-box')){ posQRCancelar(true); return; }          // se cerró la ventana: se anula el cobro
+    const { data:e } = await sb.functions.invoke('cobro-caja',{ body:{ accion:'estado', id } });
+    if(e?.pagado){ _qrCobro=null; document.getElementById('qr-estado').innerHTML='✅ Pagado'; closeModal(); await posPay('stripe'); return; }
+    if(e?.estado==='expired'||Date.now()-t0>30*60000){ _qrCobro=null; const el=document.getElementById('qr-estado'); if(el) el.innerHTML='⌛ El cobro ha caducado. Vuelve a intentarlo.'; return; }
+    setTimeout(tick,3000);
+  };
+  setTimeout(tick,3000);
+}
+async function posQRCancelar(silencioso){
+  const c=_qrCobro; _qrCobro=null; if(!silencioso) closeModal();
+  if(c) await sb.functions.invoke('cobro-caja',{ body:{ accion:'cancelar', id:c.id } });
+  if(!silencioso) toast('Cobro cancelado');
 }
 async function posPay(method){
   if(!POS_CART.length){ toast('El carrito está vacío'); return; }
