@@ -956,6 +956,7 @@ tbody tr:hover{background:rgba(0,0,0,.02);}
               <button class="btn btn-ghost" style="flex:1" onclick="posPay('tarjeta')">💳 Tarjeta</button>
             </div>
             <button class="btn btn-ghost" style="width:100%" onclick="posPay('bizum')">📱 Bizum</button>
+            <button class="btn btn-ghost" style="width:100%;margin-top:6px" onclick="posTapToPay()">📱 Tap to Pay (cobrar con el iPhone)</button>
             <button class="btn btn-ghost" style="width:100%;margin-top:6px" onclick="posPayQR()">📲 Cobrar con tarjeta por QR</button>
             <button class="btn btn-ghost" style="width:100%;margin-top:6px" onclick="abrirOtroMetodo()">➕ Otro método de pago o pago dividido</button>
           </div>
@@ -3693,6 +3694,35 @@ async function registrarCobroTPV(id){
   const tot=posTotales().total, dif=Math.round((tot-Number(c.importe))*100)/100;
   if(Math.abs(dif)>=0.01 && !confirm(`El carrito suma ${fmt2(tot)} y el cobro fue de ${fmt2(c.importe)}. ¿Registrar igualmente?`)) return;
   POS_TPV=c.id; await posPay('tap');
+}
+// Botón «Tap to Pay»: une la venta del carrito con el cobro que llega de la app de Stripe (mismo importe)
+let _tapEspera=null;
+const tapCoincide=(total,desde)=>(CONFIG.cobrosTPV||[]).find(c=>Math.abs(Number(c.importe)-total)<0.01 && (!desde||new Date(c.created_at)>=desde));
+async function posTapToPay(){
+  if(!POS_CART.length){ toast('Primero añade al carrito lo que va a pagar'); return; }
+  if(POS_CART.some(c=>c.type==='bono'||c.type==='regalo_bono') && !POS_CLIENTA){ toast('Elige la clienta arriba: el bono se guarda en su ficha'); document.getElementById('pos-cl-q')?.focus(); return; }
+  const total=posTotales().total; if(total<0.5){ toast('El importe mínimo para cobrar con tarjeta es 0,50 €'); return; }
+  const ya=tapCoincide(total);
+  if(ya){ POS_TPV=ya.id; await posPay('tap'); return; }
+  const id=Date.now(); _tapEspera=id; const desde=new Date(Date.now()-10*60000);
+  abrirModal('📱 Tap to Pay', `<div style="text-align:center;">
+    <div style="font-family:var(--font-serif);font-size:34px;color:var(--txt);margin-bottom:8px;">${fmt2(total)}</div>
+    <ol style="text-align:left;font-size:14px;line-height:1.6;margin:0 0 14px;padding-left:20px;color:var(--txt2);">
+      <li>Abre la app <b>Stripe Dashboard</b> en el iPhone.</li>
+      <li>Toca el <b>círculo morado (+)</b> → <b>cobrar con tarjeta</b>.</li>
+      <li>Pon <b>${fmt2(total)}</b> y elige <b>Tap to Pay</b>.</li>
+      <li>La clienta acerca su tarjeta o su móvil.</li></ol>
+    <div id="tap-estado" style="font-size:13px;color:var(--txt3);">⏳ Esperando el cobro… En cuanto entre, la venta se registra sola.</div>
+    <button class="btn btn-ghost" style="width:100%;margin-top:16px;" onclick="_tapEspera=null;closeModal()">Cancelar</button></div>`);
+  const tick=async()=>{
+    if(_tapEspera!==id) return;
+    if(!document.getElementById('tap-estado')){ _tapEspera=null; return; }
+    try{ const r=await sb.from('cobros_tpv').select('*').eq('estado','pendiente').order('created_at',{ascending:false}).limit(50); if(!r.error){ CONFIG.cobrosTPV=r.data||[]; renderCobrosTPV(); } }catch(e){}
+    const c=tapCoincide(total,desde);
+    if(c){ _tapEspera=null; document.getElementById('tap-estado').innerHTML='✅ Cobrado'; closeModal(); POS_TPV=c.id; await posPay('tap'); return; }
+    setTimeout(tick,3000);
+  };
+  setTimeout(tick,3000);
 }
 async function descartarCobroTPV(id){
   if(!confirm('¿Descartar este cobro? No se registrará como venta (por ejemplo, si fue una prueba).')) return;
