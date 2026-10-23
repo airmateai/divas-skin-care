@@ -1,5 +1,5 @@
 // Tarjetas regalo de Divas Skin Care: crea la tarjeta (pendiente de pago) y el cobro de Stripe.
-// La web manda { tipo: 'servicio'|'importe', servicio_id?, importe?, plantilla, para, de, mensaje }.
+// La web manda { tipo: 'servicio'|'importe'|'productos', servicio_id?, importe?, productos?, servicios?, extra?, plantilla, para, de, mensaje }.
 // El precio SIEMPRE se calcula aquí (servicio: precio con descuento si lo tiene; importe: 10–500 €).
 // Al pagar, "stripe-webhook" marca la tarjeta como pagada y la clienta la descarga en PDF.
 
@@ -35,7 +35,7 @@ Deno.serve(async (req) => {
   const plantilla = PLANTILLAS.includes(String(b.plantilla)) ? String(b.plantilla) : "detalle";
 
   let importe = 0, servicioId: string | null = null, servicioNombre: string | null = null, sesiones: number | null = null;
-  let productos: { id: string; nombre: string; qty: number; precio: number }[] | null = null, presentacion: string | null = null;
+  let productos: { id: string; nombre: string; qty: number; precio: number }[] | null = null, presentacion: string | null = null, extra = 0;
   if (tipo === "servicio") {
     const id = String(b.servicio_id || "");
     if (!/^[0-9a-f-]{36}$/i.test(id)) return json({ error: "Servicio no válido" }, 400, origin);
@@ -91,11 +91,14 @@ Deno.serve(async (req) => {
         importe += precio * v.qty;
       }
     }
-    importe = Math.round(importe * 100) / 100;
+    // Saldo extra opcional dentro de la cesta (se gasta en el centro como una tarjeta de importe)
+    extra = Math.round(Number(b.extra || 0) * 100) / 100;
+    if (extra && !(extra >= 5 && extra <= 1000)) return json({ error: "El saldo extra tiene que estar entre 5 € y 1.000 €" }, 400, origin);
+    importe = Math.round((importe + extra) * 100) / 100;
     presentacion = b.presentacion === "envuelto" ? "envuelto" : "cesta";
     const n = productos.reduce((a, p) => a + p.qty, 0);
     const hayProd = productos.some((p) => (p as { tipo?: string }).tipo !== "servicio");
-    servicioNombre = `${hayProd ? (presentacion === "cesta" ? "Cesta regalo" : "Regalo envuelto") : "Regalo"} · ${n} artículo${n > 1 ? "s" : ""}: ` + productos.map((p) => (p.qty > 1 ? p.qty + "× " : "") + p.nombre).join(", ");
+    servicioNombre = `${hayProd ? (presentacion === "cesta" ? "Cesta regalo" : "Regalo envuelto") : "Regalo"} · ${n} artículo${n > 1 ? "s" : ""}: ` + productos.map((p) => (p.qty > 1 ? p.qty + "× " : "") + p.nombre).join(", ") + (extra ? ` + ${extra.toFixed(2).replace(".", ",").replace(",00", "")} € de saldo` : "");
     if (servicioNombre.length > 300) servicioNombre = servicioNombre.slice(0, 297) + "…";
   } else {
     importe = Math.round(Number(b.importe) * 100) / 100;
@@ -108,7 +111,7 @@ Deno.serve(async (req) => {
   const token = trozo(24);
   const caduca = new Date(); caduca.setMonth(caduca.getMonth() + 4);
   const { data: t, error: e1 } = await supabase.from("tarjetas_regalo").insert({
-    codigo, token, tipo, servicio_id: servicioId, servicio_nombre: servicioNombre, importe, saldo: tipo === "importe" ? importe : null, sesiones, productos, presentacion, plantilla,
+    codigo, token, tipo, servicio_id: servicioId, servicio_nombre: servicioNombre, importe, saldo: tipo === "importe" ? importe : extra > 0 ? extra : null, sesiones, productos, presentacion, plantilla,
     para: texto(b.para, 60), de: texto(b.de, 60), mensaje: texto(b.mensaje, 240),
     caduca: caduca.toISOString().slice(0, 10), estado: "pendiente_pago",
   }).select("id").single();

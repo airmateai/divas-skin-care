@@ -249,6 +249,7 @@ footer{background:var(--primary-dk);color:var(--cream);padding:0 0 34px;}
 .rg-amts button{padding:14px 0;border:0;border-right:1px solid var(--border);background:#fff;cursor:pointer;font-family:var(--font-serif);font-size:22px;color:var(--ink);transition:background .25s,color .25s}
 .rg-amts button:last-child{border-right:0}.rg-amts button span{font-size:14px;margin-left:2px;opacity:.6}
 .rg-amts button.on{background:var(--primary);color:#fff}
+.rg-amts.rg-x4{grid-template-columns:repeat(4,1fr)!important}.rg-amts.rg-x4>*{border-bottom:0!important}.rg-amts.rg-x4 button{font-size:18px;border-right:1px solid var(--border)!important}.rg-amts.rg-x4 button:last-child{border-right:0!important}
 .rg-occ{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 .rg-occ button{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--border);border-radius:3px;background:#fff;cursor:pointer;font:inherit;font-size:13px;color:var(--ink);text-align:left;transition:border-color .25s}
 .rg-occ button i{flex:none;width:22px;height:22px;border-radius:50%}
@@ -835,6 +836,9 @@ footer{background:var(--primary-dk);color:var(--cream);padding:0 0 34px;}
           <div id="rg-productos" style="display:none">
             <input id="rg-pq" class="rg-in" placeholder="Buscar tratamiento, producto o marca" autocomplete="off">
             <div id="rg-plist" class="rg-plist"></div>
+            <div class="rg-lbl" style="margin:16px 0 8px">Añadir saldo para gastar en el centro · opcional</div>
+            <div id="rg-extra" class="rg-amts rg-x4"></div>
+            <input id="rg-extra-o" class="rg-in" type="number" inputmode="numeric" min="5" max="1000" step="1" placeholder="Otro importe de saldo (€)" style="margin-top:8px">
             <div class="rg-pres" id="rg-pres"><button type="button" class="on" data-p="cesta"><b>En cesta</b><small>Presentada en cesta de regalo</small></button><button type="button" data-p="envuelto"><b>Envuelto</b><small>Con papel y lazo</small></button></div>
             <p class="rg-nota">Se recoge en el centro · Calle Arguijón 1, La Laguna · presentando el código.</p>
           </div>
@@ -1745,7 +1749,18 @@ const RE_DURACION = /^\s*(\d+\s*h)?\s*(\d+\s*min)?\s*$/i;
   if (activa) filterSvcByCat(activa.textContent.trim());
 })();
 // ═══ Tarjeta regalo ═══
-const RG = { tipo:'importe', importe:50, servicio:null, bono:null, plantilla:'cumple', servicios:[], productos:[], cesta:{}, presentacion:'cesta' };
+const RG = { tipo:'importe', importe:50, servicio:null, bono:null, plantilla:'cumple', servicios:[], productos:[], cesta:{}, presentacion:'cesta', extra:0 };
+// Saldo extra dentro de la cesta (ej. un producto + 50 € para gastar en el centro)
+function pintarExtraRegalo(){
+  const box=document.getElementById('rg-extra'); if(!box) return;
+  box.innerHTML=[0,25,50,100].map(v=>`<button type="button" data-x="${v}" class="${RG.extra===v?'on':''}">${v?v+'<span>€</span>':'<span style="font-size:14px;opacity:1">Sin saldo</span>'}</button>`).join('');
+  box.querySelectorAll('button').forEach(b=>b.onclick=()=>{ RG.extra=+b.dataset.x; document.getElementById('rg-extra-o').value=''; pintarExtraRegalo(); pintarRegalo(); });
+}
+function initExtraRegalo(){
+  pintarExtraRegalo();
+  const o=document.getElementById('rg-extra-o'); if(o) o.oninput=()=>{ const v=Math.round(Number(o.value)||0); RG.extra=v>=5&&v<=1000?v:0; pintarExtraRegalo(); pintarRegalo(); };
+}
+document.readyState==='loading'?addEventListener('DOMContentLoaded',initExtraRegalo):setTimeout(initExtraRegalo,0);
 const bonosDeServicio = s => (Array.isArray(s?.bonos) ? s.bonos.filter(b => b && b.sesiones > 1 && b.precio > 0).sort((a,b) => a.sesiones - b.sesiones) : []);
 function montarRegalo(data){
   const R = window.DIVAS_REGALO; if (!R || !document.getElementById('rg-prev')) return;
@@ -1832,8 +1847,8 @@ function pintarRegalo(){
   const svPrecio = k => { const [id,bn]=k.split('|'), s=(RG.servicios||[]).find(x=>x.id===id); if(!s) return 0; if(+bn){ const b=bonosDeServicio(s).find(x=>x.sesiones===+bn); return b?Number(b.precio):0; } return Number(s.precio_oferta??s.precio); };
   const nSv = Object.values(RG_SV).reduce((a,n)=>a+n,0), totSv = Object.entries(RG_SV).reduce((a,[k,n])=>a+svPrecio(k)*n,0);
   const nProd = elegidos.reduce((a,p) => a + RG.cesta[p.id], 0) + nSv;
-  const precio = RG.tipo==='productos' ? Math.round((elegidos.reduce((a,p) => a + Number(p.precio)*RG.cesta[p.id], 0)+totSv)*100)/100 : RG.tipo==='servicio' ? (bono ? Number(bono.precio) : s ? Number(s.precio_oferta ?? s.precio) : 0) : RG.importe;
-  const que = RG.tipo==='productos' ? (nProd ? `${elegidos.length?(RG.presentacion==='cesta'?'Cesta regalo':'Regalo envuelto'):'Regalo'} · ${nProd} artículo${nProd>1?'s':''}` : 'Elige productos o tratamientos') : RG.tipo==='servicio' ? (s ? (bono ? `Bono ${bono.sesiones} sesiones · ${s.nombre}` : s.nombre) : 'Elige un tratamiento') : `Tarjeta regalo de ${R.euros(RG.importe)}`;
+  const precio = RG.tipo==='productos' ? Math.round((elegidos.reduce((a,p) => a + Number(p.precio)*RG.cesta[p.id], 0)+totSv+(nProd?RG.extra:0))*100)/100 : RG.tipo==='servicio' ? (bono ? Number(bono.precio) : s ? Number(s.precio_oferta ?? s.precio) : 0) : RG.importe;
+  const que = RG.tipo==='productos' ? (nProd ? `${elegidos.length?(RG.presentacion==='cesta'?'Cesta regalo':'Regalo envuelto'):'Regalo'} · ${nProd} artículo${nProd>1?'s':''}${RG.extra?' + '+R.euros(RG.extra)+' de saldo':''}` : 'Elige productos o tratamientos') : RG.tipo==='servicio' ? (s ? (bono ? `Bono ${bono.sesiones} sesiones · ${s.nombre}` : s.nombre) : 'Elige un tratamiento') : `Tarjeta regalo de ${R.euros(RG.importe)}`;
   document.getElementById('rg-prev').innerHTML = R.html({ plantilla:RG.plantilla, para:document.getElementById('rg-para').value, de:document.getElementById('rg-de').value, mensaje:document.getElementById('rg-msg').value, que });
   document.getElementById('rg-total').textContent = R.euros(precio);
 }
@@ -1843,7 +1858,7 @@ async function pagarRegalo(){
   if (RG.tipo==='productos' && !Object.keys(RG.cesta).length && !Object.keys(RG_SV).length) { err.textContent = 'Añade al menos un producto o tratamiento con el botón +.'; return; }
   if (RG.tipo==='importe' && !(RG.importe>=10 && RG.importe<=1000)) { err.textContent = 'El importe tiene que estar entre 10 € y 1.000 €.'; return; }
   b.disabled = true; err.textContent = ''; const txt = b.innerHTML; b.textContent = 'Abriendo el pago seguro…';
-  const { data, error } = await sb.functions.invoke('checkout-regalo', { body:{ tipo:RG.tipo, servicio_id:RG.servicio, bono_sesiones:RG.tipo==='servicio'?RG.bono:null, productos:RG.tipo==='productos'?Object.entries(RG.cesta).map(([id,qty])=>({id,qty})):null, servicios:RG.tipo==='productos'?Object.entries(RG_SV).map(([k,qty])=>({id:k.split('|')[0],bono:+k.split('|')[1]||0,qty})):null, presentacion:RG.presentacion, importe:RG.importe, plantilla:RG.plantilla,
+  const { data, error } = await sb.functions.invoke('checkout-regalo', { body:{ tipo:RG.tipo, servicio_id:RG.servicio, bono_sesiones:RG.tipo==='servicio'?RG.bono:null, productos:RG.tipo==='productos'?Object.entries(RG.cesta).map(([id,qty])=>({id,qty})):null, servicios:RG.tipo==='productos'?Object.entries(RG_SV).map(([k,qty])=>({id:k.split('|')[0],bono:+k.split('|')[1]||0,qty})):null, presentacion:RG.presentacion, extra:RG.tipo==='productos'?RG.extra:0, importe:RG.importe, plantilla:RG.plantilla,
     para:document.getElementById('rg-para').value, de:document.getElementById('rg-de').value, mensaje:document.getElementById('rg-msg').value } });
   if (error || !data?.url) { let m = 'No se pudo abrir el pago. Inténtalo de nuevo o escríbenos por WhatsApp.'; try { const j = await error?.context?.json?.(); if (j?.error) m = j.error; } catch(e) {} err.textContent = m; b.disabled = false; b.innerHTML = txt; return; }
   location.href = data.url;
