@@ -2419,7 +2419,7 @@ function calRejillaHTML(dias, hoy){
 }
 function calClickHueco(e, key){
   const r=e.currentTarget.getBoundingClientRect();
-  const m=Math.floor((CAL_INI+(e.clientY-r.top)/CAL_PX)/15)*15;
+  const m=Math.floor((CAL_INI+(e.clientY-r.top)/CAL_PX)/30)*30; // tramos de media hora: la mitad de arriba de cada hora da «en punto» (pedido por Louie)
   openBookingForm({ fecha:key, hora:minToHHMM(m) });
 }
 function calMesHTML(){
