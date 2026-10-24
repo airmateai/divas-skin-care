@@ -334,6 +334,7 @@ footer{background:var(--primary-dk);color:var(--cream);padding:0 0 34px;}
       <h2>Cuidado pensado para cada parte de ti</h2>
       <p>Una selección de nuestros tratamientos más solicitados — reserva el que más te apetezca en menos de un minuto.</p>
     </div>
+    <div class="eyebrow" style="text-align:center;margin:-34px 0 18px;">Conoce nuestro servicio</div>
     <div class="cat-tabs" id="svc-tabs">
       <div class="cat-tab active">Limpieza facial Profunda</div>
       <div class="cat-tab">Tratamiento Personalizado</div>
@@ -1696,6 +1697,7 @@ let currentServicioId = null;
 let currentPrecio = null;
 let SERVICIOS_MAP = {}; // servicio_id -> duracion_min, para bloquear el rango completo al reservar
 let SERVICIOS_DB = {};  // servicio_id -> fila de "servicios" (fuente de verdad: el CRM)
+const ZONAS_WEB = {};   // tratamiento por zonas (ej. «HIFU») -> sus servicios, una sola tarjeta en la web
 
 // Sincronización CRM → web. El CRM manda sobre precio, duración, descripción y
 // activo/inactivo de cada servicio; los vídeos/fotos de las tarjetas siguen en el HTML.
@@ -1729,9 +1731,29 @@ const RE_DURACION = /^\s*(\d+\s*h)?\s*(\d+\s*min)?\s*$/i;
   });
   const grid = document.querySelector('.svc-grid');
   const tabs = document.getElementById('svc-tabs');
-  data.filter(s => s.reservable === true && s.visible_web !== false && !conTarjeta.has(s.id)).forEach(s => {
+  const pestanaDe = s => {
     let tab = [...tabs.querySelectorAll('.cat-tab')].find(t => normCat(t.textContent) === normCat(s.categoria));
     if (!tab) { tab = document.createElement('div'); tab.className = 'cat-tab'; tab.textContent = s.categoria || 'Otros'; tabs.appendChild(tab); conectarPestanaServicio(tab); }
+    return tab;
+  };
+  const sinTarjeta = data.filter(s => s.reservable === true && s.visible_web !== false && !conTarjeta.has(s.id));
+  // Servicios por zonas («Tratamiento · Grupo · Zona», ej. HIFU): una sola tarjeta por tratamiento y las zonas dentro
+  const esZona = s => String(s.nombre).split(' · ').length >= 3;
+  sinTarjeta.filter(esZona).forEach(s => { const t = s.nombre.split(' · ')[0]; (ZONAS_WEB[t] = ZONAS_WEB[t] || []).push(s); });
+  Object.entries(ZONAS_WEB).forEach(([trat, svs]) => {
+    const tab = pestanaDe(svs[0]);
+    const desde = Math.min(...svs.map(s => Number(s.precio_oferta ?? s.precio)));
+    const conBono = svs.some(s => bonosDeServicio(s).length);
+    const card = document.createElement('div');
+    card.className = 'svc-card';
+    card.dataset.zonas = trat;
+    card.innerHTML = `<div class="svc-img"><div style="width:100%;height:100%;display:grid;place-items:center;background:linear-gradient(135deg,${svs[0].color || '#A9B6A2'},${svs[0].color || '#A9B6A2'}88);color:#fff;font-family:var(--font-serif);font-size:26px;font-style:italic;padding:20px;text-align:center;">${escWeb(trat)}</div></div><div class="svc-body"><div class="svc-cat">${escWeb(tab.textContent.trim())}</div><h3>${escWeb(trat)}</h3><div class="dur">${svs.length} zonas${conBono ? ' · sesión o bono de 3' : ''} · pulsa para ver</div><div class="svc-foot"><span class="svc-price">desde ${precioWeb(desde)}</span><span class="svc-book" style="cursor:pointer">Ver zonas →</span></div></div>`;
+    grid.appendChild(card);
+    card.style.cursor = 'pointer';
+    card.addEventListener('click', () => abrirDetalleServicio(card, null));
+  });
+  sinTarjeta.filter(s => !esZona(s)).forEach(s => {
+    const tab = pestanaDe(s);
     const h = Math.floor((s.duracion_min||60)/60), m = (s.duracion_min||60)%60;
     const color = s.color || '#A9B6A2';
     const media = s.video_url ? `<video autoplay muted loop playsinline><source src="${escWeb(s.video_url)}" type="video/mp4"></video>`
@@ -2018,7 +2040,41 @@ async function abrirFormularioReserva(card, bookBtn){
 }
 
 const serviceDetailModal = document.getElementById('service-detail-modal');
+function abrirDetalleZonas(card){
+  const svs = ZONAS_WEB[card.dataset.zonas] || [];
+  document.getElementById('sd-media').innerHTML = card.querySelector('.svc-img')?.innerHTML || '';
+  document.getElementById('sd-cat').textContent = card.querySelector('.svc-cat')?.textContent.trim() || '';
+  document.getElementById('sd-title').textContent = card.dataset.zonas;
+  document.getElementById('sd-desc').textContent = svs[0]?.descripcion || 'La zona y su extensión se delimitan en la valoración previa.';
+  document.getElementById('sd-dur').textContent = 'Precio según la zona';
+  document.getElementById('sd-price').style.display = 'none';
+  document.getElementById('sd-book-btn').style.display = 'none';
+  const grupos = {};
+  svs.forEach(s => { const p = s.nombre.split(' · '); (grupos[p[1]] = grupos[p[1]] || []).push(s); });
+  const opcBox = document.getElementById('sd-opciones');
+  opcBox.innerHTML = Object.entries(grupos).map(([g, lista]) =>
+    `<div style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#bc916a;font-weight:700;margin:14px 0 8px;">${escWeb(g)}</div>` +
+    lista.map(s => {
+      const zona = s.nombre.split(' · ').slice(2).join(' · ');
+      const bono = bonosDeServicio(s).map(b => `Bono ${b.sesiones} · ${precioWeb(b.precio)}`).join(' · ');
+      return `<div style="display:flex;align-items:center;gap:10px;padding:12px 14px;border:1.5px solid #dce5d1;border-radius:12px;margin-bottom:8px;">
+        <div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:600;color:#3d4a3a">${escWeb(zona)}</div>${bono ? `<div style="font-size:11.5px;color:#5c6358">${bono}</div>` : ''}</div>
+        <div style="font-size:16px;font-weight:700;color:#3d4a3a;white-space:nowrap">${precioWeb(s.precio_oferta ?? s.precio)}</div>
+        <button type="button" data-zona="${s.id}" style="padding:8px 14px;border:none;border-radius:20px;background:#3d4a3a;color:#fff;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap">Reservar</button>
+      </div>`;
+    }).join('')).join('');
+  opcBox.querySelectorAll('button[data-zona]').forEach(btn => btn.addEventListener('click', () => {
+    const s = svs.find(x => x.id === btn.dataset.zona); if (!s) return;
+    const c = document.createElement('div'); c.innerHTML = `<h3>${escWeb(s.nombre)}</h3>`;
+    const b = document.createElement('a'); b.dataset.servicioId = s.id; b.dataset.precio = s.precio;
+    serviceDetailModal.style.display = 'none';
+    abrirFormularioReserva(c, b);
+  }));
+  opcBox.style.display = '';
+  serviceDetailModal.style.display = 'flex';
+}
 function abrirDetalleServicio(card, bookBtn){
+  if (card.dataset.zonas) return abrirDetalleZonas(card);
   const titulo = card.querySelector('h3').textContent.trim();
   const cat = card.querySelector('.svc-cat')?.textContent.trim() || '';
   const dur = card.querySelector('.dur')?.textContent.trim() || '';
