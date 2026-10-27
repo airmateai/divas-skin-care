@@ -1531,7 +1531,8 @@ montarTabsTienda();
     <div style="font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:600;color:#3d4a3a;margin-bottom:2px;">Reservar cita</div>
     <div id="booking-service-name" style="font-size:12.5px;color:#5c6358;margin-bottom:14px;"></div>
     <form id="booking-form">
-      <div style="margin-bottom:10px;"><label style="display:block;font-size:11.5px;font-weight:600;color:#3d4a3a;margin-bottom:4px;">Nombre *</label><input required name="nombre" style="width:100%;padding:8px 12px;border:1.5px solid #dce5d1;border-radius:7px;font-size:13.5px;"></div>
+      <div style="margin-bottom:10px;"><label style="display:block;font-size:11.5px;font-weight:600;color:#3d4a3a;margin-bottom:4px;">Nombre *</label><input required name="nombre" autocomplete="given-name" style="width:100%;padding:8px 12px;border:1.5px solid #dce5d1;border-radius:7px;font-size:13.5px;"></div>
+      <div style="margin-bottom:10px;"><label style="display:block;font-size:11.5px;font-weight:600;color:#3d4a3a;margin-bottom:4px;">Apellidos *</label><input required name="apellidos" autocomplete="family-name" style="width:100%;padding:8px 12px;border:1.5px solid #dce5d1;border-radius:7px;font-size:13.5px;"></div>
       <div style="margin-bottom:10px;"><label style="display:block;font-size:11.5px;font-weight:600;color:#3d4a3a;margin-bottom:4px;">Teléfono *</label><input required name="telefono" type="tel" style="width:100%;padding:8px 12px;border:1.5px solid #dce5d1;border-radius:7px;font-size:13.5px;"></div>
       <div style="margin-bottom:10px;"><label style="display:block;font-size:11.5px;font-weight:600;color:#3d4a3a;margin-bottom:4px;">Email</label><input name="email" type="email" style="width:100%;padding:8px 12px;border:1.5px solid #dce5d1;border-radius:7px;font-size:13.5px;"></div>
       <div style="margin-bottom:10px;"><label style="display:block;font-size:11.5px;font-weight:600;color:#3d4a3a;margin-bottom:4px;">Fecha de nacimiento</label><input name="fecha_nacimiento" type="date" style="width:100%;padding:8px 12px;border:1.5px solid #dce5d1;border-radius:7px;font-size:13.5px;"></div>
@@ -1552,7 +1553,7 @@ montarTabsTienda();
       <div style="margin-bottom:14px;"><label style="display:block;font-size:11.5px;font-weight:600;color:#3d4a3a;margin-bottom:4px;">Notas</label><textarea name="notas" rows="2" style="width:100%;padding:8px 12px;border:1.5px solid #dce5d1;border-radius:7px;font-size:13.5px;font-family:inherit;"></textarea></div>
       <div style="margin-bottom:14px;display:flex;gap:8px;align-items:flex-start;">
         <input required type="checkbox" id="booking-consentimiento" name="consentimiento" style="margin-top:3px;width:16px;height:16px;flex:0 0 auto;">
-        <label for="booking-consentimiento" style="font-size:11px;color:#5c6358;line-height:1.4;">He leído y acepto la <a href="privacidad.html" target="_blank" rel="noopener" style="color:#3d4a3a;text-decoration:underline;">política de privacidad</a> y las <a href="condiciones.html" target="_blank" rel="noopener" style="color:#3d4a3a;text-decoration:underline;">condiciones de reserva</a> (cambios o cancelaciones con al menos 48 h de aviso; si no, se pierde la señal o la sesión del bono), y el tratamiento de mis datos por parte de Divas Skin Care para gestionar esta reserva, conforme al RGPD.</label>
+        <label for="booking-consentimiento" style="font-size:11px;color:#5c6358;line-height:1.4;">He leído y acepto la <a href="privacidad.html" target="_blank" rel="noopener" style="color:#3d4a3a;text-decoration:underline;">política de privacidad</a> y las <a href="condiciones.html" target="_blank" rel="noopener" style="color:#3d4a3a;text-decoration:underline;">condiciones de reserva</a> (cambios o cancelaciones con al menos 48 h de aviso; si no, se pierde la señal o la sesión del bono; hasta 4 cambios de fecha por reserva, al quinto se abona el servicio completo), y el tratamiento de mis datos por parte de Divas Skin Care para gestionar esta reserva, conforme al RGPD.</label>
       </div>
       <button type="submit" id="booking-submit" style="width:100%;padding:12px;border:none;border-radius:30px;background:#3d4a3a;color:#fff;font-weight:600;font-size:13.5px;cursor:pointer;">Enviar solicitud de reserva</button>
       <div id="booking-msg" style="margin-top:10px;font-size:12.5px;text-align:center;"></div>
@@ -2170,6 +2171,12 @@ form.addEventListener('submit', async (e)=>{
     return;
   }
   const fd = new FormData(form);
+  const nombreCompleto = `${String(fd.get('nombre')||'').trim()} ${String(fd.get('apellidos')||'').trim()}`.replace(/\s+/g,' ').trim();
+  if (!String(fd.get('apellidos')||'').trim()) {
+    msg.style.color = '#b3441e';
+    msg.textContent = 'Escribe también tus apellidos, por favor.';
+    return;
+  }
   const submitBtn = document.getElementById('booking-submit');
   submitBtn.disabled = true;
   submitBtn.textContent = 'Reservando...';
@@ -2178,7 +2185,7 @@ form.addEventListener('submit', async (e)=>{
   // consentimiento de privacidad. La base de datos rechaza la reserva si la franja
   // (inicio + duración) ya está ocupada, aunque dos personas reserven a la vez.
   const { data: citaId, error } = await sb.rpc('reservar_cita_web', {
-    p_nombre: fd.get('nombre'),
+    p_nombre: nombreCompleto,
     p_telefono: fd.get('telefono'),
     p_email: fd.get('email') || null,
     p_fecha_nacimiento: fd.get('fecha_nacimiento') || null,

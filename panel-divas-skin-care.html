@@ -2101,7 +2101,7 @@ function openClientForm(){
   document.getElementById('modal-title').textContent='Nueva clienta';
   document.getElementById('modal-body').innerHTML=`
     <div style="display:flex;flex-direction:column;gap:14px;">
-      <label style="display:flex;flex-direction:column;gap:4px;"><span style="font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--txt3);font-weight:600;">Nombre completo</span><input id="cf-name" placeholder="ej. Carla Domínguez" style="padding:10px 12px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--txt);font-size:13px;"></label>
+      <label style="display:flex;flex-direction:column;gap:4px;"><span style="font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--txt3);font-weight:600;">Nombre y apellidos</span><input id="cf-name" placeholder="ej. Carla Domínguez Pérez" style="padding:10px 12px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--txt);font-size:13px;"></label>
       <div class="two-col">
         <label style="display:flex;flex-direction:column;gap:4px;"><span style="font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--txt3);font-weight:600;">Teléfono</span><input id="cf-phone" placeholder="+34..." style="padding:10px 12px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--txt);font-size:13px;"></label>
         <label style="display:flex;flex-direction:column;gap:4px;"><span style="font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--txt3);font-weight:600;">Email</span><input id="cf-email" placeholder="opcional" style="padding:10px 12px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--txt);font-size:13px;"></label>
@@ -2122,6 +2122,7 @@ async function submitClientForm(){
   const nacimiento=document.getElementById('cf-nacimiento-new').value||null;
   const err=document.getElementById('cf-error');
   if(!name){ err.textContent='Falta el nombre.'; return; }
+  if(name.split(/\s+/).length<2){ err.textContent='Escribe nombre y apellidos (hay nombres que se repiten).'; return; }
   err.textContent='Guardando...';
   const result=await crearClientaReal(name, phone, email, nacimiento);
   if(result.error){ err.textContent='No se pudo guardar: '+result.error; return; }
@@ -2257,8 +2258,13 @@ function citaEsDeClienta(ct, c){
 function citasDeClienta(c){ return (CONFIG.citasWeb||[]).filter(ct=>citaEsDeClienta(ct,c)); }
 function clientaDeCita(ct){
   if(ct.clientaId){ const x=(CONFIG.clients||[]).find(c=>String(c.id)===String(ct.clientaId)); if(x) return x; }
-  return (CONFIG.clients||[]).find(c=>citaEsDeClienta({...ct,clientaId:null},c));
+  const x=(CONFIG.clients||[]).find(c=>citaEsDeClienta({...ct,clientaId:null},c)); if(x) return x;
+  // Citas importadas sin teléfono ni email: se enlaza por nombre completo si solo hay una ficha con ese nombre
+  const n=nombreNorm(ct.cliente); if(!n) return undefined;
+  const mismas=(CONFIG.clients||[]).filter(c=>nombreNorm(c.name)===n);
+  return mismas.length===1?mismas[0]:undefined;
 }
+function nombreNorm(t){ return String(t||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/\s+/g,' ').trim(); }
 
 // ¿Choca [inicio, inicio+dur) con alguna cita activa? (misma regla que la BD)
 function citaQueSolapa(inicio, dur, ignorarId){
@@ -2570,8 +2576,8 @@ function abrirDetalleCita(citaId){
       <div style="font-family:var(--font-serif);font-size:20px;color:var(--txt);">${esc(c.cliente||'-')}</div>
       <div style="font-size:12px;color:var(--txt3);">${esc(nombreServicioCita(c))}${svc&&svc.bookable===false?' · <em>servicio desactivado</em>':''}</div>
     </div>
-    ${fila('Teléfono', c.telefono?`${esc(c.telefono)} <a href="#" onclick="enviarWhatsApp('${esc(c.telefono)}','Hola ${esc((c.cliente||'').split(' ')[0])}, te escribimos desde Divas Skin Care 💛');return false;" style="color:var(--accent);font-size:12px;margin-left:6px;">WhatsApp</a>`:'-')}
-    ${c.email?fila('Email', esc(c.email)):''}
+    ${(()=>{ const tel=telCita(c); return fila('Teléfono', tel?`${esc(tel)} <a href="#" onclick="enviarWhatsApp('${esc(tel)}','Hola ${esc((c.cliente||'').split(' ')[0])}, te escribimos desde Divas Skin Care 💛');return false;" style="color:var(--accent);font-size:12px;margin-left:6px;">WhatsApp</a>`:'-'); })()}
+    ${(c.email||cl?.email)?fila('Email', esc(c.email||cl.email)):''}
     ${fila('Fecha', ini?ini.toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long',year:'numeric'}):'<em>Sin fecha asignada</em>')}
     ${fila('Hora', ini?`${minToHHMM(minDelDia(ini))} – ${minToHHMM(minDelDia(fin))}`:'-')}
     ${fila('Duración', duracionCita(c)+' min')}
@@ -2595,6 +2601,7 @@ function abrirDetalleCita(citaId){
       ${activa&&c.fecha?`<button class="btn btn-ghost" onclick="enviarConfirmacionCita('${c.id}')">✅ Confirmación WhatsApp</button>`:''}
       ${activa&&c.fecha?`<button class="btn btn-ghost" onclick="enviarRecordatorioCita('${c.id}')">📲 Recordatorio WhatsApp</button>`:''}
       ${activa?`<button class="btn btn-ghost" onclick="openBookingForm({citaId:'${c.id}'})">✎ Modificar cita</button>`:''}
+      ${activa&&c.fecha?`<button class="btn btn-ghost" onclick="openBookingForm({citaId:'${c.id}',addSvc:true})">➕ Añadir servicio</button>`:''}
       ${activa?`<button class="btn btn-ghost" id="btn-cancelar-cita" style="color:#b3441e;" onclick="pedirConfirmacionCancelar('${c.id}')">Cancelar cita</button>`:''}
       ${!activa&&c.fecha?`<button class="btn btn-ghost" onclick="mostrarCompatiblesHueco('${c.id}')">Ver lista de espera para este hueco</button>`:''}
     </div>`);
@@ -2668,15 +2675,15 @@ function openBookingForm(opts={}){
         <input id="bf-cl-q" autocomplete="off" placeholder="Escribe el nombre o el teléfono…" value="${clIni?esc(clIni.name):selCl==='__nueva'?'+ Clienta nueva':''}" oninput="bfBuscarCl()" onfocus="this.select();bfBuscarCl()" onkeydown="bfTeclaCl(event)" style="${INP}width:100%;">
         <div class="bf-cl-res" id="bf-cl-res"></div></div>`)}
       <div id="bf-nueva" class="two-col" style="display:${selCl==='__nueva'?'grid':'none'};">
-        ${campo('Nombre',`<input id="bf-nombre" value="${esc(BF.nombre||'')}" style="${INP}">`)}
+        ${campo('Nombre y apellidos',`<input id="bf-nombre" value="${esc(BF.nombre||'')}" placeholder="ej. Carla Domínguez Pérez" style="${INP}">`)}
         ${campo('Teléfono',`<input id="bf-tel" value="${esc(BF.telefono||'')}" style="${INP}">`)}
         ${campo('Fecha de nacimiento',`<input type="date" id="bf-nac" style="${INP}">`)}
       </div>
       ${campo(CONFIG.labels.catalog||'Tratamiento',`<select id="bf-svc" style="${INP}" onchange="bfPintarHoras()">
         ${svcs.map(s=>`<option value="${s.id}" ${String(s.id)===String(BF.servicioId)?'selected':''}>${esc(s.name)} · ${s.duracionMin} min · ${s.precioOferta!=null?fmt(s.precioOferta)+' (oferta)':fmt(s.price)}${s.bookable===false?' (desactivado)':''}</option>`).join('')}
       </select>`)}
-      ${edit?'':`<div id="bf-extra" style="display:flex;flex-direction:column;gap:8px;margin-top:-6px;"></div>
-      <a href="#" onclick="bfAddSvc();return false;" style="font-size:13px;color:var(--accent);font-weight:600;margin-top:-6px;">+ Añadir otro servicio</a>`}
+      <div id="bf-extra" style="display:flex;flex-direction:column;gap:8px;margin-top:-6px;"></div>
+      <a href="#" onclick="bfAddSvc();return false;" style="font-size:13px;color:var(--accent);font-weight:600;margin-top:-6px;">+ Añadir otro servicio${edit?' (va justo después)':''}</a>
       <div class="two-col">
         ${campo('Fecha',`<input type="date" id="bf-date" value="${BF.fecha||dayKey(new Date())}" style="${INP}" onchange="bfPintarHoras()">`)}
         ${campo('Hora (solo huecos libres)',`<select id="bf-time" style="${INP}"></select>`)}
@@ -2691,6 +2698,7 @@ function openBookingForm(opts={}){
       <button class="btn btn-accent" style="flex:1" onclick="submitBookingForm()">${edit?'Guardar cambios':'Confirmar cita'}</button>
     </div>`);
   bfPintarHoras();
+  if(opts.addSvc) bfAddSvc();
 }
 // Varios servicios en la misma cita: se guardan como citas seguidas (una por servicio)
 function bfAddSvc(){
@@ -2862,17 +2870,30 @@ async function submitBookingForm(){
   if(!svc){ err.textContent='Elige un servicio.'; return; }
   if(!fecha||!hora){ err.textContent='No hay ninguna hora libre elegida para ese día.'; return; }
   const inicio=new Date(fecha+'T'+hora+':00');
-  const lista=edit?[svc]:bfServicios();
-  const dur=edit?(svc.duracionMin||60):bfDuracionTotal();
+  const lista=bfServicios();
+  const dur=bfDuracionTotal();
   const choca=citaQueSolapa(inicio, dur, BF.citaId);
   if(choca){ err.textContent=`Se solapa con la cita de ${choca.cliente} (${new Date(choca.fecha).toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'})}). Elige otra hora.`; return; }
   err.textContent='Guardando...';
 
   if(edit){
-    const cambios={ fecha:inicio.toISOString(), servicio_id:servicioId, duracion_min:dur, profesional, notas };
+    const cambios={ fecha:inicio.toISOString(), servicio_id:servicioId, duracion_min:svc.duracionMin||60, profesional, notas };
     const { data, error } = await sb.from('citas').update(cambios).eq('id', edit.id).select('id');
     if(error||!data?.length){ err.textContent='No se pudo guardar: '+textoError(error?.message||'sin permiso'); return; }
-    await recargarTodo(); closeModal(); toast('✓ Cita modificada');
+    // Servicios añadidos: citas seguidas justo después de esta, para la misma clienta
+    const extra=lista.slice(1);
+    if(extra.length){
+      let t1=inicio.getTime()+(svc.duracionMin||60)*60000;
+      const filas=extra.map(sv=>{ const d=sv.duracionMin||60; const f={
+        cliente_nombre: edit.cliente, cliente_telefono: telCita(edit)||null, cliente_email: edit.email||null,
+        clienta_id: clientaDeCita(edit)?.id||null, fecha: new Date(t1).toISOString(), servicio_id: sv.id, duracion_min: d,
+        estado: edit.estado==='en_cabina'?'confirmada':(edit.estado||'confirmada'), notas:'Continúa la cita anterior', origen:'panel', profesional,
+        creado_por: CURRENT_USER.nombre||null
+      }; t1+=d*60000; return f; });
+      const r=await sb.from('citas').insert(filas).select('id');
+      if(r.error||r.data?.length!==filas.length){ await recargarTodo(); err.textContent='La cita se guardó, pero no se pudo añadir el otro servicio: '+textoError(r.error?.message||'sin permiso'); return; }
+    }
+    await recargarTodo(); closeModal(); toast(extra.length?`✓ Cita modificada y ${extra.length} servicio${extra.length>1?'s':''} añadido${extra.length>1?'s':''} a continuación`:'✓ Cita modificada');
     return;
   }
 
@@ -2882,6 +2903,7 @@ async function submitBookingForm(){
   if(clSel==='__nueva'){
     const nombre=document.getElementById('bf-nombre').value.trim(), tel=document.getElementById('bf-tel').value.trim();
     if(!nombre){ err.textContent='Escribe el nombre de la clienta nueva.'; return; }
+    if(nombre.split(/\s+/).length<2){ err.textContent='Escribe nombre y apellidos de la clienta (hay nombres que se repiten).'; return; }
     const r=await crearClientaReal(nombre, tel, '', document.getElementById('bf-nac').value||null, { sinRecargar:true });
     if(r.error){ err.textContent='No se pudo crear la clienta: '+r.error; return; }
     clienta={ id:r.id, name:nombre, phone:tel, email:null };
