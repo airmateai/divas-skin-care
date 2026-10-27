@@ -3937,23 +3937,53 @@ function cajaAbierta(){ return (CONFIG.cierresCaja||[]).find(c=>c.estado==='abie
 // Ventas del turno: desde la apertura (o desde el último cierre de hoy / inicio del día)
 // Retiradas / entradas de efectivo del turno (se restan / suman al efectivo esperado)
 function movimientosDelTurno(desde){ return (CONFIG.movCaja||[]).filter(m=>new Date(m.created_at)>=desde).sort((a,b)=>new Date(b.created_at)-new Date(a.created_at)); }
-function netoMovimientos(movs){ return Math.round(movs.reduce((a,m)=>a+(m.tipo==='entrada'?1:-1)*Number(m.importe||0),0)*100)/100; }
+function netoMovimientos(movs){ return Math.round(movs.reduce((a,m)=>a+(m.tipo==='entrada'?1:m.tipo==='retirada'?-1:0)*Number(m.importe||0),0)*100)/100; }
+// Fondo de caja que se arrastra de un día a otro aunque no se cierre: se parte del último momento en que se
+// sabe lo que quedó en el cajón (retiro/depósito/recuento con saldo, apertura o cierre) y se suman las ventas
+// en efectivo y los movimientos posteriores.
+function anclaCajon(){
+  const pts=[];
+  (CONFIG.cierresCaja||[]).forEach(c=>{
+    if(c.estado!=='abierta' && c.hora_cierre && c.efectivo_contado!=null) pts.push({ t:new Date(c.hora_cierre), saldo:Number(c.efectivo_contado), que:'cierre de caja', quien:c.usuario });
+    if(c.hora_apertura && c.fondo_inicial!=null) pts.push({ t:new Date(c.hora_apertura), saldo:Number(c.fondo_inicial), que:'apertura', quien:c.usuario_apertura });
+  });
+  (CONFIG.movCaja||[]).forEach(m=>{ if(m.saldo_despues!=null) pts.push({ t:new Date(m.created_at), saldo:Number(m.saldo_despues), que:m.tipo==='retirada'?'retiro de '+fmt2(m.importe):m.tipo==='entrada'?'depósito de '+fmt2(m.importe):'recuento', quien:m.usuario }); });
+  pts.sort((a,b)=>b.t-a.t);
+  return pts[0]||{ t:new Date(0), saldo:0, que:null };
+}
+function efectivoEnCajon(){
+  const ancla=anclaCajon();
+  const ventasEfe=Math.round((resumenMetodos((CONFIG.ventasReales||[]).filter(v=>new Date(v.created_at)>ancla.t)).efectivo||0)*100)/100;
+  const movs=(CONFIG.movCaja||[]).filter(m=>new Date(m.created_at)>ancla.t);
+  return { ancla, ventasEfe, movs, cajon:Math.round((ancla.saldo+ventasEfe+netoMovimientos(movs))*100)/100 };
+}
 function efectivoEsperadoTurno(){
-  const ab=cajaAbierta(); const { desde, ventas }=ventasDelTurno(); const met=resumenMetodos(ventas);
-  const movs=movimientosDelTurno(desde);
-  return { movs, retirado:-netoMovimientos(movs), esperado:Math.round((Number(ab?.fondo_inicial||0)+(met.efectivo||0)+netoMovimientos(movs))*100)/100 };
+  const { desde }=ventasDelTurno();
+  const movs=movimientosDelTurno(desde).filter(m=>m.tipo!=='ajuste');
+  return { movs, retirado:-netoMovimientos(movs), esperado:efectivoEnCajon().cajon };
 }
 function abrirRetirada(tipo='retirada'){
-  const { esperado }=efectivoEsperadoTurno(); const dep=tipo==='entrada';
+  const { cajon, ancla }=efectivoEnCajon(); const dep=tipo==='entrada';
+  const fondo=ancla.saldo, sugerido=Math.round((cajon-fondo)*100)/100;
   abrirModal(dep?'💶 Depósito en efectivo':'💸 Retiro de efectivo', `
     <div style="display:flex;flex-direction:column;gap:12px;">
-      ${campo(dep?'Importe que metes en el cajón (€)':'Importe que sacas del cajón (€)',`<input id="rt-imp" type="number" step="0.01" min="0" placeholder="0,00" style="${INP}font-size:18px;">`)}
-      <div class="caja-linea"><span>Efectivo disponible</span><strong>${fmt2(esperado)}</strong></div>
+      <div class="caja-linea"><span>En el cajón ahora</span><strong>${fmt2(cajon)}</strong></div>
+      ${dep?'':`<div class="caja-linea"><span>Fondo de caja</span><strong>${fmt2(fondo)}</strong></div>
+      ${sugerido>0?`<button type="button" class="btn btn-ghost" style="font-size:12.5px;" onclick="document.getElementById('rt-imp').value='${sugerido}';rtQueda(${cajon},${fondo},false)">Retirar ${fmt2(sugerido)} y dejar el fondo de ${fmt2(fondo)}</button>`:''}`}
+      ${campo(dep?'Importe que metes en el cajón (€)':'Importe que sacas del cajón (€)',`<input id="rt-imp" type="number" step="0.01" min="0" placeholder="0,00" oninput="rtQueda(${cajon},${fondo},${dep})" style="${INP}font-size:18px;">`)}
+      <div class="caja-linea caja-total"><span>Se queda en el cajón</span><strong id="rt-queda">${fmt2(cajon)}</strong></div>
+      <div id="rt-nota-fondo" style="font-size:12px;color:var(--txt3);margin-top:-6px;"></div>
       ${campo('Notas',`<input id="rt-notas" placeholder="${dep?'Ej.: cambio traído del banco…':'Ej.: pago a proveedor, ingreso en el banco…'}" style="${INP}">`)}
     </div>
     <p id="rt-err" style="color:#b3441e;font-size:12px;margin-top:8px;"></p>
-    <div style="display:flex;gap:8px;margin-top:14px;"><button class="btn btn-ghost" style="flex:1" onclick="closeModal()">Cancelar</button><button class="btn btn-accent" style="flex:1" id="rt-btn" onclick="guardarRetirada(${esperado},'${tipo}')">${dep?'Registrar depósito':'Registrar retiro'}</button></div>`);
+    <div style="display:flex;gap:8px;margin-top:14px;"><button class="btn btn-ghost" style="flex:1" onclick="closeModal()">Cancelar</button><button class="btn btn-accent" style="flex:1" id="rt-btn" onclick="guardarRetirada(${cajon},'${tipo}')">${dep?'Registrar depósito':'Registrar retiro'}</button></div>`);
   setTimeout(()=>document.getElementById('rt-imp')?.focus(),50);
+}
+function rtQueda(cajon, fondo, dep){
+  const imp=Math.round((parseFloat(String(document.getElementById('rt-imp').value).replace(',','.'))||0)*100)/100;
+  const queda=Math.round((cajon+(dep?imp:-imp))*100)/100, d=Math.round((queda-fondo)*100)/100;
+  document.getElementById('rt-queda').textContent=fmt2(queda);
+  document.getElementById('rt-nota-fondo').textContent=dep||!imp?'':d>0?`Dejas ${fmt2(d)} más de fondo: el fondo pasa a ${fmt2(queda)}.`:d<0?`El fondo baja a ${fmt2(queda)}.`:'El fondo se queda igual.';
 }
 async function guardarRetirada(disponible, tipo='retirada'){ const dep=tipo==='entrada';
   const err=document.getElementById('rt-err'), btn=document.getElementById('rt-btn');
@@ -3961,9 +3991,33 @@ async function guardarRetirada(disponible, tipo='retirada'){ const dep=tipo==='e
   if(!(imp>0)){ err.textContent=dep?'Escribe el importe que metes.':'Escribe el importe que sacas.'; return; }
   if(!dep && imp>disponible+0.001){ err.textContent=`No puedes sacar más de lo que hay en el cajón (${fmt2(disponible)}).`; return; }
   btn.disabled=true; err.textContent='Guardando…';
-  const { data, error } = await sb.from('movimientos_caja').insert({ tipo, importe:imp, notas:document.getElementById('rt-notas').value.trim()||null, usuario:CURRENT_USER.nombre||null }).select('id');
+  const saldo_despues=Math.round((disponible+(dep?imp:-imp))*100)/100;
+  const { data, error } = await sb.from('movimientos_caja').insert({ tipo, importe:imp, saldo_despues, notas:document.getElementById('rt-notas').value.trim()||null, usuario:CURRENT_USER.nombre||null }).select('id');
   if(error||!data?.length){ btn.disabled=false; err.textContent='No se pudo guardar: '+(/movimientos_caja/.test(error?.message||'')?'falta activar las retiradas en la base de datos (avisa a Airmate).':(error?.message||'sin permiso')); return; }
-  await recargarTodo(); closeModal(); toast(dep?'💶 Depósito de '+fmt2(imp)+' registrado':'💸 Retiro de '+fmt2(imp)+' registrado');
+  await recargarTodo(); closeModal(); toast((dep?'💶 Depósito de '+fmt2(imp)+' registrado':'💸 Retiro de '+fmt2(imp)+' registrado')+' · quedan '+fmt2(saldo_despues)+' en el cajón');
+}
+// Recuento: si lo que hay en el cajón no cuadra, se apunta lo contado y a partir de ahí se sigue sumando
+function abrirRecuento(){
+  const { cajon }=efectivoEnCajon();
+  abrirModal('✎ He contado el cajón', `
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <div class="caja-linea"><span>Debería haber</span><strong>${fmt2(cajon)}</strong></div>
+      ${campo('Lo que hay de verdad (€)',`<input id="rc-imp" type="number" step="0.01" min="0" placeholder="0,00" style="${INP}font-size:18px;">`)}
+      ${campo('Notas',`<input id="rc-notas" placeholder="Ej.: faltaba el cambio de una venta…" style="${INP}">`)}
+    </div>
+    <p id="rc-err" style="color:#b3441e;font-size:12px;margin-top:8px;"></p>
+    <div style="display:flex;gap:8px;margin-top:14px;"><button class="btn btn-ghost" style="flex:1" onclick="closeModal()">Cancelar</button><button class="btn btn-accent" style="flex:1" id="rc-btn" onclick="guardarRecuento(${cajon})">Guardar recuento</button></div>`);
+  setTimeout(()=>document.getElementById('rc-imp')?.focus(),50);
+}
+async function guardarRecuento(esperado){
+  const err=document.getElementById('rc-err'), btn=document.getElementById('rc-btn'), raw=String(document.getElementById('rc-imp').value).trim();
+  if(raw===''){ err.textContent='Escribe lo que has contado.'; return; }
+  const contado=Math.round((parseFloat(raw.replace(',','.'))||0)*100)/100, dif=Math.round((contado-esperado)*100)/100;
+  btn.disabled=true; err.textContent='Guardando…';
+  const notas=[`Recuento: debía haber ${fmt2(esperado)} (${dif>0?'+':''}${fmt2(dif)})`, document.getElementById('rc-notas').value.trim()].filter(Boolean).join(' · ');
+  const { data, error } = await sb.from('movimientos_caja').insert({ tipo:'ajuste', importe:Math.abs(dif), saldo_despues:contado, notas, usuario:CURRENT_USER.nombre||null }).select('id');
+  if(error||!data?.length){ btn.disabled=false; err.textContent='No se pudo guardar: '+(error?.message||'sin permiso'); return; }
+  await recargarTodo(); closeModal(); toast('✓ Cajón: '+fmt2(contado));
 }
 function ventasDelTurno(){
   const hoy0=new Date(); hoy0.setHours(0,0,0,0);
@@ -4030,25 +4084,28 @@ function renderCaja(){
   const { desde, ventas }=ventasDelTurno();
   const met=resumenMetodos(ventas);
   const total=ventas.reduce((a,v)=>a+Number(v.total||0),0);
-  const fondo=Number(ab?.fondo_inicial||0);
-  const { movs, retirado, esperado }=efectivoEsperadoTurno();
+  const { esperado }=efectivoEsperadoTurno();
+  const { ancla, ventasEfe, movs }=efectivoEnCajon();
+  const fondo=ancla.saldo;
+  const retirado=-netoMovimientos(movs);
   host.innerHTML=`
     <div class="two-col" style="align-items:start;">
       <div class="card" style="margin-bottom:0;">
         <div class="card-hd"><div class="card-hd-title">${ab?'Caja abierta':'Caja cerrada'}</div><span class="tag tag-${ab?'ok':'info'}">${ab?'Abierta desde '+new Date(ab.hora_apertura).toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'})+' · '+esc(ab.usuario_apertura||''):'Sin abrir'}</span></div>
         <div style="padding:18px;display:flex;flex-direction:column;gap:12px;">
           ${!ab?`
-            <p style="font-size:13px;color:var(--txt2);margin:0;">Abre la caja al empezar el día indicando el efectivo que hay en el cajón (fondo de cambio).</p>
-            ${campo('Fondo inicial en efectivo (€)',`<input id="caja-fondo" type="number" step="0.01" min="0" placeholder="0,00" style="${INP}">`)}
-            <button class="btn btn-accent" onclick="abrirCaja()">Abrir caja como <span class="js-usuario-actual">${esc(CURRENT_USER.nombre)}</span></button>
-            <p style="font-size:11px;color:var(--txt3);margin:0;">También puedes cerrar sin haberla abierto: se toma fondo 0 y las ventas de hoy.</p>`:''}
-          <div style="${LBL}margin-top:4px;">Cierre</div>
-          <div class="caja-linea"><span>Fondo inicial</span><strong>${fmt2(fondo)}</strong></div>
-          <div class="caja-linea"><span>Ventas en efectivo</span><strong>${fmt2(met.efectivo||0)}</strong></div>
+            <p style="font-size:13px;color:var(--txt2);margin:0;">Abrir la caja es opcional: el fondo se arrastra solo de un día a otro aunque no se haga el cierre.</p>
+            ${campo('Fondo en el cajón (€)',`<input id="caja-fondo" type="number" step="0.01" min="0" value="${esperado}" style="${INP}">`)}
+            <button class="btn btn-accent" onclick="abrirCaja()">Abrir caja como <span class="js-usuario-actual">${esc(CURRENT_USER.nombre)}</span></button>`:''}
+          <div style="${LBL}margin-top:4px;">Efectivo en el cajón</div>
+          <div class="caja-linea"><span>Fondo de caja</span><strong>${fmt2(fondo)}</strong></div>
+          ${ancla.que?`<div style="font-size:11.5px;color:var(--txt3);margin-top:-6px;">Desde el ${esc(ancla.que)} del ${ancla.t.toLocaleString('es-ES',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}${ancla.quien?' · '+esc(ancla.quien):''}</div>`:''}
+          <div class="caja-linea"><span>Ventas en efectivo desde entonces</span><strong>${fmt2(ventasEfe)}</strong></div>
           ${movs.length?`<div class="caja-linea"><span>Retiros y depósitos (${movs.length})</span><strong style="color:${retirado>0?'#b3441e':'#16a34a'}">${retirado>0?'−':'+'}${fmt2(Math.abs(retirado))}</strong></div>
           <div style="font-size:11.5px;color:var(--txt3);margin-top:-6px;">${movs.map(m=>`${new Date(m.created_at).toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'})} · ${m.tipo==='entrada'?'+':'−'}${fmt2(m.importe)} ${m.tipo==='entrada'?'depósito':'retiro'}${m.notas?' · '+esc(m.notas):''}${m.usuario?' · '+esc(m.usuario):''}`).join('<br>')}</div>`:''}
-          <div style="display:flex;gap:8px;"><button class="btn btn-ghost" style="flex:1;font-size:12.5px;" onclick="abrirRetirada('retirada')">💸 Retiro de efectivo</button><button class="btn btn-ghost" style="flex:1;font-size:12.5px;" onclick="abrirRetirada('entrada')">💶 Depósito en efectivo</button></div>
-          <div class="caja-linea caja-total"><span>Efectivo esperado en cajón</span><strong id="caja-esperado">${fmt2(esperado)}</strong></div>
+          <div class="caja-linea caja-total"><span>Efectivo en el cajón</span><strong id="caja-esperado">${fmt2(esperado)}</strong></div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;"><button class="btn btn-ghost" style="flex:1;font-size:12.5px;" onclick="abrirRetirada('retirada')">💸 Retiro de efectivo</button><button class="btn btn-ghost" style="flex:1;font-size:12.5px;" onclick="abrirRetirada('entrada')">💶 Depósito en efectivo</button><button class="btn btn-ghost" style="flex:1;font-size:12.5px;" onclick="abrirRecuento()">✎ He contado el cajón</button></div>
+          <div style="${LBL}margin-top:8px;">Cierre (opcional)</div>
           ${campo('Efectivo contado (€)',`<input id="caja-contado" type="number" step="0.01" placeholder="0,00" oninput="cajaDiferencia(${esperado})" style="${INP}font-size:16px;">`)}
           <div class="caja-linea"><span>Diferencia</span><strong id="caja-dif">—</strong></div>
           ${campo('Observaciones',`<textarea id="caja-obs" rows="2" style="${INP}"></textarea>`)}
@@ -4108,7 +4165,7 @@ async function cerrarCaja(){
     ventas_total:Math.round(ventas.reduce((a,v)=>a+Number(v.total||0),0)*100)/100, num_ventas:ventas.length,
     efectivo_esperado:esperado, efectivo_contado:contado, diferencia:Math.round((contado-esperado)*100)/100,
     otros_metodos:{ ...met, retiros_efectivo:retirado }, observaciones:document.getElementById('caja-obs').value.trim()||null };
-  const q=ab?sb.from('cierres_caja').update(fila).eq('id',ab.id):sb.from('cierres_caja').insert({ ...fila, fecha:dayKey(new Date()), fondo_inicial:0 });
+  const q=ab?sb.from('cierres_caja').update(fila).eq('id',ab.id):sb.from('cierres_caja').insert({ ...fila, fecha:dayKey(new Date()), fondo_inicial:anclaCajon().saldo });
   const { data, error } = await q.select('id');
   if(error||!data?.length){ toast('No se pudo guardar el cierre: '+(error?.message||'sin permiso')); return; }
   await recargarTodo(); toast('✓ Caja cerrada · diferencia '+fmt2(fila.diferencia));
