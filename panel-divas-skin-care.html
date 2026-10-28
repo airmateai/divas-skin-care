@@ -2814,12 +2814,44 @@ function abrirDetalleBloqueo(id){
       <div>${b.profesional?'👤 '+esc(b.profesional):'Todo el centro'}</div>
       ${serie>1?`<div style="color:var(--txt3);font-size:12px;">Forma parte de una serie de ${serie} bloqueos repetidos</div>`:''}
     </div>
+    <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border2);display:flex;flex-direction:column;gap:12px;">
+      <div style="${LBL}">Cambiar fecha u hora</div>
+      ${campo('Fecha',`<input type="date" id="bqd-fecha" value="${dayKey(b.inicio)}" style="${INP}">`)}
+      <div class="two-col">${campo('Hora de inicio',horasSelect('bqd-ini',minToHHMM(ini)))}${campo('Hora de finalización',horasSelect('bqd-fin',minToHHMM(Math.min(22*60,ini+b.duracion_min))))}</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn btn-accent" style="flex:1" id="bqd-guardar" onclick="cambiarBloqueo('${b.id}',false)">Guardar cambios</button>
+        ${serie>1?`<button class="btn btn-ghost" style="flex:1" onclick="cambiarBloqueo('${b.id}',true)">Cambiar la hora en toda la serie (${serie})</button>`:''}
+      </div>
+    </div>
     <p id="bqd-error" style="color:#b3441e;font-size:12px;margin-top:8px;"></p>
     <div style="display:flex;gap:8px;margin-top:18px;flex-wrap:wrap;">
       <button class="btn btn-ghost" style="flex:1" onclick="closeModal()">Cerrar</button>
       <button class="btn btn-ghost" style="flex:1;color:#b3441e" onclick="quitarBloqueo('${b.id}',false)">Quitar este bloqueo</button>
       ${serie>1?`<button class="btn btn-ghost" style="flex:1;color:#b3441e" onclick="quitarBloqueo('${b.id}',true)">Quitar toda la serie (${serie})</button>`:''}
     </div>`);
+}
+// Cambiar la hora (y la fecha, si es uno solo) de un bloqueo ya creado
+let _bqdForzar=null;
+async function cambiarBloqueo(id, serie){
+  const b=(CONFIG.bloqueos||[]).find(x=>String(x.id)===String(id)); if(!b) return;
+  const err=document.getElementById('bqd-error');
+  const fecha=document.getElementById('bqd-fecha').value, ini=hhmmToMin(document.getElementById('bqd-ini').value), fin=hhmmToMin(document.getElementById('bqd-fin').value);
+  if(!fecha){ err.textContent='Elige la fecha.'; return; }
+  if(!(fin>ini)){ err.textContent='La hora de finalización tiene que ser después de la de inicio.'; return; }
+  const filas=(serie&&b.serie_id?(CONFIG.bloqueos||[]).filter(x=>x.serie_id===b.serie_id):[b]).map(x=>{ const d=new Date((serie?dayKey(x.inicio):fecha)+'T00:00:00'); d.setMinutes(ini); return { id:x.id, inicio:d.toISOString(), duracion_min:fin-ini }; });
+  const conCita=filas.map(f=>{ const a=new Date(f.inicio).getTime(), z=a+f.duracion_min*60000; return (CONFIG.citasWeb||[]).find(c=>citaActiva(c) && new Date(c.fecha).getTime()<z && new Date(c.fecha).getTime()+duracionCita(c)*60000>a); }).filter(Boolean);
+  const clave=id+'|'+serie+'|'+fecha+'|'+ini+'|'+fin;
+  if(conCita.length && _bqdForzar!==clave){ _bqdForzar=clave; err.innerHTML=`⚠ Ya hay ${conCita.length} cita${conCita.length>1?'s':''} en esa franja (${conCita.slice(0,3).map(c=>esc(c.cliente)+' '+new Date(c.fecha).toLocaleDateString('es-ES',{day:'numeric',month:'short'})).join(', ')}). Las citas no se borran. Pulsa otra vez para cambiarlo igualmente.`; return; }
+  err.textContent='Guardando…';
+  try{
+    let hechos=0;
+    for(let i=0;i<filas.length;i+=20){
+      const res=await Promise.all(filas.slice(i,i+20).map(f=>sb.from('bloqueos').update({ inicio:f.inicio, duracion_min:f.duracion_min }).eq('id',f.id).select('id')));
+      res.forEach(r=>{ if(r.error) throw r.error; if(!r.data?.length) throw new Error('sin permiso'); hechos++; });
+    }
+    _bqdForzar=null; await recargarTodo(); closeModal();
+    toast(hechos>1?`🔒 Hora cambiada en ${hechos} bloqueos: ${minToHHMM(ini)}–${minToHHMM(fin)}`:`🔒 Bloqueo cambiado: ${minToHHMM(ini)}–${minToHHMM(fin)}`);
+  }catch(e){ err.textContent='No se pudo cambiar: '+(e.message||e); }
 }
 async function quitarBloqueo(id, serie){
   const b=(CONFIG.bloqueos||[]).find(x=>String(x.id)===String(id)); if(!b) return;
