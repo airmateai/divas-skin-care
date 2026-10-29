@@ -946,6 +946,7 @@ tbody tr:hover{background:rgba(0,0,0,.02);}
             <div class="bf-cl" style="margin-bottom:10px;"><input id="pos-cl-q" autocomplete="off" placeholder="👤 Clienta (obligatoria para bonos)" oninput="posBuscarCl()" onfocus="this.select();posBuscarCl()" style="padding:9px 11px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--txt);font-size:13px;width:100%;"><div class="bf-cl-res" id="pos-cl-res"></div></div>
             <div id="pos-tpv"></div>
             <div id="pos-cart" style="max-height:280px;overflow-y:auto;"></div>
+            <textarea id="pos-nota" rows="2" maxlength="300" placeholder="📝 Nota (opcional): producto pasado a tester, regalo por bono…" style="width:100%;margin-top:10px;padding:9px 11px;border:1px solid var(--border);border-radius:8px;font:inherit;font-size:13px;resize:vertical;background:var(--bg-card,#fff);color:var(--txt);"></textarea>
             <div style="margin-top:10px;font-size:11.5px;color:var(--txt3);">Venta registrada a nombre de <strong class="js-usuario-actual" style="color:var(--txt);"></strong></div>
             <hr style="margin:14px 0;border:none;border-top:1px solid var(--border);">
             <div style="display:flex;justify-content:space-between;font-size:13px;color:var(--txt2);margin-bottom:4px;"><span>Base imponible</span><span id="pos-sub">0€</span></div>
@@ -3856,11 +3857,13 @@ async function posPay(method, pagos=null){
   if(POS_CART.some(c=>c.type==='bono'||c.type==='regalo_bono') && !POS_CLIENTA){ toast('Elige la clienta arriba: el bono se guarda en su ficha'); document.getElementById('pos-cl-q')?.focus(); return; }
   const items=POS_CART.map(c=>({ type:c.type, stock_id:c.stockId, servicio_id:c.servicioId, name:c.name, qty:c.qty, price:c.price, precio_antes:c.precioAntes||null, sesiones:c.sesiones||null, tipo_impuesto:c.tipoImpuesto, porcentaje_impuesto:c.pctImpuesto }));
   const clientaVenta=POS_CLIENTA;
+  const notaVenta=(document.getElementById('pos-nota')?.value||'').trim();
   const t=posTotales();
   const usuario=CURRENT_USER.nombre||null;
   toast('Guardando venta...');
   const { data:ventaId, error } = await sb.rpc('registrar_venta', { p_items:items, p_metodo:method, p_usuario:usuario, p_cliente_email:null, p_pagos:pagos });
   if(error||!ventaId){ toast('No se pudo guardar la venta: '+textoError(error?.message)); await recargarTodo(); return; }
+  if(notaVenta){ const { data:nd, error:ne } = await sb.from('ventas').update({ motivo:notaVenta }).eq('id',ventaId).select('id'); if(ne||!nd?.length) toast('⚠ La venta se guardó, pero la nota NO: '+(ne?.message||'sin permiso')+'. Avisa a Airmate.'); }
   if(clientaVenta){
     await sb.from('ventas').update({ clienta_id:clientaVenta.id }).eq('id',ventaId);
     const bonos=[]; items.filter(c=>c.type==='bono').forEach(c=>{ for(let k=0;k<c.qty;k++) bonos.push({ clienta_id:clientaVenta.id, servicio_id:c.servicio_id, nombre:c.name, sesiones_total:c.sesiones, precio:c.price, venta_id:ventaId }); });
@@ -3910,8 +3913,8 @@ async function posPay(method, pagos=null){
       <button class="btn btn-ghost" style="flex:1" onclick="enviarReciboPDF(true)">↓ PDF</button>
       <button class="btn btn-accent" style="flex:1" onclick="closeModal()">Hecho</button>
     </div>`);
-  POS_CART=[]; posSetClienta(null); posFilter('');
-  toast('✓ Venta guardada');
+  POS_CART=[]; posSetClienta(null); posFilter(''); const pn=document.getElementById('pos-nota'); if(pn) pn.value='';
+  toast('✓ Venta guardada'+(notaVenta?' con su nota':''));
 }
 
 // ═══════════════ OTRO MÉTODO / PAGO DIVIDIDO ═══════════════
@@ -4073,7 +4076,7 @@ function abrirBuscarVenta(){
     <div id="bv-list" style="max-height:420px;overflow:auto;">${ult.map(v=>filaVentaDev(v)).join('')||'<p style="color:var(--txt3)">No hay ventas.</p>'}</div>`);
 }
 function filaVentaDev(v){ const cl=(CONFIG.clients||[]).find(c=>String(c.id)===String(v.clienta_id)); const its=(Array.isArray(v.items)?v.items:[]).map(i=>(i.qty>1?i.qty+'× ':'')+i.name).join(', ');
-  return `<div class="bv-it" data-t="${esc(normTxt(its+' '+(cl?.name||'')+' '+v.total))}" style="display:flex;justify-content:space-between;gap:10px;align-items:center;padding:10px 4px;border-bottom:1px solid var(--border2);"><div style="min-width:0"><b style="font-size:13px">${new Date(v.created_at).toLocaleString('es-ES',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})} · ${fmt2(v.total)}</b><div style="font-size:12px;color:var(--txt3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:380px">${esc(its)}${cl?' · '+esc(cl.name):''}</div></div><button class="ord-b" onclick="abrirDevolucion('${v.id}')">Devolver</button></div>`; }
+  return `<div class="bv-it" data-t="${esc(normTxt(its+' '+(cl?.name||'')+' '+v.total+' '+(v.motivo||'')))}" style="display:flex;justify-content:space-between;gap:10px;align-items:center;padding:10px 4px;border-bottom:1px solid var(--border2);"><div style="min-width:0"><b style="font-size:13px">${new Date(v.created_at).toLocaleString('es-ES',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})} · ${fmt2(v.total)}</b><div style="font-size:12px;color:var(--txt3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:380px">${esc(its)}${cl?' · '+esc(cl.name):''}</div></div><button class="ord-b" onclick="abrirDevolucion('${v.id}')">Devolver</button></div>`; }
 function filtrarVentasDev(){ const q=normTxt(document.getElementById('bv-q').value); document.querySelectorAll('.bv-it').forEach(e=>e.style.display=!q||e.dataset.t.includes(q)?'':'none'); }
 let DEV={};
 function abrirDevolucion(id){
@@ -4153,7 +4156,7 @@ function renderCaja(){
         </div>
         <div style="padding:0 18px 10px;"><button class="btn btn-ghost" style="width:100%;font-size:12px;" onclick="abrirBuscarVenta()">↩︎ Devolver una venta anterior</button></div>
         <div class="table-wrap" style="max-height:300px;overflow:auto;"><table><thead><tr><th>Hora</th><th>Usuario</th><th>Método</th><th>Total</th><th></th></tr></thead><tbody>
-          ${ventas.length?ventas.map(v=>`<tr style="${Number(v.total)<0?'color:#b3441e':''}"><td>${new Date(v.created_at).toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'})}</td><td>${esc(v.usuario||'—')}</td><td>${esc(metodoVenta(v))}${v.devolucion_de?' · devolución':''}</td><td><strong>${fmt2(v.total)}</strong></td><td>${Number(v.total)>0?`<button class="ord-b" onclick="abrirDevolucion('${v.id}')">↩︎ Devolver</button>`:''}</td></tr>`).join(''):'<tr><td colspan="4" style="text-align:center;color:var(--txt3);padding:18px;">Sin ventas en este turno</td></tr>'}
+          ${ventas.length?ventas.map(v=>`<tr style="${Number(v.total)<0?'color:#b3441e':''}"><td>${new Date(v.created_at).toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'})}</td><td>${esc(v.usuario||'—')}</td><td>${esc(metodoVenta(v))}${v.devolucion_de?' · devolución':''}${v.motivo?`<div style="font-size:11.5px;color:var(--txt3);margin-top:2px;white-space:normal;">📝 ${esc(v.motivo)}</div>`:''}</td><td><strong>${fmt2(v.total)}</strong></td><td>${Number(v.total)>0?`<button class="ord-b" onclick="abrirDevolucion('${v.id}')">↩︎ Devolver</button>`:''}</td></tr>`).join(''):'<tr><td colspan="4" style="text-align:center;color:var(--txt3);padding:18px;">Sin ventas en este turno</td></tr>'}
         </tbody></table></div>
       </div>
     </div>`;
