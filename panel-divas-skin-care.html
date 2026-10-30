@@ -1406,7 +1406,8 @@ async function loadRealData(){
       orden: s.orden ?? 9999,
       precioOferta: s.precio_oferta ?? null,
       bonos: Array.isArray(s.bonos) ? s.bonos.filter(b=>b&&b.sesiones>1&&b.precio>=0).sort((a,b)=>a.sesiones-b.sesiones) : [],
-      visibleWeb: s.visible_web !== false
+      visibleWeb: s.visible_web !== false,
+      archivado: s.archivado === true
     }));
   }
 
@@ -3093,10 +3094,10 @@ async function guardarFechaNacimiento(clienteId){ return guardarFichaClienta(cli
 function ordenDe(tipo){ const m={}; (CONFIG.ordenCat||[]).filter(o=>o.tipo===tipo).forEach(o=>m[o.nombre]=o.orden); return m; }
 function categoriasOrdenadas(){
   const m=ordenDe('servicio'), vistas=[];
-  (CONFIG.catalog||[]).slice().sort((a,b)=>(a.orden??9999)-(b.orden??9999)).forEach(x=>{ const c=x.categoria||'Sin categoría'; if(!vistas.includes(c)) vistas.push(c); });
+  (CONFIG.catalog||[]).filter(x=>!x.archivado).sort((a,b)=>(a.orden??9999)-(b.orden??9999)).forEach(x=>{ const c=x.categoria||'Sin categoría'; if(!vistas.includes(c)) vistas.push(c); });
   return vistas.sort((a,b)=>((m[a]??(1000+vistas.indexOf(a)))-(m[b]??(1000+vistas.indexOf(b)))));
 }
-function serviciosDeCategoria(cat){ return (CONFIG.catalog||[]).filter(x=>(x.categoria||'Sin categoría')===cat).sort((a,b)=>(a.orden??9999)-(b.orden??9999)); }
+function serviciosDeCategoria(cat){ return (CONFIG.catalog||[]).filter(x=>!x.archivado&&(x.categoria||'Sin categoría')===cat).sort((a,b)=>(a.orden??9999)-(b.orden??9999)); }
 function precioServicioHTML(p){
   const base=fmt2(p.price).replace(',00','');
   return p.precioOferta!=null?`<span style="text-decoration:line-through;color:var(--txt3);font-size:12px;margin-right:4px;">${base}</span><span style="font-size:15px;font-weight:800;color:#b3441e;">${fmt2(p.precioOferta).replace(',00','')}</span>`:`<span style="font-size:15px;font-weight:800;color:var(--accent);">${base}</span>`;
@@ -3126,7 +3127,18 @@ function renderCatalog(){
         </span>
       </div>
     </div>`).join('');
-  }).join('');
+  }).join('')+serviciosEliminadosHTML();
+}
+// Servicios eliminados que tenían citas: no salen en la lista, pero se pueden recuperar
+function serviciosEliminadosHTML(){
+  const l=(CONFIG.catalog||[]).filter(x=>x.archivado); if(!l.length) return '';
+  return `<details style="margin-top:22px;"><summary style="cursor:pointer;font-size:12px;color:var(--txt3);">Servicios eliminados (${l.length}) · se guardan solo para el historial de citas</summary>
+    ${l.map(p=>`<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border,#eee);font-size:12.5px;"><span>${esc(p.name)}</span><button class="btn btn-ghost" style="padding:4px 10px;font-size:10px;" onclick="recuperarServicio('${p.id}')">↩ Recuperar</button></div>`).join('')}</details>`;
+}
+async function recuperarServicio(id){
+  const { data, error } = await sb.from('servicios').update({ archivado:false }).eq('id', id).select('id');
+  if(error||!data?.length){ toast('No se pudo recuperar: '+textoError(error?.message||'sin permiso')); return; }
+  await recargarTodo(); toast('✓ Recuperado (está desactivado: actívalo cuando quieras)');
 }
 function fmtE(n){ return fmt2(n).replace(',00',''); }
 function abrirDescuento(id){
@@ -3560,9 +3572,13 @@ async function borrarServicio(id){
   const { data, error } = await sb.from('servicios').delete().eq('id', id).select('id');
   if(error && error.code==='23503'){
     // Tiene citas o lista de espera: no se borra para no romper el historial, se retira de la web y de las reservas
-    const r = await sb.from('servicios').update({ reservable:false, visible_web:false }).eq('id', id).select('id');
-    if(r.error||!r.data?.length){ toast('No se pudo retirar: '+textoError(r.error?.message||'sin permiso')); return; }
-    await recargarTodo(); closeModal(); toast('Este servicio tiene citas guardadas, así que no se borra del historial: lo he quitado de la web y de las reservas'); return;
+    // Tiene citas: se archiva (desaparece de la lista y de la web, pero las citas antiguas conservan su nombre)
+    let r = await sb.from('servicios').update({ reservable:false, visible_web:false, archivado:true }).eq('id', id).select('id');
+    const sinColumna = r.error && /archivado/.test(r.error.message||'');
+    if(sinColumna) r = await sb.from('servicios').update({ reservable:false, visible_web:false }).eq('id', id).select('id');
+    if(r.error||!r.data?.length){ toast('No se pudo eliminar: '+textoError(r.error?.message||'sin permiso')); return; }
+    await recargarTodo(); closeModal();
+    toast(sinColumna?'Este servicio tiene citas guardadas: lo he quitado de la web y de las reservas':'✓ Servicio eliminado (sus citas antiguas lo conservan en el historial)'); return;
   }
   if(error||!data?.length){ toast('No se pudo eliminar: '+textoError(error?.message||'sin permiso')); return; }
   await recargarTodo(); closeModal(); toast('✓ Servicio eliminado');
