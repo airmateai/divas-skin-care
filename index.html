@@ -1697,7 +1697,9 @@ const RE_DURACION = /^\s*(\d+\s*h)?\s*(\d+\s*min)?\s*$/i;
   document.querySelectorAll('.svc-book[data-servicio-id]').forEach(btn => {
     const s = SERVICIOS_DB[btn.dataset.servicioId];
     const card = btn.closest('.svc-card');
-    if (!s || !card) return;
+    if (!card) return;
+    // El CRM manda: si el servicio se eliminó (o nunca se creó) en el panel, la tarjeta no sale en la web
+    if (!s) { card.dataset.inactivo = '1'; card.style.display = 'none'; return; }
     conTarjeta.add(s.id);
     if (s.reservable === false || s.visible_web === false) { card.dataset.inactivo = '1'; card.style.display = 'none'; return; }
     if (s.img_url) { const media = card.querySelector('.svc-img'); if (media) media.innerHTML = `<img src="${escWeb(s.img_url)}" alt="${escWeb(s.nombre)}" loading="lazy">`; }
