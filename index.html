@@ -303,9 +303,7 @@ footer{background:var(--primary-dk);color:var(--cream);padding:0 0 34px;}
 
 <section class="hero">
   <div class="hero-bg">
-    <video autoplay muted loop playsinline poster="img/hero-video-limpieza-sinlogo-poster.jpg">
-      <source src="img/hero-video-limpieza-sinlogo.mp4" type="video/mp4">
-    </video>
+    <video id="hero-video" autoplay muted loop playsinline poster="img/hero-video-limpieza-sinlogo-poster.jpg" data-defecto="img/hero-video-limpieza-sinlogo.mp4"></video>
   </div>
   <div class="wrap hero-inner">
     <div class="eyebrow hero-anim" style="--d:0">Centro de belleza · La Laguna, Tenerife</div>
@@ -1548,6 +1546,15 @@ montarTabsTienda();
 const SUPABASE_URL = 'https://tmbnufvchgwfnwmpbamq.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRtYm51ZnZjaGd3Zm53bXBiYW1xIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc3NDEwMzAsImV4cCI6MjEwMzMxNzAzMH0.lYEIDtBEonDCcyWi3eluP5e6m7lgefxFstheWpA7KHg';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// Vídeo de portada: el que Louie haya subido desde el panel (Servicios → Vídeo de portada) o, si no hay, el de siempre
+(async function videoPortada(){
+  const v = document.getElementById('hero-video'); if (!v) return;
+  let url = null;
+  try { const r = await Promise.race([sb.from('ajustes_web').select('valor').eq('clave','video_portada').maybeSingle(), new Promise(ok => setTimeout(() => ok(null), 1500))]);
+    url = r?.data?.valor || null; } catch(e) {}
+  if (url) { v.removeAttribute('poster'); v.onerror = () => { v.onerror = null; v.src = v.dataset.defecto; v.play().catch(()=>{}); }; }
+  v.src = url || v.dataset.defecto; v.play().catch(()=>{});
+})();
 
 const modal = document.getElementById('booking-modal');
 const form = document.getElementById('booking-form');
