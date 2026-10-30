@@ -1793,6 +1793,13 @@ function montarRegalo(data){
   ['rg-para','rg-de','rg-msg'].forEach(id => document.getElementById(id).addEventListener('input', pintarRegalo));
   document.getElementById('rg-pagar').onclick = pagarRegalo;
   // botón «Regalar» en cada tratamiento
+  document.querySelectorAll('.svc-card[data-zonas]').forEach(card => {
+    const foot = card.querySelector('.svc-foot'), primero = (ZONAS_WEB[card.dataset.zonas] || []).find(z => RG.servicios.some(x => x.id === z.id));
+    if (!foot || !primero || foot.querySelector('.svc-regalar')) return;
+    const r = document.createElement('button'); r.type = 'button'; r.className = 'svc-regalar'; r.textContent = 'Regalar';
+    r.onclick = e => { e.stopPropagation(); e.preventDefault(); regalarServicio(primero.id); };
+    foot.insertBefore(r, foot.querySelector('.svc-book'));
+  });
   document.querySelectorAll('.svc-book[data-servicio-id]').forEach(btn => {
     const s = RG.servicios.find(x => x.id === btn.dataset.servicioId); if (!s || btn.parentElement.querySelector('.svc-regalar')) return;
     const r = document.createElement('button'); r.type = 'button'; r.className = 'svc-regalar'; r.textContent = 'Regalar';
@@ -1835,6 +1842,12 @@ function pintarProductosRegalo(){
   box.innerHTML = html || '<p class="rg-nota" style="padding:10px">No hay nada con ese nombre.</p>';
   box.querySelectorAll('button[data-id]').forEach(b => b.onclick = () => { const st=b.dataset.k==='s'?RG_SV:RG.cesta, id=b.dataset.id, n=Math.max(0,Math.min(5,(st[id]||0)+ +b.dataset.d)); if(n) st[id]=n; else delete st[id];
     if(Object.keys(RG.cesta).length+Object.keys(RG_SV).length>15){ delete st[id]; } pintarProductosRegalo(); pintarRegalo(); });
+}
+// Abre «Bono regalo» con ese tratamiento (o su bono: id|sesiones) ya elegido
+function regalarServicio(valor){
+  const sel = document.getElementById('rg-servicio'); if (!sel || ![...sel.options].some(o => o.value === valor)) return;
+  regaloTipo('servicio'); sel.value = valor; const [id, n] = valor.split('|'); RG.servicio = id; RG.bono = n ? +n : null; pintarRegalo();
+  document.getElementById('regalo').scrollIntoView({ behavior:'smooth' });
 }
 function regaloTipo(t){
   RG.tipo = t; document.querySelectorAll('.rg-tipo button').forEach(x => x.classList.toggle('on', x.dataset.t===t));
@@ -2042,9 +2055,13 @@ function abrirDetalleZonas(card){
       return `<div style="display:flex;align-items:center;gap:10px;padding:12px 14px;border:1.5px solid #dce5d1;border-radius:12px;margin-bottom:8px;">
         <div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:600;color:#3d4a3a">${escWeb(zona)}</div>${bono ? `<div style="font-size:11.5px;color:#5c6358">${bono}</div>` : ''}</div>
         <div style="font-size:16px;font-weight:700;color:#3d4a3a;white-space:nowrap">${precioWeb(s.precio_oferta ?? s.precio)}</div>
+        <button type="button" data-regalar-zona="${s.id}" style="padding:8px 4px;border:none;background:none;color:#5c6358;font-size:11px;letter-spacing:.12em;text-transform:uppercase;border-bottom:1px solid currentColor;cursor:pointer;white-space:nowrap">Regalar</button>
         <button type="button" data-zona="${s.id}" style="padding:8px 14px;border:none;border-radius:20px;background:#3d4a3a;color:#fff;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap">Reservar</button>
       </div>`;
     }).join('')).join('');
+  opcBox.querySelectorAll('button[data-regalar-zona]').forEach(btn => btn.addEventListener('click', () => {
+    serviceDetailModal.style.display = 'none'; regalarServicio(btn.dataset.regalarZona);
+  }));
   opcBox.querySelectorAll('button[data-zona]').forEach(btn => btn.addEventListener('click', () => {
     const s = svs.find(x => x.id === btn.dataset.zona); if (!s) return;
     const c = document.createElement('div'); c.innerHTML = `<h3>${escWeb(s.nombre)}</h3>`;
