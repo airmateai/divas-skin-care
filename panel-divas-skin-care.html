@@ -2884,7 +2884,17 @@ function bfPintarHoras(){
   const pref=BF.hora&&fecha===BF.fecha?hhmmToMin(BF.hora):null;
   let elegido=libres[0];
   if(pref!=null) elegido=libres.slice().sort((a,b)=>Math.abs(a-pref)-Math.abs(b-pref))[0];
-  sel.innerHTML=libres.map(m=>`<option value="${minToHHMM(m)}" ${m===elegido?'selected':''}>${minToHHMM(m)} – ${minToHHMM(m+dur)}</option>`).join('');
+  // También las horas ocupadas, en gris y con el motivo (para que no parezca que falta una hora)
+  const d=new Date(fecha+'T00:00:00'), ahora=new Date(), todas=[];
+  (HORARIO_CENTRO[d.getDay()]||[]).forEach(([a,b])=>{ for(let m=a; m+dur<=b; m+=15){ const i=new Date(d); i.setMinutes(m); if(i>ahora) todas.push(m); } });
+  sel.innerHTML=todas.map(m=>{
+    if(libres.includes(m)) return `<option value="${minToHHMM(m)}" ${m===elegido?'selected':''}>${minToHHMM(m)} – ${minToHHMM(m+dur)}</option>`;
+    const i=new Date(d); i.setMinutes(m);
+    const c=citaQueSolapa(i, dur, BF.citaId);
+    const t=c?new Date(c.fecha).toTimeString().slice(0,5):'';
+    const motivo=!c?'ocupado':c.bloqueo?`bloqueo de las ${t}`:`choca con la cita de las ${t}`;
+    return `<option disabled>${minToHHMM(m)} – ${minToHHMM(m+dur)} · ${motivo}</option>`;
+  }).join('');
 }
 function bfAListaEspera(){
   const clSel=document.getElementById('bf-client');
