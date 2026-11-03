@@ -2513,10 +2513,13 @@ function textoConfirmacion(c){
   const ini=new Date(c.fecha);
   const dia=ini.toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long'});
   const nombre=(c.cliente||'').split(' ')[0]||'';
+  // Con bono no se pide la reserva de 20 €; si no avisa a tiempo se descuenta la sesión
+  const conBono=!!c.bonoId;
   return `Hola ${nombre} 💛 Tu cita en Divas Skin Care está confirmada:\n\n`+
     `📅 ${dia.charAt(0).toUpperCase()+dia.slice(1)} a las ${minToHHMM(minDelDia(ini))}\n`+
     `✨ ${nombreServicioCita(c)}\n📍 Calle Arguijón 1, La Laguna\n\n`+
-    `Si necesitas cambiarla o cancelarla, avísanos con al menos 48 horas de antelación. ¡Te esperamos!`;
+    (conBono?'':`💳 Para reservarla, haz un Bizum de 20 € al 613 367 567 como máximo 2 días antes (concepto: «Reserva» + tu nombre). Te lo descontamos del total el día de la cita.\n\n`)+
+    `Cambios o cancelaciones, con 48 h de antelación. Si no avisas, ${conBono?'se descuenta la sesión del bono':'pierdes la reserva'}. ¡Te esperamos! 🤍`;
 }
 function ofrecerConfirmacion(id){
   const c=(CONFIG.citasWeb||[]).find(x=>String(x.id)===String(id));
