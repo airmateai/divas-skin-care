@@ -1937,6 +1937,7 @@ function posSwitchTab(tab){
   document.getElementById('pos-tab-servicios').style.color=tab==='servicios'?'#fff':'';
   document.getElementById('pos-tab-productos').style.background=tab==='productos'?'var(--accent)':'';
   document.getElementById('pos-tab-productos').style.color=tab==='productos'?'#fff':'';
+  const fi=document.querySelector('#page-pos .cmdk-input'); if(fi) fi.value='';
   posFilter('');
   posRedrawCart();
 }
@@ -3715,9 +3716,10 @@ async function submitArticuloForm(id){
 
 // ═══════════════ TPV ═══════════════
 function posFilter(q){
-  q=(q||'').toLowerCase();
+  // Sin tildes y por palabras sueltas: «extraccion presoterapia» encuentra «Extracción … + Presoterapia»
+  const pal=normTxt(q).split(/\s+/).filter(Boolean);
   const source=POS_TAB==='productos'?(CONFIG.stock||[]):(CONFIG.catalog||[]).filter(s=>s.bookable!==false);
-  const items=source.filter(c=>!q||(c.name+' '+(c.marca||'')).toLowerCase().includes(q));
+  const items=source.filter(c=>{ const t=normTxt(c.name+' '+(c.marca||'')+' '+(c.categoria||'')); return pal.every(w=>t.includes(w)); });
   POS_VISIBLE=items;
   document.getElementById('pos-grid').innerHTML=items.map((p,i)=>{
     const sinStock=POS_TAB==='productos' && (p.qty||0)<=0;
