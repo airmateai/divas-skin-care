@@ -2510,15 +2510,30 @@ function renderKanban(){
 
 // ═══════════════ RECORDATORIOS DE CITA (WhatsApp) ═══════════════
 // Mensaje con la política de 48 h. Se abre WhatsApp con el texto escrito; Louie solo pulsa enviar.
-function textoConfirmacion(c){
-  const ini=new Date(c.fecha);
+// Varios servicios el mismo día = varias filas en «citas» (una por servicio, seguidas).
+// Confirmación y recordatorio van en UN solo mensaje con todos (pedido por Louie 05/11/2026).
+function claveClientaCita(c){ return c.clientaId?'id:'+c.clientaId:'n:'+nombreNorm(c.cliente); }
+function citasDelMismoDia(c){
+  if(!c||!c.fecha) return [c];
+  const k=claveClientaCita(c), d=dayKey(c.fecha);
+  const g=(CONFIG.citasWeb||[]).filter(x=>x.fecha && citaActiva(x) && dayKey(x.fecha)===d && claveClientaCita(x)===k);
+  if(!g.some(x=>String(x.id)===String(c.id))) g.push(c);
+  return g.sort((a,b)=>new Date(a.fecha)-new Date(b.fecha));
+}
+function lineasCitaWA(g){
+  const ini=new Date(g[0].fecha);
   const dia=ini.toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long'});
+  const cab=`📅 ${dia.charAt(0).toUpperCase()+dia.slice(1)} a las ${minToHHMM(minDelDia(ini))}\n`;
+  if(g.length===1) return cab+`✨ ${nombreServicioCita(g[0])}\n`;
+  return cab+g.map(x=>`✨ ${minToHHMM(minDelDia(new Date(x.fecha)))} · ${nombreServicioCita(x)}`).join('\n')+'\n';
+}
+function textoConfirmacion(c){
+  const g=citasDelMismoDia(c);
   const nombre=(c.cliente||'').split(' ')[0]||'';
   // Con bono no se pide la reserva de 20 €; si no avisa a tiempo se descuenta la sesión
-  const conBono=!!c.bonoId;
+  const conBono=g.every(x=>!!x.bonoId);
   return `Hola ${nombre} 💛 Tu cita en Divas Skin Care está confirmada:\n\n`+
-    `📅 ${dia.charAt(0).toUpperCase()+dia.slice(1)} a las ${minToHHMM(minDelDia(ini))}\n`+
-    `✨ ${nombreServicioCita(c)}\n📍 Calle Arguijón 1, La Laguna\n\n`+
+    lineasCitaWA(g)+`📍 Calle Arguijón 1, La Laguna\n\n`+
     (conBono?'':`💳 Para reservarla, haz un Bizum de 20 € al 613 367 567 como máximo 2 días antes (concepto: «Reserva» + tu nombre). Te lo descontamos del total el día de la cita.\n\n`)+
     `Cambios o cancelaciones, con 48 h de antelación. Si no avisas, ${conBono?'se descuenta la sesión del bono':'pierdes la reserva'}. ¡Te esperamos! 🤍`;
 }
@@ -2537,12 +2552,10 @@ function enviarConfirmacionCita(citaId){
   enviarWhatsApp(telCita(c), textoConfirmacion(c));
 }
 function textoRecordatorio(c){
-  const ini=new Date(c.fecha);
-  const dia=ini.toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long'});
+  const g=citasDelMismoDia(c);
   const nombre=(c.cliente||'').split(' ')[0]||'';
   return `Hola ${nombre} 💛 Te recordamos tu cita en Divas Skin Care:\n\n`+
-    `📅 ${dia.charAt(0).toUpperCase()+dia.slice(1)} a las ${minToHHMM(minDelDia(ini))}\n`+
-    `✨ ${nombreServicioCita(c)}\n📍 Calle Arguijón 1, La Laguna\n\n`+
+    lineasCitaWA(g)+`📍 Calle Arguijón 1, La Laguna\n\n`+
     `Si necesitas cambiarla o cancelarla, avísanos con al menos 48 horas de antelación. `+
     `Si no nos avisas a tiempo (salvo causa urgente justificada), la cita se dará por realizada: se pierde la señal o el importe pagado y, si tienes bono, se descuenta la sesión.\n\n`+
     `Respóndenos a este mensaje para confirmar tu asistencia. ¡Te esperamos!`;
@@ -2554,7 +2567,10 @@ function enviarRecordatorioCita(citaId){
 }
 function citasDeManana(){
   const m=new Date(); m.setDate(m.getDate()+1); const k=dayKey(m);
-  return (CONFIG.citasWeb||[]).filter(c=>c.fecha && citaActiva(c) && dayKey(c.fecha)===k).sort((a,b)=>new Date(a.fecha)-new Date(b.fecha));
+  const todas=(CONFIG.citasWeb||[]).filter(c=>c.fecha && citaActiva(c) && dayKey(c.fecha)===k).sort((a,b)=>new Date(a.fecha)-new Date(b.fecha));
+  // Una sola entrada por clienta (la primera cita del día); el mensaje ya lleva todos sus servicios
+  const vistas=new Set();
+  return todas.filter(c=>{ const kc=claveClientaCita(c); if(vistas.has(kc)) return false; vistas.add(kc); return true; });
 }
 function abrirRecordatoriosManana(){
   const lista=citasDeManana();
@@ -2562,7 +2578,7 @@ function abrirRecordatoriosManana(){
     <p style="font-size:13px;color:var(--txt2);margin:0 0 12px;">Pulsa cada botón: se abre WhatsApp con el recordatorio (incluye el aviso de las 48 horas). Solo tienes que darle a enviar.</p>
     ${lista.map(c=>`<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border2);">
       <span style="width:46px;font-weight:600;">${minToHHMM(minDelDia(new Date(c.fecha)))}</span>
-      <span style="flex:1;"><strong>${esc(c.cliente||'-')}</strong><br><span style="font-size:11px;color:var(--txt3);">${esc(nombreServicioCita(c))}</span></span>
+      <span style="flex:1;"><strong>${esc(c.cliente||'-')}</strong><br><span style="font-size:11px;color:var(--txt3);">${esc(citasDelMismoDia(c).map(nombreServicioCita).join(' + '))}</span></span>
       <button class="btn btn-ghost" style="padding:5px 10px;font-size:11px;" onclick="enviarRecordatorioCita('${c.id}');this.textContent='✓ Abierto';">📲 Recordar</button>
     </div>`).join('')}`:'<p style="font-size:13px;color:var(--txt2);">No hay citas para mañana.</p>');
 }
