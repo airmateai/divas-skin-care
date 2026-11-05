@@ -4894,6 +4894,117 @@ async function guardarObjetivo(){
 })();
 
 // ═════════════════════════════════════════════════════════════════════
+// Metas personales (pedido por Fabio 05/11/2026 para Louie y Natalia): cada
+// usuaria apunta sus propias metas de dinero (para qué, cuánto, fecha) y va
+// sumando lo que lleva. Tabla metas_personales con RLS: cada una solo ve las suyas.
+// ═════════════════════════════════════════════════════════════════════
+let METAS=null; // null = tabla no disponible → no se pinta la tarjeta
+async function cargarMetas(){
+  const { data, error }=await sb.from('metas_personales').select('*').order('created_at');
+  if(error){ console.warn('metas',error.message); METAS=null; return; }
+  METAS=data||[];
+}
+function renderMetas(){
+  const host=document.getElementById('dash-metas'); if(!host) return;
+  if(METAS===null){ host.innerHTML=''; return; }
+  const nombre=esc((CURRENT_USER.nombre||'').split(' (')[0]);
+  const filas=METAS.map(m=>{
+    const obj=Number(m.objetivo)||0, llevo=Number(m.llevo)||0;
+    const pct=obj?Math.min(100,Math.round(llevo/obj*100)):0, hecho=obj&&llevo>=obj;
+    let plazo='';
+    if(m.fecha_limite && !hecho){
+      const dias=Math.ceil((new Date(m.fecha_limite+'T23:59:59')-new Date())/864e5);
+      plazo=dias<0?'<span style="color:#b3441e">fecha pasada</span>':dias+' días · '+fmt2(Math.max(0,obj-llevo)/Math.max(1,Math.ceil(dias/7)))+'/semana';
+    }
+    return `<div style="border:1px solid var(--border);border-radius:10px;padding:12px 14px;">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap;">
+        <div style="font-size:14px;font-weight:700;color:var(--txt);">${esc(m.titulo||'Mi meta')}</div>
+        <div style="font-size:13px;color:${hecho?'#16a34a':'var(--txt2)'};font-weight:700;">${hecho?'🎉 ¡Conseguida!':fmt2(llevo)+' de '+fmt2(obj)}</div>
+      </div>
+      <div style="height:9px;background:var(--border2);border-radius:6px;overflow:hidden;margin:8px 0 6px;"><div style="height:100%;width:${pct}%;background:${hecho?'#16a34a':'linear-gradient(90deg,var(--accent),#d4b596)'};border-radius:6px;transition:width .4s;"></div></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
+        <div style="font-size:11.5px;color:var(--txt3);">${pct}%${plazo?' · '+plazo:''}</div>
+        <div style="display:flex;gap:6px;">
+          ${hecho?'':`<button class="btn btn-accent" style="padding:4px 10px;font-size:11px;" onclick="sumarMeta('${m.id}')">+ Sumar</button>`}
+          <button class="btn btn-ghost" style="padding:4px 10px;font-size:11px;" onclick="abrirMeta('${m.id}')">Editar</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+  host.innerHTML=`<div class="card" style="margin-bottom:18px;">
+    <div class="card-hd"><div class="card-hd-title">💸 Mis metas, ${nombre}</div><button class="btn btn-ghost" style="padding:4px 10px;font-size:11px;" onclick="abrirMeta()">+ Nueva meta</button></div>
+    <div style="padding:6px 20px 18px;">
+      ${METAS.length?`<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px;">${filas}</div>`
+        :`<div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;"><div style="flex:1;min-width:200px;font-size:12.5px;color:var(--txt3);">Apunta cuánto quieres ganar y para qué: un viaje, un coche, ahorrar… Solo la ves tú.</div><button class="btn btn-accent" onclick="abrirMeta()">🎯 Poner mi primera meta</button></div>`}
+    </div>
+  </div>`;
+}
+function abrirMeta(id){
+  const m=(METAS||[]).find(x=>x.id===id)||{};
+  abrirModal(id?'Editar meta':'Nueva meta', `
+    <p style="font-size:13px;color:var(--txt2);margin:0 0 14px;">Pon lo que quieras. Esta meta solo la ves tú.</p>
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      ${campo('¿Para qué?',`<input id="meta-tit" maxlength="80" value="${esc(m.titulo||'')}" placeholder="ej. Viaje a Bali, ahorrar para el coche…" style="${INP}">`)}
+      <div class="two-col">
+        ${campo('Quiero ganar (€)',`<input id="meta-obj" type="number" min="0" step="10" value="${m.objetivo??''}" placeholder="ej. 2000" style="${INP}font-size:16px;">`)}
+        ${campo('Ya llevo (€)',`<input id="meta-llevo" type="number" min="0" step="10" value="${m.llevo??0}" style="${INP}font-size:16px;">`)}
+      </div>
+      ${campo('Para cuándo (opcional)',`<input id="meta-fecha" type="date" value="${m.fecha_limite||''}" style="${INP}">`)}
+    </div>
+    <div style="display:flex;gap:8px;margin-top:18px;">
+      ${id?`<button class="btn btn-ghost" style="color:#b3441e" onclick="borrarMeta('${id}')">Borrar</button>`:''}
+      <button class="btn btn-ghost" style="flex:1" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-accent" style="flex:1" onclick="guardarMeta(${id?`'${id}'`:''})">Guardar</button>
+    </div>`);
+}
+async function guardarMeta(id){
+  const titulo=document.getElementById('meta-tit').value.trim(), objetivo=parseFloat(document.getElementById('meta-obj').value);
+  const llevo=parseFloat(document.getElementById('meta-llevo').value)||0, fecha_limite=document.getElementById('meta-fecha').value||null;
+  if(!titulo){ toast('Escribe para qué es la meta'); return; }
+  if(!(objetivo>0)){ toast('Escribe cuánto quieres ganar'); return; }
+  const fila={ titulo, objetivo, llevo, fecha_limite, updated_at:new Date().toISOString() };
+  const q=id?sb.from('metas_personales').update(fila).eq('id',id):sb.from('metas_personales').insert({ id:crypto.randomUUID(), ...fila });
+  const { error }=await q;
+  if(error){ toast('No se pudo guardar: '+error.message); return; }
+  await cargarMetas(); closeModal(); renderMetas(); toast('✓ Meta guardada');
+}
+function sumarMeta(id){
+  const m=(METAS||[]).find(x=>x.id===id); if(!m) return;
+  abrirModal('Sumar a «'+esc(m.titulo)+'»', `
+    ${campo('¿Cuánto sumas? (€)',`<input id="meta-suma" type="number" step="10" placeholder="ej. 150" style="${INP}font-size:16px;">`)}
+    <div style="display:flex;gap:8px;margin-top:18px;">
+      <button class="btn btn-ghost" style="flex:1" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-accent" style="flex:1" onclick="guardarSumaMeta('${id}')">Sumar</button>
+    </div>`);
+}
+async function guardarSumaMeta(id){
+  const m=(METAS||[]).find(x=>x.id===id), suma=parseFloat(document.getElementById('meta-suma').value);
+  if(!m||!suma){ toast('Escribe la cantidad'); return; }
+  const llevo=Math.max(0,Math.round(((Number(m.llevo)||0)+suma)*100)/100);
+  const { error }=await sb.from('metas_personales').update({ llevo, updated_at:new Date().toISOString() }).eq('id',id);
+  if(error){ toast('No se pudo guardar: '+error.message); return; }
+  await cargarMetas(); closeModal(); renderMetas(); toast('✓ Llevas '+fmt2(llevo));
+}
+async function borrarMeta(id){
+  const { error }=await sb.from('metas_personales').delete().eq('id',id);
+  if(error){ toast('No se pudo borrar: '+error.message); return; }
+  await cargarMetas(); closeModal(); renderMetas(); toast('Meta borrada');
+}
+(function(){
+  const _rd=renderDashboard;
+  renderDashboard=function(){
+    _rd.apply(this,arguments);
+    if(!document.getElementById('dash-metas')){
+      const ancla=document.getElementById('dash-objetivo')||document.getElementById('dash-stats');
+      if(ancla) ancla.insertAdjacentHTML('afterend','<div id="dash-metas"></div>');
+    }
+    renderMetas();
+  };
+  const _lr=loadRealData;
+  loadRealData=async function(){ await Promise.all([_lr.apply(this,arguments), cargarMetas().catch(()=>{})]); };
+})();
+
+// ═════════════════════════════════════════════════════════════════════
 // Recibos y facturas en PDF: se generan en el propio dispositivo (gratis) y
 // se comparten con el menú del sistema (WhatsApp, Mail…) con el PDF adjunto.
 // Si el dispositivo no tiene menú de compartir, se descarga el PDF.
