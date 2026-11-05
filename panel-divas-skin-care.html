@@ -2318,12 +2318,40 @@ function suscribirTiempoReal(){
   if(_rtCanal) return;
   _rtCanal=sb.channel('divas-panel')
     .on('postgres_changes',{event:'INSERT',schema:'public',table:'notificaciones'},p=>{
-      toast('🔔 '+(p.new?.mensaje||'Nueva notificación'));
+      _ultimoAviso=Date.now();
+      avisar('🔔 '+(p.new?.mensaje||'Nueva notificación'));
       programarRecarga();
     })
-    .on('postgres_changes',{event:'*',schema:'public',table:'citas'},()=>programarRecarga())
+    .on('postgres_changes',{event:'INSERT',schema:'public',table:'citas'},p=>{
+      // Las reservas de la web no crean fila en «notificaciones» (pedido por Louie 05/11/2026):
+      // se avisa aquí, salvo que acabe de llegar ya su notificación
+      const c=p.new||{};
+      if(c.origen!=='panel') setTimeout(()=>{ if(Date.now()-_ultimoAviso>4000){
+        const cuando=c.fecha?new Date(c.fecha).toLocaleString('es-ES',{weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'sin fecha';
+        avisar('📅 Nueva reserva'+(c.cliente_nombre?' de '+c.cliente_nombre:'')+' · '+cuando);
+      } },1500);
+      programarRecarga();
+    })
+    .on('postgres_changes',{event:'UPDATE',schema:'public',table:'citas'},()=>programarRecarga())
+    .on('postgres_changes',{event:'DELETE',schema:'public',table:'citas'},()=>programarRecarga())
     .subscribe();
 }
+let _ultimoAviso=0, _acAviso=null;
+// Aviso en pantalla + sonido + notificación del sistema (si el navegador lo permite y el panel no está a la vista)
+function avisar(txt){
+  toast(txt);
+  try{ _acAviso=_acAviso||new (window.AudioContext||window.webkitAudioContext)(); const t=_acAviso.currentTime;
+    [880,1318.5].forEach((f,i)=>{ const o=_acAviso.createOscillator(), g=_acAviso.createGain(); o.frequency.value=f;
+      g.gain.setValueAtTime(0,t+i*.15); g.gain.linearRampToValueAtTime(.2,t+i*.15+.02); g.gain.exponentialRampToValueAtTime(.001,t+i*.15+.5);
+      o.connect(g).connect(_acAviso.destination); o.start(t+i*.15); o.stop(t+i*.15+.55); }); }catch(e){}
+  try{ if('Notification' in window && Notification.permission==='granted' && document.hidden) new Notification('Divas Skin Care',{ body:txt.replace(/^\S+\s/,''), icon:'img/logo-divas-silueta.jpeg' }); }catch(e){}
+}
+// Safari solo deja pedir permiso de notificaciones tras un toque: se pide en el primer clic dentro del panel
+document.addEventListener('click',function pedirPermiso(){
+  document.removeEventListener('click',pedirPermiso);
+  try{ if(_acAviso===null) _acAviso=new (window.AudioContext||window.webkitAudioContext)(); _acAviso.resume&&_acAviso.resume(); }catch(e){}
+  try{ if('Notification' in window && Notification.permission==='default') Notification.requestPermission(); }catch(e){}
+});
 function programarRecarga(){ clearTimeout(_rtTimer); _rtTimer=setTimeout(recargarTodo,600); }
 
 // ═══════════════ CALENDARIO (día / semana / mes) ═══════════════
