@@ -1696,9 +1696,14 @@ function precioWeb(p){ p=Number(p)||0; return (Number.isInteger(p)?p:p.toFixed(2
 function escWeb(t){ return String(t??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 const RE_DURACION = /^\s*(\d+\s*h)?\s*(\d+\s*min)?\s*$/i;
 (async function sincronizarServiciosWeb(){
-  let { data, error } = await sb.from('servicios').select('id,nombre,categoria,duracion,duracion_min,precio,reservable,descripcion,color,img_url,video_url,orden,precio_oferta,bonos,visible_web').order('orden');
+  let { data, error } = await sb.from('servicios').select('id,nombre,categoria,duracion,duracion_min,precio,reservable,descripcion,color,img_url,video_url,orden,precio_oferta,bonos,visible_web,oferta_solo_web,oferta_hasta').order('orden');
+  if (error) ({ data, error } = await sb.from('servicios').select('id,nombre,categoria,duracion,duracion_min,precio,reservable,descripcion,color,img_url,video_url,orden,precio_oferta,bonos,visible_web').order('orden'));
   if (error) ({ data, error } = await sb.from('servicios').select('id,nombre,categoria,duracion,duracion_min,precio,reservable,descripcion,color,img_url,video_url,orden').order('orden'));
   if (error || !data) return;
+  // Un descuento con fecha de fin ya pasada no se enseña
+  const hoy = new Date().toLocaleDateString('sv-SE', { timeZone:'Atlantic/Canary' });
+  data.forEach(s => { if (s.oferta_hasta && s.oferta_hasta < hoy) s.precio_oferta = null; });
+  avisoOfertaWeb(data);
   const conTarjeta = new Set();
   data.forEach(s => { SERVICIOS_MAP[s.id] = s.duracion_min || 60; SERVICIOS_DB[s.id] = s; });
   document.querySelectorAll('.svc-book[data-servicio-id]').forEach(btn => {
@@ -1894,9 +1899,23 @@ async function pagarRegalo(){
   if (error || !data?.url) { let m = 'No se pudo abrir el pago. Inténtalo de nuevo o escríbenos por WhatsApp.'; try { const j = await error?.context?.json?.(); if (j?.error) m = j.error; } catch(e) {} err.textContent = m; b.disabled = false; b.innerHTML = txt; return; }
   location.href = data.url;
 }
+// Franja en la portada cuando hay descuentos «solo reservando online»
+function avisoOfertaWeb(data){
+  const ofertas = data.filter(s => s.oferta_solo_web && s.precio_oferta != null && s.reservable === true && s.visible_web !== false && Number(s.precio) > 0);
+  const h1 = document.querySelector('.hero h1');
+  if (!ofertas.length || !h1) return;
+  const pct = Math.max(...ofertas.map(s => Math.round((1 - s.precio_oferta / s.precio) * 100)));
+  const fechas = [...new Set(ofertas.map(s => s.oferta_hasta || ''))];
+  const hasta = fechas.length === 1 && fechas[0] ? ' · hasta el ' + new Date(fechas[0] + 'T12:00:00').toLocaleDateString('es-ES', { day:'numeric', month:'long' }) : '';
+  const a = document.createElement('a');
+  a.href = '#servicios';
+  a.style.cssText = 'display:inline-block;margin-bottom:18px;padding:8px 16px;border-radius:999px;background:#b3441e;color:#fff;font-size:13px;font-weight:600;letter-spacing:.02em;text-decoration:none;max-width:100%;';
+  a.textContent = `🎉 Oferta de lanzamiento: hasta −${pct}% reservando online${hasta} →`;
+  h1.before(a);
+}
 function precioServicioWeb(s){
   const base = precioWeb(s.precio);
-  const precio = s.precio_oferta != null ? `<s style="opacity:.55;font-size:.85em;margin-right:4px;">${base}</s>${precioWeb(s.precio_oferta)}` : base;
+  const precio = s.precio_oferta != null ? `<s style="opacity:.55;font-size:.85em;margin-right:4px;">${base}</s>${precioWeb(s.precio_oferta)}${s.oferta_solo_web ? '<small style="display:block;font-size:10.5px;font-weight:600;color:#b3441e;margin-top:2px;">Precio exclusivo web</small>' : ''}` : base;
   const bonos = Array.isArray(s.bonos) ? s.bonos.filter(b => b && b.sesiones > 1).sort((a,b) => a.sesiones - b.sesiones) : [];
   return bonos.length ? `${precio}<small style="display:block;font-size:11px;opacity:.85;font-weight:500;margin-top:2px;">${bonos.map(b => `Bono ${b.sesiones} sesiones · ${precioWeb(b.precio)}`).join('<br>')}</small>` : precio;
 }

@@ -1404,7 +1404,12 @@ async function loadRealData(){
       descripcion: s.descripcion || '',
       imgUrl: s.img_url || '',
       orden: s.orden ?? 9999,
-      precioOferta: s.precio_oferta ?? null,
+      // ofertaPrecio = descuento tal cual está guardado; precioOferta = el que se aplica en cabina
+      // (no si es «solo web» ni si ya pasó su fecha de fin)
+      ofertaPrecio: s.precio_oferta ?? null,
+      ofertaSoloWeb: s.oferta_solo_web === true,
+      ofertaHasta: s.oferta_hasta || null,
+      precioOferta: s.precio_oferta != null && s.oferta_solo_web !== true && ofertaVigente(s.oferta_hasta) ? s.precio_oferta : null,
       bonos: Array.isArray(s.bonos) ? s.bonos.filter(b=>b&&b.sesiones>1&&b.precio>=0).sort((a,b)=>a.sesiones-b.sesiones) : [],
       visibleWeb: s.visible_web !== false,
       archivado: s.archivado === true
@@ -1442,6 +1447,7 @@ async function loadRealData(){
       servicioId: c.servicio_id,
       profesional: c.profesional,
       bonoId: c.bono_id || null,
+      precioWeb: c.precio_web ?? null,
       duracionMin: c.duracion_min,
       clientaId: c.clienta_id,
       creadoPor: c.creado_por,
@@ -3156,9 +3162,15 @@ function categoriasOrdenadas(){
   return vistas.sort((a,b)=>((m[a]??(1000+vistas.indexOf(a)))-(m[b]??(1000+vistas.indexOf(b)))));
 }
 function serviciosDeCategoria(cat){ return (CONFIG.catalog||[]).filter(x=>!x.archivado&&(x.categoria||'Sin categoría')===cat).sort((a,b)=>(a.orden??9999)-(b.orden??9999)); }
+function ofertaVigente(hasta){ return !hasta || hasta >= hoyCanarias(); }
+function hoyCanarias(){ return new Date().toLocaleDateString('sv-SE',{timeZone:'Atlantic/Canary'}); }
+function fechaCorta(iso){ return new Date(iso+'T12:00:00').toLocaleDateString('es-ES',{day:'numeric',month:'short'}); }
 function precioServicioHTML(p){
   const base=fmt2(p.price).replace(',00','');
-  return p.precioOferta!=null?`<span style="text-decoration:line-through;color:var(--txt3);font-size:12px;margin-right:4px;">${base}</span><span style="font-size:15px;font-weight:800;color:#b3441e;">${fmt2(p.precioOferta).replace(',00','')}</span>`:`<span style="font-size:15px;font-weight:800;color:var(--accent);">${base}</span>`;
+  if(p.ofertaPrecio==null) return `<span style="font-size:15px;font-weight:800;color:var(--accent);">${base}</span>`;
+  const caducada=!ofertaVigente(p.ofertaHasta);
+  const etiqueta=[p.ofertaSoloWeb?'solo web':'', p.ofertaHasta?(caducada?'terminó el ':'hasta el ')+fechaCorta(p.ofertaHasta):''].filter(Boolean).join(' · ');
+  return `<span style="text-decoration:line-through;color:var(--txt3);font-size:12px;margin-right:4px;${caducada?'text-decoration:none;':''}">${base}</span>${caducada?'':`<span style="font-size:15px;font-weight:800;color:#b3441e;">${fmt2(p.ofertaPrecio).replace(',00','')}</span>`}${etiqueta?`<span style="font-size:10.5px;color:${caducada?'var(--txt3)':'#b3441e'};margin-left:5px;">${etiqueta}</span>`:''}`;
 }
 function renderCatalog(){
   const cats=categoriasOrdenadas();
@@ -3201,31 +3213,37 @@ async function recuperarServicio(id){
 function fmtE(n){ return fmt2(n).replace(',00',''); }
 function abrirDescuento(id){
   const s=servicioDe(id); if(!s) return;
-  const actual=s.precioOferta!=null?Math.round((1-s.precioOferta/s.price)*100):'';
+  const actual=s.ofertaPrecio!=null?Math.round((1-s.ofertaPrecio/s.price)*100):'';
   abrirModal('Descuento · '+s.name, `<div style="display:flex;flex-direction:column;gap:14px;">
     <div style="font-size:13px;color:var(--txt2);">Precio normal: <b>${fmtE(s.price)}</b></div>
     <div class="two-col">
       ${campo('Descuento (%)',`<input id="dc-pct" type="number" min="1" max="90" value="${actual}" oninput="dcDesdePct()" style="${INP}">`)}
-      ${campo('Precio final (€)',`<input id="dc-fin" type="number" min="0" step="0.01" value="${s.precioOferta??''}" oninput="dcDesdeFinal()" style="${INP}">`)}
+      ${campo('Precio final (€)',`<input id="dc-fin" type="number" min="0" step="0.01" value="${s.ofertaPrecio??''}" oninput="dcDesdeFinal()" style="${INP}">`)}
     </div>
+    <label style="display:flex;gap:10px;align-items:flex-start;font-size:13px;cursor:pointer;"><input id="dc-web" type="checkbox" ${s.ofertaSoloWeb?'checked':''} onchange="dcPrev()" style="margin-top:3px;"><span><b>Solo reservando por la web</b><br><span style="color:var(--txt3);font-size:12px;">En el punto de venta se cobra el precio normal, salvo a quien reservó online con descuento.</span></span></label>
+    ${campo('Hasta el día (opcional)',`<input id="dc-hasta" type="date" min="${hoyCanarias()}" value="${s.ofertaHasta??''}" onchange="dcPrev()" style="${INP}">`)}
     <div id="dc-prev" style="text-align:center;padding:16px;border-radius:10px;background:color-mix(in srgb,var(--accent) 8%,var(--surface));"></div>
   </div><p id="dc-error" style="color:#b3441e;font-size:12px;margin-top:8px;"></p>
   <div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap;">
-    ${s.precioOferta!=null?`<button class="btn btn-ghost" style="flex:1" onclick="guardarDescuento('${id}',null)">Quitar descuento</button>`:''}
+    ${s.ofertaPrecio!=null?`<button class="btn btn-ghost" style="flex:1" onclick="guardarDescuento('${id}',null)">Quitar descuento</button>`:''}
     <button class="btn btn-accent" style="flex:1" onclick="guardarDescuento('${id}')">Aplicar descuento</button></div>`);
   window._dcBase=Number(s.price)||0; dcPrev();
 }
 function dcDesdePct(){ const p=parseFloat(document.getElementById('dc-pct').value); document.getElementById('dc-fin').value=p>0?Math.round(_dcBase*(1-p/100)*100)/100:''; dcPrev(); }
 function dcDesdeFinal(){ const f=parseFloat(document.getElementById('dc-fin').value); document.getElementById('dc-pct').value=f>=0&&_dcBase?Math.round((1-f/_dcBase)*100):''; dcPrev(); }
 function dcPrev(){ const f=parseFloat(document.getElementById('dc-fin').value), el=document.getElementById('dc-prev');
-  el.innerHTML=f>=0&&f<_dcBase?`<span style="text-decoration:line-through;color:var(--txt3);font-size:18px;">${fmtE(_dcBase)}</span> <span style="font-family:var(--font-serif);font-size:30px;color:#b3441e;font-weight:600;">${fmtE(f)}</span><div style="font-size:12px;color:var(--txt2);margin-top:4px;">Así se verá en la web y en el punto de venta · ahorra ${fmtE(_dcBase-f)}</div>`:'<span style="color:var(--txt3);font-size:13px;">Escribe el % o el precio final</span>'; }
+  el.innerHTML=f>=0&&f<_dcBase?`<span style="text-decoration:line-through;color:var(--txt3);font-size:18px;">${fmtE(_dcBase)}</span> <span style="font-family:var(--font-serif);font-size:30px;color:#b3441e;font-weight:600;">${fmtE(f)}</span><div style="font-size:12px;color:var(--txt2);margin-top:4px;">${document.getElementById('dc-web')?.checked?'Así se verá en la web (en el centro, precio normal)':'Así se verá en la web y en el punto de venta'} · ahorra ${fmtE(_dcBase-f)}${document.getElementById('dc-hasta')?.value?' · hasta el '+fechaCorta(document.getElementById('dc-hasta').value):''}</div>`:'<span style="color:var(--txt3);font-size:13px;">Escribe el % o el precio final</span>'; }
 async function guardarDescuento(id, quitar){
   const s=servicioDe(id), err=document.getElementById('dc-error');
   let v=null; if(quitar!==null){ v=parseFloat(document.getElementById('dc-fin').value); if(!(v>=0 && v<s.price)){ err.textContent='El precio final tiene que ser menor que el precio normal.'; return; } v=Math.round(v*100)/100; }
   err.textContent='Guardando…';
-  const { data, error } = await sb.from('servicios').update({ precio_oferta:v }).eq('id',id).select('id');
-  if(error||!data?.length){ err.textContent='No se pudo guardar: '+(/precio_oferta/.test(error?.message||'')?'falta activar descuentos en la base de datos (avisa a Airmate)':(error?.message||'sin permiso')); return; }
-  await recargarTodo(); closeModal(); toast(v==null?'Descuento quitado':'✓ Descuento aplicado: '+fmtE(s.price)+' → '+fmtE(v));
+  const soloWeb=v!=null&&document.getElementById('dc-web').checked, hasta=v!=null?(document.getElementById('dc-hasta').value||null):null;
+  if(hasta && hasta<hoyCanarias()){ err.textContent='La fecha de fin ya ha pasado.'; return; }
+  const cambios={ precio_oferta:v };
+  if(soloWeb || hasta || s.ofertaSoloWeb || s.ofertaHasta){ cambios.oferta_solo_web=soloWeb; cambios.oferta_hasta=hasta; }
+  const { data, error } = await sb.from('servicios').update(cambios).eq('id',id).select('id');
+  if(error||!data?.length){ err.textContent='No se pudo guardar: '+(/precio_oferta|oferta_solo_web|oferta_hasta/.test(error?.message||'')?'falta activar descuentos en la base de datos (avisa a Airmate)':(error?.message||'sin permiso')); return; }
+  await recargarTodo(); closeModal(); toast(v==null?'Descuento quitado':'✓ Descuento aplicado: '+fmtE(s.price)+' → '+fmtE(v)+(soloWeb?' (solo web)':''));
 }
 async function toggleVisibleWeb(id){
   const s=servicioDe(id); const nuevo=s.visibleWeb===false;
@@ -3376,7 +3394,7 @@ function openServicioForm(id){
       </div>
       <div class="two-col">
         ${campo('Precio (€)',`<input id="sf-precio" type="number" min="0" step="0.01" value="${s?.price??''}" style="${INP}">`)}
-        ${campo('Precio con descuento (€) · opcional',`<input id="sf-oferta" type="number" min="0" step="0.01" value="${s?.precioOferta??''}" placeholder="Vacío = sin descuento" style="${INP}">`)}
+        ${campo('Precio con descuento (€) · opcional',`<input id="sf-oferta" type="number" min="0" step="0.01" value="${s?.ofertaPrecio??''}" placeholder="Vacío = sin descuento" style="${INP}">`)}
       </div>
       <div>
         <div style="${LBL}margin-bottom:6px;">Bonos de este servicio (opcional)</div>
@@ -3443,7 +3461,7 @@ async function submitServicioForm(id){
     color:document.getElementById('sf-color').value, descripcion:document.getElementById('sf-desc').value.trim()||null,
     reservable:document.getElementById('sf-reservable').checked };
   // Solo se envían si se usan o ya existían (así no falla si la base de datos aún no tiene estas columnas)
-  if(oferta!=null || s0?.precioOferta!=null) fila.precio_oferta=oferta;
+  if(oferta!=null || s0?.ofertaPrecio!=null) fila.precio_oferta=oferta;
   if(bonos.length || s0?.bonos?.length) fila.bonos=bonos.map(b=>({sesiones:b.sesiones,precio:Math.round(b.precio*100)/100})).sort((a,b)=>a.sesiones-b.sesiones);
   const web=document.getElementById('sf-web').checked; if(!web || s0?.visibleWeb===false) fila.visible_web=web;
   const fotoSf=document.getElementById('sf-foto')?.files?.[0];
@@ -3712,7 +3730,7 @@ function cobrarCita(citaId){
     POS_CART=[]; POS_REGALOS=[]; POS_CITA=todas.map(x=>x.id);
     posSetClienta(cl?cl.id:null);
     let conBono=0;
-    todas.forEach(x=>{ const sv=servicioDe(x.servicioId); if(x.bonoId){ conBono++; return; } if(sv){ const unit=sv.precioOferta??sv.price; posAddLinea({ key:'servicios:'+sv.id, type:'servicio', servicioId:sv.id, name:sv.name, price:Number(unit)||0, precioBase:Number(unit)||0, precioAntes:sv.precioOferta!=null?Number(sv.price):null }); } });
+    todas.forEach(x=>{ const sv=servicioDe(x.servicioId); if(x.bonoId){ conBono++; return; } if(sv){ const unit=x.precioWeb??sv.precioOferta??sv.price; posAddLinea({ key:'servicios:'+sv.id, type:'servicio', servicioId:sv.id, name:sv.name+(x.precioWeb!=null&&x.precioWeb!=(sv.precioOferta??sv.price)?' (precio web)':''), price:Number(unit)||0, precioBase:Number(unit)||0, precioAntes:Number(unit)<Number(sv.price)?Number(sv.price):null }); } });
     if(conBono) toast(conBono===todas.length?'Esta cita va con bono: el tratamiento no se cobra. Añade productos si se lleva algo':'Los servicios que van con bono no se cobran');
     posRedrawCart();
     toast('Cobrando la cita de '+(cl?cl.name:(c.cliente||'la clienta'))+(cl?'':' · no tiene ficha, elígela arriba si quieres que quede registrado'));

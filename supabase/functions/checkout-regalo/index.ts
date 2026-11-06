@@ -23,6 +23,12 @@ const texto = (v: unknown, max: number) => String(v ?? "").replace(/[<>]/g, "").
 const ALFA = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 const trozo = (n: number) => Array.from(crypto.getRandomValues(new Uint8Array(n)), (b) => ALFA[b % ALFA.length]).join("");
 
+// El descuento solo cuenta hasta su fecha de fin (hora de Canarias)
+function precioVigente(s: { precio: number; precio_oferta: number | null; oferta_hasta?: string | null }) {
+  const hoy = new Date().toLocaleDateString("sv-SE", { timeZone: "Atlantic/Canary" });
+  return Number(s.precio_oferta != null && (!s.oferta_hasta || s.oferta_hasta >= hoy) ? s.precio_oferta : s.precio);
+}
+
 Deno.serve(async (req) => {
   const origin = req.headers.get("origin");
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors(origin) });
@@ -40,10 +46,10 @@ Deno.serve(async (req) => {
     const id = String(b.servicio_id || "");
     if (!/^[0-9a-f-]{36}$/i.test(id)) return json({ error: "Servicio no válido" }, 400, origin);
     const { data: s, error } = await supabase.from("servicios")
-      .select("id, nombre, precio, precio_oferta, reservable, bonos").eq("id", id).maybeSingle();
+      .select("*").eq("id", id).maybeSingle();
     if (error || !s || s.reservable === false) return json({ error: "Este servicio no se puede regalar ahora" }, 404, origin);
     servicioId = s.id; servicioNombre = s.nombre;
-    importe = Number(s.precio_oferta ?? s.precio);
+    importe = precioVigente(s);
     const n = Number(b.bono_sesiones || 0);
     if (n) {
       const bono = (Array.isArray(s.bonos) ? s.bonos : []).find((x: { sesiones: number; precio: number }) => Number(x?.sesiones) === n);
@@ -75,12 +81,12 @@ Deno.serve(async (req) => {
     }
     if (sv.size) {
       const ids = [...new Set([...sv.keys()].map((k) => k.split("|")[0]))];
-      const { data: ss, error } = await supabase.from("servicios").select("id, nombre, precio, precio_oferta, reservable, bonos").in("id", ids);
+      const { data: ss, error } = await supabase.from("servicios").select("*").in("id", ids);
       if (error || !ss || ss.length !== ids.length) return json({ error: "Algún tratamiento ya no está disponible" }, 404, origin);
       for (const [k, v] of sv) {
         const s = ss.find((x) => x.id === k.split("|")[0])!;
         if (s.reservable === false) return json({ error: `${s.nombre} no se puede regalar ahora` }, 409, origin);
-        let precio = Number(s.precio_oferta ?? s.precio), nombre = s.nombre;
+        let precio = precioVigente(s), nombre = s.nombre;
         if (v.bono) {
           const bono = (Array.isArray(s.bonos) ? s.bonos : []).find((x: { sesiones: number }) => Number(x?.sesiones) === v.bono);
           if (!bono) return json({ error: `Ese bono de ${s.nombre} ya no está disponible` }, 404, origin);
