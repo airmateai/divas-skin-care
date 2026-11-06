@@ -469,6 +469,9 @@ tbody tr:hover{background:rgba(0,0,0,.02);}
 .cal-ev{position:absolute;z-index:2;border-radius:7px;padding:4px 7px;overflow:hidden;cursor:pointer;background:color-mix(in srgb,var(--c) 22%,var(--surface));border-left:4px solid var(--c);color:var(--txt);box-shadow:0 1px 2px rgba(0,0,0,.06);transition:transform .12s,box-shadow .12s;}
 .cal-ev:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(0,0,0,.12);z-index:4;}
 .cal-ev-pend{background:repeating-linear-gradient(135deg,color-mix(in srgb,var(--c) 22%,var(--surface)) 0 8px,color-mix(in srgb,var(--c) 10%,var(--surface)) 8px 16px);}
+.cal-ev-novino{background:var(--surface);border:1px dashed #b3441e;border-left:4px solid #b3441e;box-shadow:none;}
+.cal-ev-novino .cal-ev-t b{color:#b3441e;}
+.cal-ev-novino .cal-ev-n,.cal-ev-novino .cal-ev-s,.cal-ev-novino .cal-ev-p{color:var(--txt3);text-decoration:line-through;}
 .cal-ev-t{font-size:10px;color:var(--txt2);font-weight:600;white-space:nowrap;}
 .cal-ev-n{font-size:12px;font-weight:700;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .cal-ev-s,.cal-ev-p{font-size:10.5px;color:var(--txt2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
@@ -504,6 +507,7 @@ tbody tr:hover{background:rgba(0,0,0,.02);}
 .notif-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--accent);}
 .nav-count{margin-left:auto;background:var(--accent);color:#fff;font-size:10px;font-weight:700;border-radius:10px;padding:1px 7px;}
 .kan-card{cursor:pointer;}
+.cal-chip-novino{background:var(--surface);border-left-color:#b3441e;color:var(--txt3);}
 @media(max-width:760px){.cal-mcell{min-height:72px;padding:4px;} .cal-chip{font-size:9.5px;} .cal-label{font-size:14px;} }
 </style>
 </head>
@@ -2406,7 +2410,8 @@ function calIrADia(key){ CAL.ref=new Date(key+'T12:00:00'); CAL.vista='dia'; ren
 function inicioSemana(d){ const x=new Date(d); x.setHours(0,0,0,0); x.setDate(x.getDate()-((x.getDay()+6)%7)); return x; }
 function citasCalendarioDia(d){
   const k=dayKey(d);
-  return (CONFIG.citasWeb||[]).filter(c=>citaActiva(c) && dayKey(c.fecha)===k &&
+  // Las «No vino» se quedan a la vista (pedido por Louie), aunque el hueco siga libre para reservar
+  return (CONFIG.citasWeb||[]).filter(c=>c.fecha && (citaActiva(c)||c.estado==='no_show') && dayKey(c.fecha)===k &&
     (!CAL.prof || (CAL.prof==='__sin' ? !c.profesional : c.profesional===CAL.prof)))
     .sort((a,b)=>new Date(a.fecha)-new Date(b.fecha));
 }
@@ -2438,8 +2443,8 @@ function calRejillaHTML(dias, hoy){
   for(let m=CAL_INI;m<=CAL_FIN;m+=60) horas+=`<div class="cal-hora" style="top:${(m-CAL_INI)*CAL_PX}px">${minToHHMM(m)}</div>`;
   dias.forEach(d=>{
     const k=dayKey(d), esHoy=k===dayKey(hoy);
-    const citas=citasCalendarioDia(d);
-    head+=`<div class="cal-hcell ${esHoy?'cal-today':''}" onclick="calIrADia('${k}')" title="Ver día">${d.toLocaleDateString('es-ES',{weekday:'short'})} <b>${d.getDate()}</b><span class="cal-hcount">${citas.length?citas.length+' cita'+(citas.length>1?'s':''):''}</span></div>`;
+    const citas=citasCalendarioDia(d), nAct=citas.filter(citaActiva).length;
+    head+=`<div class="cal-hcell ${esHoy?'cal-today':''}" onclick="calIrADia('${k}')" title="Ver día">${d.toLocaleDateString('es-ES',{weekday:'short'})} <b>${d.getDate()}</b><span class="cal-hcount">${nAct?nAct+' cita'+(nAct>1?'s':''):''}</span></div>`;
     // Zonas cerradas (fuera del horario de apertura)
     let cerr='';
     const fr=HORARIO_CENTRO[d.getDay()]||[];
@@ -2451,9 +2456,9 @@ function calRejillaHTML(dias, hoy){
     const evs=pos.map(({c,ini,fin,l})=>{
       const top=(Math.max(ini,CAL_INI)-CAL_INI)*CAL_PX, h=Math.max((Math.min(fin,CAL_FIN)-Math.max(ini,CAL_INI))*CAL_PX,24);
       const col=colorCita(c);
-      const pend=/^pendiente/.test(c.estado);
-      return `<div class="cal-ev ${pend?'cal-ev-pend':''}" data-svc="${esc(c.servicioId||'')}" style="top:${top}px;height:${h}px;left:calc(${l*100/nL}% + 2px);width:calc(${100/nL}% - 4px);--c:${col}" onclick="event.stopPropagation();abrirDetalleCita('${c.id}')" title="${esc(c.cliente)} · ${esc(nombreServicioCita(c))}">
-        <div class="cal-ev-t">${minToHHMM(ini)}–${minToHHMM(fin)}${pend?' · <em>pendiente</em>':''}</div>
+      const pend=/^pendiente/.test(c.estado), noVino=c.estado==='no_show';
+      return `<div class="cal-ev ${pend?'cal-ev-pend':''} ${noVino?'cal-ev-novino':''}" data-svc="${esc(c.servicioId||'')}" style="top:${top}px;height:${h}px;left:calc(${l*100/nL}% + 2px);width:calc(${100/nL}% - 4px);--c:${col}" onclick="event.stopPropagation();abrirDetalleCita('${c.id}')" title="${esc(c.cliente)} · ${esc(nombreServicioCita(c))}">
+        <div class="cal-ev-t">${minToHHMM(ini)}–${minToHHMM(fin)}${pend?' · <em>pendiente</em>':''}${noVino?' · <b>No vino</b>':''}</div>
         <div class="cal-ev-n">${esc(c.cliente||'-')}</div>
         ${h>44?`<div class="cal-ev-s">${esc(nombreServicioCita(c))}</div>`:''}
         ${h>60&&c.profesional?`<div class="cal-ev-p">👤 ${esc(c.profesional)}</div>`:''}
@@ -2484,7 +2489,7 @@ function calMesHTML(){
     const k=dayKey(d), citas=citasCalendarioDia(d);
     html+=`<div class="cal-mcell ${d.getMonth()!==ref.getMonth()?'cal-fuera':''} ${k===hoyK?'cal-today':''}" onclick="calIrADia('${k}')">
       <div class="cal-mnum">${d.getDate()}</div>
-      ${citas.slice(0,3).map(c=>`<div class="cal-chip" data-svc="${esc(c.servicioId||'')}" style="--c:${colorCita(c)}" onclick="event.stopPropagation();abrirDetalleCita('${c.id}')">${new Date(c.fecha).toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'})} ${esc((c.cliente||'').split(' ')[0])}</div>`).join('')}
+      ${citas.slice(0,3).map(c=>`<div class="cal-chip ${c.estado==='no_show'?'cal-chip-novino':''}" data-svc="${esc(c.servicioId||'')}" style="--c:${colorCita(c)}" onclick="event.stopPropagation();abrirDetalleCita('${c.id}')">${new Date(c.fecha).toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'})} ${esc((c.cliente||'').split(' ')[0])}${c.estado==='no_show'?' · No vino':''}</div>`).join('')}
       ${citas.length>3?`<div class="cal-mas">+${citas.length-3} más</div>`:''}
       ${bloqueosDia(d).length?`<div class="cal-mas">🔒 ${bloqueosDia(d).length} bloqueo${bloqueosDia(d).length>1?'s':''}</div>`:''}
     </div>`;
@@ -2659,12 +2664,20 @@ function abrirDetalleCita(citaId){
       ${activa?`<button class="btn btn-ghost" onclick="openBookingForm({citaId:'${c.id}'})">✎ Modificar cita</button>`:''}
       ${activa&&c.fecha?`<button class="btn btn-ghost" onclick="openBookingForm({citaId:'${c.id}',addSvc:true})">➕ Añadir servicio</button>`:''}
       ${activa?`<button class="btn btn-ghost" id="btn-cancelar-cita" style="color:#b3441e;" onclick="pedirConfirmacionCancelar('${c.id}')">Cancelar cita</button>`:''}
+      ${c.estado==='no_show'&&c.fecha?`<button class="btn btn-ghost" onclick="openBookingForm({fecha:'${dayKey(c.fecha)}',hora:'${minToHHMM(minDelDia(ini))}'})">➕ Nueva cita en este hueco</button>`:''}
+      ${c.estado==='no_show'?`<button class="btn btn-ghost" onclick="cambiarEstadoCita('${c.id}','confirmada')">↩ Deshacer «No vino»</button>`:''}
+      ${c.estado==='no_show'?`<button class="btn btn-ghost" id="btn-quitar-cita" style="color:#b3441e;" onclick="pedirConfirmacionQuitar('${c.id}')">Quitar del calendario</button>`:''}
       ${!activa&&c.fecha?`<button class="btn btn-ghost" onclick="mostrarCompatiblesHueco('${c.id}')">Ver lista de espera para este hueco</button>`:''}
     </div>`);
 }
 function pedirConfirmacionCancelar(id){
   const b=document.getElementById('btn-cancelar-cita');
   b.textContent='¿Seguro? Pulsa otra vez para cancelar';
+  b.onclick=()=>cambiarEstadoCita(id,'cancelada');
+}
+function pedirConfirmacionQuitar(id){
+  const b=document.getElementById('btn-quitar-cita');
+  b.textContent='¿Seguro? Pulsa otra vez para quitarla';
   b.onclick=()=>cambiarEstadoCita(id,'cancelada');
 }
 async function cambiarEstadoCita(id, estado){
