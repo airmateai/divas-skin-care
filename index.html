@@ -1909,7 +1909,7 @@ function avisoOfertaWeb(data){
   const hasta = fechas.length === 1 && fechas[0] ? ' · hasta el ' + new Date(fechas[0] + 'T12:00:00').toLocaleDateString('es-ES', { day:'numeric', month:'long' }) : '';
   const a = document.createElement('a');
   a.href = '#servicios';
-  a.style.cssText = 'display:inline-block;margin-bottom:18px;padding:8px 16px;border-radius:999px;background:#b3441e;color:#fff;font-size:13px;font-weight:600;letter-spacing:.02em;text-decoration:none;max-width:100%;';
+  a.style.cssText = 'display:table;margin:0 0 18px;padding:8px 16px;border-radius:999px;background:#b3441e;color:#fff;font-size:13px;font-weight:600;letter-spacing:.02em;text-decoration:none;max-width:100%;';
   a.textContent = `🎉 Oferta de lanzamiento: hasta −${pct}% reservando online${hasta} →`;
   h1.before(a);
 }
