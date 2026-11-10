@@ -224,6 +224,28 @@ footer{background:var(--primary-dk);color:var(--cream);padding:0 0 34px;}
 .foot-col p,.foot-col a{display:block;font-size:13px;color:rgba(243,241,232,.7);margin-bottom:11px;font-weight:300;}
 .foot-brand{font-family:var(--font-serif);font-weight:400;font-size:22px;margin-bottom:16px;letter-spacing:.02em;}
 .foot-bottom{border-top:1px solid rgba(255,255,255,.1);padding-top:26px;display:flex;justify-content:space-between;font-size:11px;color:rgba(243,241,232,.45);flex-wrap:wrap;gap:10px;letter-spacing:.03em;}
+/* OPINIONES */
+.op-sec{background:var(--cream);}
+.op-scores{display:flex;justify-content:center;gap:56px;flex-wrap:wrap;margin:-24px 0 48px;}
+.op-score{text-align:center;}
+.op-score b{display:block;font-family:var(--font-serif);font-weight:400;font-size:46px;line-height:1;color:var(--primary-dk);}
+.op-score .op-st{color:var(--accent);letter-spacing:.12em;font-size:14px;margin:8px 0 6px;}
+.op-score span{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink2);font-weight:600;}
+.op-tabs{display:flex;justify-content:center;flex-wrap:wrap;border-bottom:1px solid var(--border);margin-bottom:40px;}
+.op-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;}
+@media(max-width:900px){.op-grid{grid-template-columns:repeat(2,1fr);}}
+@media(max-width:620px){.op-grid{grid-template-columns:1fr;}.op-scores{gap:36px;}}
+.op-card{background:#fff;border:1px solid var(--border);padding:26px 26px 22px;display:flex;flex-direction:column;}
+.op-card .op-st{color:var(--accent);font-size:13px;letter-spacing:.1em;margin-bottom:12px;}
+.op-card p{color:var(--ink);font-size:15px;font-weight:300;line-height:1.7;flex:1;}
+.op-card .op-who{margin-top:18px;font-size:12px;color:var(--ink2);display:flex;justify-content:space-between;gap:10px;}
+.op-card .op-who b{font-weight:600;color:var(--primary-dk);}
+.op-actions{display:flex;justify-content:center;gap:14px;flex-wrap:wrap;margin-top:44px;}
+.op-actions .btn{text-decoration:none;}
+.op-more{background:transparent;color:var(--primary-dk);border:1px solid var(--primary-dk);}
+.op-google{background:var(--primary);color:#fff;}
+.op-tw{display:block;text-align:center;margin-top:18px;font-size:13px;color:var(--ink2);}
+.op-tw a{color:var(--primary-dk);}
 </style>
 <style>
 .enc-guia{margin-top:16px;border:1px solid #d9d4c7;border-radius:8px;background:#fff;padding:12px 14px;font-size:13px}
@@ -294,6 +316,7 @@ footer{background:var(--primary-dk);color:var(--cream);padding:0 0 34px;}
         <a href="#tienda">Tienda online</a>
         <a href="#regalo">Bono regalo</a>
         <a href="#nosotros">Nosotras</a>
+        <a href="#opiniones">Opiniones</a>
         <a href="#contacto">Contacto</a>
       </div>
       <a href="#servicios" class="nav-cta">Reservar cita</a>
@@ -1322,6 +1345,30 @@ footer{background:var(--primary-dk);color:var(--cream);padding:0 0 34px;}
   </div>
 </section>
 
+<section class="section op-sec" id="opiniones">
+  <div class="wrap">
+    <div class="section-head center">
+      <div class="eyebrow" style="color:var(--accent)">Opiniones</div>
+      <h2>Lo que dicen <em>nuestras clientas</em></h2>
+    </div>
+    <div class="op-scores">
+      <div class="op-score"><b>5,0</b><div class="op-st">★★★★★</div><span>63 reseñas en Google</span></div>
+      <div class="op-score"><b>4,9</b><div class="op-st">★★★★★</div><span>105 opiniones en Treatwell</span></div>
+    </div>
+    <div class="op-tabs">
+      <button class="cat-tab active" data-op="todas">Todas</button>
+      <button class="cat-tab" data-op="g">Google</button>
+      <button class="cat-tab" data-op="t">Treatwell</button>
+    </div>
+    <div class="op-grid" id="opGrid"></div>
+    <div class="op-actions">
+      <button class="btn op-more" id="opMore">Ver más opiniones</button>
+      <a class="btn op-google" href="https://search.google.com/local/writereview?placeid=ChIJMx_AFXDNQQwRAyOKo3tTFog" target="_blank" rel="noopener">Deja tu reseña en Google</a>
+    </div>
+    <span class="op-tw">¿Reservaste por Treatwell? <a href="https://www.treatwell.es/establecimiento/divas-skin-care-centro-de-belleza-by-louie/" target="_blank" rel="noopener">Ver todas las opiniones en Treatwell</a></span>
+  </div>
+</section>
+
 <section class="booking-section" id="reservar">
   <div class="wrap">
     <div class="eyebrow">Reserva</div>
@@ -2254,6 +2301,32 @@ form.addEventListener('submit', async (e)=>{
     setTimeout(()=>{ modal.style.display='none'; }, 2500);
   }
 });
+</script>
+
+<script src="resenas.js"></script>
+<script>
+(function(){
+  var grid=document.getElementById('opGrid'), more=document.getElementById('opMore');
+  if(!grid||!window.RESENAS) return;
+  var filtro='todas', visibles=9, PASO=9;
+  function esc(t){var d=document.createElement('div');d.textContent=t;return d.innerHTML;}
+  function lista(){return filtro==='todas'?RESENAS:RESENAS.filter(function(r){return r.s===filtro;});}
+  function pintar(){
+    var l=lista();
+    grid.innerHTML=l.slice(0,visibles).map(function(r){
+      return '<article class="op-card"><div class="op-st">★★★★★</div><p>'+esc(r.t)+'</p><div class="op-who"><b>'+esc(r.n)+'</b><span>'+(r.s==='g'?'Google':'Treatwell')+'</span></div></article>';
+    }).join('');
+    more.style.display=visibles<l.length?'':'none';
+  }
+  more.addEventListener('click',function(){visibles+=PASO;pintar();});
+  document.querySelectorAll('[data-op]').forEach(function(b){
+    b.addEventListener('click',function(){
+      document.querySelectorAll('[data-op]').forEach(function(x){x.classList.toggle('active',x===b);});
+      filtro=b.dataset.op; visibles=PASO; pintar();
+    });
+  });
+  pintar();
+})();
 </script>
 
 </body>
