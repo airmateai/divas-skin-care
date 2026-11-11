@@ -285,6 +285,14 @@ footer{background:var(--primary-dk);color:var(--cream);padding:0 0 34px;}
 .rg-occ button i{flex:none;width:22px;height:22px;border-radius:50%}
 .rg-occ button.on{border-color:var(--primary);box-shadow:inset 0 0 0 1px var(--primary)}
 .rg-in{width:100%;padding:13px 14px;border:1px solid var(--border);border-radius:3px;font:inherit;font-size:14px;background:#fff;margin-bottom:10px;color:var(--ink)}
+.rg-rep{margin:0 0 18px;padding:14px 16px;border:1px solid var(--border);background:rgba(255,255,255,.5)}
+.rg-rep-sw{display:flex;gap:12px;align-items:flex-start;cursor:pointer}
+.rg-rep-sw input{margin-top:3px;width:18px;height:18px;accent-color:var(--accent);flex:0 0 auto}
+.rg-rep-sw b{display:block;font-weight:600;font-size:14px;color:var(--ink)}
+.rg-rep-sw small{display:block;font-size:12.5px;color:var(--ink2);margin-top:2px;line-height:1.5}
+.rg-rep-n{display:grid;grid-template-columns:1fr 1fr;gap:0 18px;margin-top:12px}
+.rg-rep-n:empty{display:none}
+@media(max-width:860px){.rg-rep-n{grid-template-columns:1fr}}
 .rg-2{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
 .rg-f{display:block;margin-bottom:14px}.rg-f span{display:block;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink2);margin-bottom:4px}
 .rg-f input,.rg-f textarea{width:100%;border:0;border-bottom:1px solid var(--border);padding:8px 0;font-family:var(--font-serif);font-size:19px;background:transparent;color:var(--ink);resize:none;outline:none;transition:border-color .25s}
@@ -861,7 +869,11 @@ footer{background:var(--primary-dk);color:var(--cream);padding:0 0 34px;}
         </div></div>
         <div class="rg-step"><span class="rg-n">II</span><div><div class="rg-lbl">La ocasión</div><div id="rg-plantillas" class="rg-occ"></div></div></div>
         <div class="rg-step"><span class="rg-n">III</span><div><div class="rg-lbl">Dedicatoria</div>
-          <div class="rg-2"><label class="rg-f"><span>Para</span><input id="rg-para" maxlength="60" placeholder="Nombre"></label><label class="rg-f"><span>De parte de</span><input id="rg-de" maxlength="60" placeholder="Tu nombre"></label></div>
+          <div id="rg-rep" class="rg-rep" style="display:none">
+            <label class="rg-rep-sw"><input type="checkbox" id="rg-rep-on"><span><b>Regalar cada sesión a una persona distinta</b><small>Se crea una tarjeta con el nombre de cada persona, para que cada una la use cuando quiera.</small></span></label>
+            <div id="rg-rep-nombres" class="rg-rep-n"></div>
+          </div>
+          <div class="rg-2"><label class="rg-f" id="rg-para-f"><span>Para</span><input id="rg-para" maxlength="60" placeholder="Nombre"></label><label class="rg-f"><span>De parte de</span><input id="rg-de" maxlength="60" placeholder="Tu nombre"></label></div>
           <label class="rg-f"><span>Mensaje · opcional</span><textarea id="rg-msg" maxlength="240" rows="2" placeholder="Unas palabras para acompañar el regalo"></textarea></label>
         </div></div>
         <div class="rg-pay"><div><small>Total</small><b id="rg-total">50 €</b></div><button type="button" class="rg-btn" id="rg-pagar">Pagar y descargar</button></div>
@@ -1832,7 +1844,7 @@ const RE_DURACION = /^\s*(\d+\s*h)?\s*(\d+\s*min)?\s*$/i;
   if (activa) filterSvcByCat(activa.textContent.trim());
 })();
 // ═══ Tarjeta regalo ═══
-const RG = { tipo:'importe', importe:50, servicio:null, bono:null, plantilla:'cumple', servicios:[], productos:[], cesta:{}, presentacion:'cesta', extra:0 };
+const RG = { tipo:'importe', importe:50, servicio:null, bono:null, plantilla:'cumple', servicios:[], productos:[], cesta:{}, presentacion:'cesta', extra:0, repartir:false, nombres:[] };
 // Saldo extra dentro de la cesta (ej. un producto + 50 € para gastar en el centro)
 function pintarExtraRegalo(){
   const box=document.getElementById('rg-extra'); if(!box) return;
@@ -1945,17 +1957,42 @@ function pintarRegalo(){
   const nProd = elegidos.reduce((a,p) => a + RG.cesta[p.id], 0) + nSv;
   const precio = RG.tipo==='productos' ? Math.round((elegidos.reduce((a,p) => a + Number(p.precio)*RG.cesta[p.id], 0)+totSv+(nProd?RG.extra:0))*100)/100 : RG.tipo==='servicio' ? (bono ? Number(bono.precio) : s ? Number(s.precio_oferta ?? s.precio) : 0) : RG.importe;
   const que = RG.tipo==='productos' ? (nProd ? `${elegidos.length?(RG.presentacion==='cesta'?'Cesta regalo':'Regalo envuelto'):'Regalo'} · ${nProd} artículo${nProd>1?'s':''}${RG.extra?' + '+R.euros(RG.extra)+' de saldo':''}` : 'Elige productos o tratamientos') : RG.tipo==='servicio' ? (s ? (bono ? `Bono ${bono.sesiones} sesiones · ${s.nombre}` : s.nombre) : 'Elige un tratamiento') : `Tarjeta regalo de ${R.euros(RG.importe)}`;
-  document.getElementById('rg-prev').innerHTML = R.html({ plantilla:RG.plantilla, para:document.getElementById('rg-para').value, de:document.getElementById('rg-de').value, mensaje:document.getElementById('rg-msg').value, que });
+  const rep = pintarReparto(s, bono);
+  document.getElementById('rg-prev').innerHTML = R.html({ plantilla:RG.plantilla, para:rep ? (RG.nombres[0]||'') : document.getElementById('rg-para').value, de:document.getElementById('rg-de').value, mensaje:document.getElementById('rg-msg').value, que: rep ? `1 sesión · ${s.nombre}` : que });
   document.getElementById('rg-total').textContent = R.euros(precio);
+}
+
+// Bono repartido (pedido de Natalia): un nombre por sesión → una tarjeta para cada persona
+function pintarReparto(s, bono){
+  const w=document.getElementById('rg-rep'), on=document.getElementById('rg-rep-on'), box=document.getElementById('rg-rep-nombres'), pf=document.getElementById('rg-para-f');
+  if(!w) return false;
+  const visible = RG.tipo==='servicio' && !!bono;
+  w.style.display = visible ? '' : 'none';
+  if(!on.dataset.ok){ on.dataset.ok=1; on.onchange=()=>{ RG.repartir=on.checked; if(RG.repartir&&!RG.nombres[0]) RG.nombres[0]=document.getElementById('rg-para').value; pintarRegalo(); }; }
+  const activo = visible && RG.repartir;
+  on.checked = activo; pf.style.display = activo ? 'none' : '';
+  if(activo){
+    const n=bono.sesiones;
+    if(box.children.length!==n){
+      box.innerHTML = Array.from({length:n},(_,i)=>`<label class="rg-f"><span>Sesión ${i+1} · para</span><input data-i="${i}" maxlength="60" placeholder="Nombre" value="${escWeb(RG.nombres[i]||'')}"></label>`).join('');
+      box.querySelectorAll('input').forEach(inp=>inp.oninput=()=>{ RG.nombres[+inp.dataset.i]=inp.value; pintarRegalo(); });
+    }
+    const nota=document.getElementById('rg-rep-nota')||Object.assign(document.createElement('p'),{id:'rg-rep-nota',className:'rg-nota'});
+    nota.textContent=`Se crean ${n} tarjetas, cada una con su nombre y su código. Al pagar podrás descargarlas y enviarlas una a una.`;
+    box.after(nota);
+  } else { box.innerHTML=''; const nota=document.getElementById('rg-rep-nota'); if(nota) nota.remove(); }
+  return activo;
 }
 async function pagarRegalo(){
   const b = document.getElementById('rg-pagar'), err = document.getElementById('rg-err');
   if (RG.tipo==='servicio' && !RG.servicio) { err.textContent = 'Elige el tratamiento que quieres regalar.'; return; }
   if (RG.tipo==='productos' && !Object.keys(RG.cesta).length && !Object.keys(RG_SV).length) { err.textContent = 'Añade al menos un producto o tratamiento con el botón +.'; return; }
   if (RG.tipo==='importe' && !(RG.importe>=10 && RG.importe<=1000)) { err.textContent = 'El importe tiene que estar entre 10 € y 1.000 €.'; return; }
+  const reparto = RG.tipo==='servicio' && RG.bono && RG.repartir;
+  if (reparto && RG.nombres.slice(0,RG.bono).filter(x=>x&&x.trim()).length !== RG.bono) { err.textContent = `Escribe el nombre de las ${RG.bono} personas (una por sesión).`; return; }
   b.disabled = true; err.textContent = ''; const txt = b.innerHTML; b.textContent = 'Abriendo el pago seguro…';
   const { data, error } = await sb.functions.invoke('checkout-regalo', { body:{ tipo:RG.tipo, servicio_id:RG.servicio, bono_sesiones:RG.tipo==='servicio'?RG.bono:null, productos:RG.tipo==='productos'?Object.entries(RG.cesta).map(([id,qty])=>({id,qty})):null, servicios:RG.tipo==='productos'?Object.entries(RG_SV).map(([k,qty])=>({id:k.split('|')[0],bono:+k.split('|')[1]||0,qty})):null, presentacion:RG.presentacion, extra:RG.tipo==='productos'?RG.extra:0, importe:RG.importe, plantilla:RG.plantilla,
-    para:document.getElementById('rg-para').value, de:document.getElementById('rg-de').value, mensaje:document.getElementById('rg-msg').value } });
+    para:document.getElementById('rg-para').value, repartir: reparto ? RG.nombres.slice(0,RG.bono).map(x=>x.trim()) : null, de:document.getElementById('rg-de').value, mensaje:document.getElementById('rg-msg').value } });
   if (error || !data?.url) { let m = 'No se pudo abrir el pago. Inténtalo de nuevo o escríbenos por WhatsApp.'; try { const j = await error?.context?.json?.(); if (j?.error) m = j.error; } catch(e) {} err.textContent = m; b.disabled = false; b.innerHTML = txt; return; }
   location.href = data.url;
 }
