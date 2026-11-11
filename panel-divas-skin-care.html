@@ -405,6 +405,20 @@ tbody tr:hover{background:rgba(0,0,0,.02);}
 .two-col{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
 @media(max-width:840px){.two-col{grid-template-columns:1fr;}}
 
+
+.cl-tabs{display:flex;gap:6px;margin:0 0 16px;border-bottom:1px solid var(--border);}
+.cl-tab{background:none;border:none;border-bottom:2px solid transparent;padding:10px 14px;font-size:13px;font-weight:600;color:var(--txt3);cursor:pointer;margin-bottom:-1px;}
+.cl-tab.on{color:var(--txt);border-bottom-color:var(--accent);}
+.ct-modos{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:14px;}
+.ct-chip{border:1px solid var(--border);background:var(--surface);border-radius:999px;padding:7px 14px;font-size:12.5px;font-weight:600;color:var(--txt2);cursor:pointer;}
+.ct-chip.on{background:var(--primary,#3d4a3a);border-color:var(--primary,#3d4a3a);color:#fff;}
+.ct-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;margin-bottom:18px;}
+.ct-g{border:1px solid var(--border);background:var(--surface);border-radius:12px;padding:13px 15px;cursor:pointer;text-align:left;transition:.15s;}
+.ct-g:hover{border-color:var(--accent);}
+.ct-g.on{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent) inset;}
+.ct-g b{display:block;font-size:13px;line-height:1.3;color:var(--txt);}
+.ct-g span{font-size:11.5px;color:var(--txt3);}
+.ct-acc{display:flex;gap:8px;flex-wrap:wrap;}
 </style>
 <style>
 /* ── CRM v2: calendario ── */
@@ -803,6 +817,12 @@ tbody tr:hover{background:rgba(0,0,0,.02);}
         </div>
         <button class="btn btn-accent" onclick="openClientForm()">+ Nueva clienta</button>
       </div>
+      <div class="cl-tabs">
+        <button class="cl-tab on" data-t="todas" onclick="clTab('todas')">Todas las clientas</button>
+        <button class="cl-tab" data-t="trat" onclick="clTab('trat')">Por tratamiento</button>
+      </div>
+      <div id="cl-trat" style="display:none;"></div>
+      <div id="cl-todas">
       <div class="card" id="birthdays-card" style="display:none;">
         <div class="card-hd"><div class="card-hd-title">🎂 Cumpleaños este mes</div></div>
         <div class="table-wrap"><table><thead><tr><th>Nombre</th><th>Teléfono</th><th>Fecha</th><th></th></tr></thead><tbody id="birthdays-tbody"></tbody></table></div>
@@ -812,6 +832,7 @@ tbody tr:hover{background:rgba(0,0,0,.02);}
           <input class="field-input" placeholder="Buscar por nombre, teléfono, email…" oninput="filterClients(this.value)" style="margin-bottom:14px;">
           <div class="table-wrap"><table><thead><tr><th>Nombre</th><th>Teléfono</th><th>Cumpleaños</th><th>Última visita</th><th>Visitas</th><th>Gastado</th><th>Etiquetas</th></tr></thead><tbody id="clients-tbody"></tbody></table></div>
         </div>
+      </div>
       </div>
     </div>
 
@@ -1798,6 +1819,7 @@ let ALL_CLIENTS=[];
 function renderClients(){
   ALL_CLIENTS=(CONFIG.clients||[]).slice().sort((a,b)=>String(a.name||'').localeCompare(String(b.name||''),'es',{sensitivity:'base'}));
   drawClients(ALL_CLIENTS);
+  const t=document.getElementById('cl-trat'); if(t&&t.style.display!=='none') renderPorTratamiento();
 }
 function renderBirthdaysThisMonth(list){
   const mesActual = new Date().getMonth();
@@ -3061,6 +3083,89 @@ function drawClients(list){
       <td>${(c.tags||[]).map(t=>`<span class="tag tag-${t.cls}">${t.text}</span>`).join(' ')}</td>
     </tr>`).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--txt3);padding:24px;">Todavía no hay clientas. Se crean solas al reservar en la web, o con «+ Nueva clienta».</td></tr>';
   renderBirthdaysThisMonth(list);
+}
+
+// ═══ Clientas por tratamiento (para mandar promos por grupos) ═══
+let CT_MODO='cat', CT_SEL=null, CT_BUSCA='';
+function clTab(t){
+  document.querySelectorAll('.cl-tab').forEach(b=>b.classList.toggle('on',b.dataset.t===t));
+  document.getElementById('cl-todas').style.display=t==='todas'?'':'none';
+  document.getElementById('cl-trat').style.display=t==='trat'?'':'none';
+  if(t==='trat') renderPorTratamiento();
+}
+function ctCategoria(ct){ const s=servicioDe(ct.servicioId); return (s&&s.categoria)||'Sin categoría'; }
+function ctGrupos(modo=CT_MODO){
+  const g={};
+  (CONFIG.citasWeb||[]).forEach(ct=>{
+    if(!(ct.estado==='completada'||citaActiva(ct))) return;
+    const k=modo==='cat'?ctCategoria(ct):nombreServicioCita(ct);
+    const cl=clientaDeCita(ct);
+    const id=cl?'c'+cl.id:'n'+nombreNorm(ct.cliente)+'|'+(ct.telefono||'');
+    if(!nombreNorm(cl?cl.name:ct.cliente)) return;
+    const grupo=g[k]=g[k]||{};
+    const x=grupo[id]=grupo[id]||{cl, nombre:cl?cl.name:ct.cliente, tel:telCita(ct), n:0, ultima:null};
+    x.n++; if(ct.fecha&&(!x.ultima||ct.fecha>x.ultima)) x.ultima=ct.fecha;
+  });
+  return g;
+}
+function ctLista(){
+  const q=nombreNorm(CT_BUSCA), g=ctGrupos(q?'serv':CT_MODO);
+  let claves=CT_SEL?[CT_SEL]:[];
+  if(q) claves=Object.keys(g).filter(k=>nombreNorm(k).includes(q));
+  const m={};
+  claves.forEach(k=>Object.entries(g[k]||{}).forEach(([id,x])=>{ const y=m[id]=m[id]||{...x,n:0,ultima:null,trats:new Set()}; y.n+=x.n; y.trats.add(k); if(x.ultima&&(!y.ultima||x.ultima>y.ultima)) y.ultima=x.ultima; }));
+  return Object.values(m).sort((a,b)=>String(b.ultima||'').localeCompare(String(a.ultima||'')));
+}
+function renderPorTratamiento(){
+  const box=document.getElementById('cl-trat'); if(!box) return;
+  const g=ctGrupos();
+  const claves=Object.keys(g).sort((a,b)=>Object.keys(g[b]).length-Object.keys(g[a]).length||a.localeCompare(b,'es'));
+  if(CT_SEL&&!g[CT_SEL]) CT_SEL=null;
+  const lista=ctLista(), titulo=CT_BUSCA?`Todo lo que contiene «${esc(CT_BUSCA)}»`:CT_SEL?esc(CT_SEL):'';
+  const conTel=lista.filter(x=>x.tel);
+  box.innerHTML=`
+    <div class="card"><div class="card-body">
+      <div style="font-size:13px;color:var(--txt2);margin-bottom:14px;">Elige un grupo y tendrás a todas las clientas que se han hecho ese tratamiento, listas para mandarles una promo. Cuentan las citas hechas y las que están reservadas.</div>
+      <div class="ct-modos">
+        <button class="ct-chip ${CT_MODO==='cat'?'on':''}" onclick="CT_MODO='cat';CT_SEL=null;renderPorTratamiento()">Por tipo (faciales, corporales, láser…)</button>
+        <button class="ct-chip ${CT_MODO==='serv'?'on':''}" onclick="CT_MODO='serv';CT_SEL=null;renderPorTratamiento()">Por tratamiento exacto</button>
+        <input class="field-input" id="ct-busca" placeholder="Buscar palabra: dermapen, presoterapia, IPL…" value="${esc(CT_BUSCA)}" oninput="CT_BUSCA=this.value;CT_SEL=null;renderPorTratamiento();const i=document.getElementById('ct-busca');i.focus();i.setSelectionRange(i.value.length,i.value.length);" style="flex:1;min-width:240px;margin:0;">
+      </div>
+      ${claves.length?`<div class="ct-grid">${claves.map(k=>{const n=Object.keys(g[k]).length;const on=CT_SEL===k||(CT_BUSCA&&CT_MODO==='serv'&&nombreNorm(k).includes(nombreNorm(CT_BUSCA)));
+        return `<button class="ct-g ${on?'on':''}" onclick="CT_BUSCA='';CT_SEL=${esc(JSON.stringify(k))};renderPorTratamiento()"><b>${esc(k)}</b><span>${n} clienta${n===1?'':'s'}</span></button>`;}).join('')}</div>`
+        :'<div style="color:var(--txt3);padding:20px 0;">Todavía no hay citas con tratamiento asignado.</div>'}
+    </div></div>
+    ${titulo?`<div class="card">
+      <div class="card-hd" style="flex-wrap:wrap;gap:10px;"><div class="card-hd-title">${titulo} · ${lista.length} clienta${lista.length===1?'':'s'}</div>
+        <div class="ct-acc">
+          <button class="btn btn-ghost" onclick="ctCopiarTels()" ${conTel.length?'':'disabled'}>Copiar teléfonos (${conTel.length})</button>
+          <button class="btn btn-ghost" onclick="ctExportar()">Descargar Excel (CSV)</button>
+        </div></div>
+      <div class="table-wrap"><table><thead><tr><th>Clienta</th><th>Teléfono</th><th>Veces</th><th>Última vez</th>${CT_BUSCA||CT_MODO==='cat'?'<th>Tratamientos</th>':''}<th></th></tr></thead><tbody>
+      ${lista.map(x=>`<tr ${x.cl?`onclick="showClientById('${x.cl.id}')" style="cursor:pointer"`:''}>
+        <td><strong>${esc(x.nombre)}</strong>${x.cl?'':' <span style="font-size:11px;color:var(--txt3);">(sin ficha)</span>'}</td>
+        <td>${esc(x.tel||'—')}</td><td>${x.n}</td>
+        <td>${x.ultima?new Date(x.ultima).toLocaleDateString('es-ES',{day:'numeric',month:'short',year:'numeric'}):'—'}</td>
+        ${CT_BUSCA||CT_MODO==='cat'?`<td style="font-size:12px;color:var(--txt2);max-width:320px;">${CT_MODO==='cat'&&!CT_BUSCA?'':esc([...x.trats].join(', '))}</td>`:''}
+        <td>${x.tel?`<button class="btn btn-ghost" style="padding:4px 10px;font-size:11px;" onclick="event.stopPropagation();enviarWhatsApp(${esc(JSON.stringify(x.tel))},${esc(JSON.stringify('Hola '+String(x.nombre||'').split(' ')[0]+' 😊 '))})">WhatsApp</button>`:''}</td>
+      </tr>`).join('')}
+      </tbody></table></div></div>`:''}`;
+  if(CT_MODO==='cat'&&!CT_BUSCA&&titulo){ /* en modo tipo, enseñamos los tratamientos concretos de cada clienta */
+    const tb=box.querySelectorAll('tbody tr'); const det={};
+    (CONFIG.citasWeb||[]).forEach(ct=>{ if(!(ct.estado==='completada'||citaActiva(ct))||ctCategoria(ct)!==CT_SEL) return; const cl=clientaDeCita(ct); const id=cl?'c'+cl.id:'n'+nombreNorm(ct.cliente)+'|'+(ct.telefono||''); (det[id]=det[id]||new Set()).add(nombreServicioCita(ct)); });
+    const ids=lista.map(x=>x.cl?'c'+x.cl.id:'n'+nombreNorm(x.nombre)+'|'+(x.tel||''));
+    tb.forEach((tr,i)=>{ const td=tr.children[4]; if(td&&det[ids[i]]) td.textContent=[...det[ids[i]]].join(', '); });
+  }
+}
+function ctCopiarTels(){
+  const t=[...new Set(ctLista().map(x=>x.tel).filter(Boolean))].join('\n');
+  navigator.clipboard.writeText(t).then(()=>toast('Teléfonos copiados: pégalos en una lista de difusión de WhatsApp')).catch(()=>toast('No se pudo copiar'));
+}
+function ctExportar(){
+  const filas=[['Clienta','Teléfono','Veces','Última vez']].concat(ctLista().map(x=>[x.nombre,x.tel||'',x.n,x.ultima?String(x.ultima).slice(0,10):'']));
+  const csv=filas.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(';')).join('\n');
+  const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob(['﻿'+csv],{type:'text/csv'}));
+  a.download='clientas-'+(CT_BUSCA||CT_SEL||'tratamiento').toLowerCase().replace(/[^a-z0-9áéíóúñ]+/gi,'-')+'.csv'; a.click();
 }
 function showClient(name){ const c=(CONFIG.clients||[]).find(x=>x.name===name); if(c) showClientById(c.id); else toast('No se encontró la ficha'); }
 function showClientById(id){
