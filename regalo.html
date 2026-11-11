@@ -23,7 +23,15 @@
   .esp{text-align:center;padding:60px 10px;color:#5c6358}
   .spin{width:34px;height:34px;border:3px solid #dce5d1;border-top-color:#3d4a3a;border-radius:50%;margin:0 auto 14px;animation:g 1s linear infinite}
   @keyframes g{to{transform:rotate(360deg)}}
-  @media print{body{background:#fff;padding:0}.hd,.btns,.nota{display:none}#tarjeta{max-width:none}.dr-card{box-shadow:none}}
+  .gr{max-width:720px;margin:30px auto 0;background:#fff;border:1px solid #e3ddcf;border-radius:16px;padding:20px 22px}
+  .gr h2{font-family:'Cormorant Garamond',serif;font-weight:500;font-size:24px;margin:0 0 4px}
+  .gr>p{font-size:13.5px;color:#5c6358;margin:0 0 14px;line-height:1.55}
+  .gr-f{display:flex;align-items:center;gap:12px;padding:12px 0;border-top:1px solid #efeadf;flex-wrap:wrap}
+  .gr-f .n{flex:1;min-width:150px}.gr-f .n b{display:block;font-size:15px}.gr-f .n small{font-family:monospace;color:#7a8076;font-size:12px}
+  .gr-f a{font:600 12.5px 'Poppins',sans-serif;text-decoration:none;padding:9px 14px;border-radius:30px;border:1px solid #d9d4c7;color:#3d4a3a;background:#fff}
+  .gr-f a.w{background:#3d4a3a;color:#fff;border-color:#3d4a3a}
+  .gr-f .yo{font-size:11px;color:#a8794f;font-weight:600;letter-spacing:.06em;text-transform:uppercase}
+  @media print{body{background:#fff;padding:0}.hd,.btns,.nota,#grupo{display:none}#tarjeta{max-width:none}.dr-card{box-shadow:none}}
 </style>
 </head>
 <body>
@@ -37,6 +45,7 @@
       <button class="btn g" onclick="window.print()">🖨 Imprimir</button>
       <button class="btn g" onclick="compartir()">💬 Enviar por WhatsApp</button>
     </div>
+    <div id="grupo" style="display:none"></div>
     <p class="nota">Para usarla: reservad por WhatsApp o en divasskincare.com y presentad el código en el centro.<br>Divas Skin Care by Louie · Calle Arguijón 1, La Laguna (Tenerife)</p>
   </div>
 </div>
@@ -65,6 +74,7 @@ async function cargar(intento = 0) {
   document.getElementById('tarjeta').innerHTML = R.html({ plantilla: t.plantilla, para: t.para, de: t.de, mensaje: t.mensaje, que, codigo: t.codigo, caduca: t.caduca });
   est.style.display = 'none'; document.getElementById('ok').style.display = '';
   if (t.tipo === 'productos' && t.estado === 'pagada') document.querySelector('.hd p').textContent = 'Lo preparamos con mucho cariño. Se recoge en el centro (Calle Arguijón 1, La Laguna) presentando el código de la tarjeta. Descárgala para imprimirla o enviarla.';
+  cargarGrupo();
   if (t.estado === 'canjeada') document.querySelector('.hd p').textContent = 'Esta tarjeta ya se ha canjeado. ¡Esperamos que la hayas disfrutado!';
   else if (t.tipo === 'importe' && t.saldo != null && Number(t.saldo) < Number(t.importe)) document.querySelector('.hd p').textContent = `Saldo disponible: ${R.euros(t.saldo)} de ${R.euros(t.importe)}. Puedes seguir usándola hasta la fecha de validez.`;
 }
@@ -84,6 +94,26 @@ function compartir() {
   const txt = `🎁 Tienes una tarjeta regalo de Divas Skin Care${T.para ? ' para ' + T.para : ''}. Mírala y descárgala aquí: ${location.href}`;
   if (navigator.share) navigator.share({ title: 'Tarjeta regalo Divas Skin Care', text: txt }).catch(() => {});
   else window.open('https://wa.me/?text=' + encodeURIComponent(txt), '_blank');
+}
+
+// Bono repartido: quien compra ve todas las tarjetas (una por persona) para enviarlas
+async function cargarGrupo(){
+  try{
+    const { data, error } = await sb.rpc('tarjetas_regalo_grupo', { p_id: id, p_token: token });
+    if (error || !data || data.length < 2) return;
+    const base = location.href.split('?')[0];
+    const box = document.getElementById('grupo');
+    box.innerHTML = `<div class="gr"><h2>${data.length} tarjetas, una para cada persona</h2>
+      <p>Cada persona tiene su propia tarjeta con su nombre y su código. Envíale a cada una la suya: podrá verla y descargarla en PDF desde su enlace.</p>
+      ${data.map(x => { const url = `${base}?id=${x.id}&t=${x.token}`, txt = `🎁 ${x.para ? x.para + ', tienes' : 'Tienes'} una tarjeta regalo de Divas Skin Care: ${x.servicio_nombre}. Mírala y descárgala aquí: ${url}`;
+        return `<div class="gr-f"><div class="n"><b>${R.esc(x.para || 'Sin nombre')}</b><small>${R.esc(x.codigo)}</small> ${x.id === id ? '<span class="yo">· la que ves arriba</span>' : ''}</div>
+          ${x.id === id ? '' : `<a href="${url}" target="_blank" rel="noopener">Ver y descargar</a>`}
+          <a class="w" href="https://wa.me/?text=${encodeURIComponent(txt)}" target="_blank" rel="noopener">Enviar por WhatsApp</a></div>`; }).join('')}
+    </div>`;
+    box.style.display = '';
+    document.querySelector('.hd h1').textContent = '¡Tus tarjetas regalo están listas!';
+    document.querySelector('.hd p').textContent = `Has regalado ${data.length} sesiones, una para cada persona. Abajo tienes la tarjeta de cada una para enviársela.`;
+  }catch(e){}
 }
 cargar();
 </script>

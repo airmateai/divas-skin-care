@@ -1,5 +1,5 @@
 // Tarjetas regalo de Divas Skin Care: crea la tarjeta (pendiente de pago) y el cobro de Stripe.
-// La web manda { tipo: 'servicio'|'importe'|'productos', servicio_id?, importe?, productos?, servicios?, extra?, plantilla, para, de, mensaje }.
+// La web manda { tipo: 'servicio'|'importe'|'productos', servicio_id?, bono_sesiones?, repartir? (un nombre por sesión), importe?, productos?, servicios?, extra?, plantilla, para, de, mensaje }.
 // El precio SIEMPRE se calcula aquí (servicio: precio con descuento si lo tiene; importe: 10–500 €).
 // Al pagar, "stripe-webhook" marca la tarjeta como pagada y la clienta la descarga en PDF.
 
@@ -41,6 +41,7 @@ Deno.serve(async (req) => {
   const plantilla = PLANTILLAS.includes(String(b.plantilla)) ? String(b.plantilla) : "detalle";
 
   let importe = 0, servicioId: string | null = null, servicioNombre: string | null = null, sesiones: number | null = null;
+  let repartir: string[] | null = null, sesionNombre = "";
   let productos: { id: string; nombre: string; qty: number; precio: number }[] | null = null, presentacion: string | null = null, extra = 0;
   if (tipo === "servicio") {
     const id = String(b.servicio_id || "");
@@ -55,6 +56,12 @@ Deno.serve(async (req) => {
       const bono = (Array.isArray(s.bonos) ? s.bonos : []).find((x: { sesiones: number; precio: number }) => Number(x?.sesiones) === n);
       if (!bono || !(Number(bono.precio) > 0)) return json({ error: "Ese bono ya no está disponible" }, 404, origin);
       importe = Number(bono.precio); sesiones = n; servicioNombre = `Bono ${n} sesiones · ${s.nombre}`;
+      // Bono repartido: un nombre por sesión → una tarjeta para cada persona
+      const nombres = (Array.isArray(b.repartir) ? b.repartir : []).map((x) => texto(x, 60));
+      if (nombres.length) {
+        if (nombres.length !== n || nombres.some((x) => !x)) return json({ error: `Escribe un nombre para cada una de las ${n} sesiones` }, 400, origin);
+        repartir = nombres as string[]; sesionNombre = s.nombre;
+      }
     }
   } else if (tipo === "productos") {
     // Cesta personalizada: productos (con stock o bajo pedido) + tratamientos o bonos
@@ -116,15 +123,31 @@ Deno.serve(async (req) => {
   const codigo = `DIVAS-${trozo(4)}-${trozo(4)}`;
   const token = trozo(24);
   const caduca = new Date(); caduca.setMonth(caduca.getMonth() + 4);
-  const { data: t, error: e1 } = await supabase.from("tarjetas_regalo").insert({
+  let t: { id: string } | null = null, e1: unknown = null, tokenPago = token;
+  if (repartir) {
+    // Una tarjeta por persona: el importe del bono se reparte en partes iguales (la última ajusta los céntimos)
+    const grupo = crypto.randomUUID(), n = repartir.length, parte = Math.floor((importe / n) * 100) / 100;
+    const filas = repartir.map((para, i) => ({
+      codigo: i === 0 ? codigo : `DIVAS-${trozo(4)}-${trozo(4)}`, token: i === 0 ? token : trozo(24), tipo, servicio_id: servicioId,
+      servicio_nombre: `1 sesión · ${sesionNombre}`, importe: i === n - 1 ? Math.round((importe - parte * (n - 1)) * 100) / 100 : parte,
+      saldo: null, sesiones: null, plantilla, para, de: texto(b.de, 60), mensaje: texto(b.mensaje, 240),
+      caduca: caduca.toISOString().slice(0, 10), estado: "pendiente_pago", grupo, grupo_n: i + 1, grupo_total: n,
+    }));
+    const r = await supabase.from("tarjetas_regalo").insert(filas).select("id, grupo_n");
+    e1 = r.error; t = (r.data || []).find((x: { grupo_n: number }) => x.grupo_n === 1) || null;
+  } else {
+  const r0 = await supabase.from("tarjetas_regalo").insert({
     codigo, token, tipo, servicio_id: servicioId, servicio_nombre: servicioNombre, importe, saldo: tipo === "importe" ? importe : extra > 0 ? extra : null, sesiones, productos, presentacion, plantilla,
     para: texto(b.para, 60), de: texto(b.de, 60), mensaje: texto(b.mensaje, 240),
     caduca: caduca.toISOString().slice(0, 10), estado: "pendiente_pago",
   }).select("id").single();
+  e1 = r0.error; t = r0.data;
+  }
   if (e1 || !t) return json({ error: "No se pudo preparar la tarjeta, inténtalo de nuevo" }, 500, origin);
 
   const base = origin && ORIGENES_OK.includes(origin) ? origin + (origin.includes("github.io") ? "/divas-skin-care/" : "/") : WEB;
   const nombre = tipo === "importe" ? `Tarjeta regalo · ${importe.toFixed(2).replace(".", ",").replace(",00", "")} €` : `Tarjeta regalo · ${servicioNombre}`.slice(0, 250);
+  const nombreFinal = repartir ? `${repartir.length} tarjetas regalo · ${servicioNombre} (una sesión para cada persona)`.slice(0, 250) : nombre;
 
   const session = await stripe.checkout.sessions.create({
     mode: "payment",
@@ -134,7 +157,7 @@ Deno.serve(async (req) => {
         currency: "eur",
         unit_amount: centimos,
         product_data: {
-          name: nombre,
+          name: nombreFinal,
           description: tipo === "productos"
             ? `Lo preparamos ${presentacion === "cesta" ? "en cesta" : "envuelto para regalo"} y se recoge en el centro (Divas Skin Care, La Laguna) con el código de la tarjeta. Válida 4 meses.`
             : "Divas Skin Care · La Laguna. Válida 4 meses. Al pagar, la descargas en PDF para imprimir o enviar.",
@@ -145,7 +168,7 @@ Deno.serve(async (req) => {
     phone_number_collection: { enabled: true },
     client_reference_id: t.id,
     metadata: { tipo: "regalo", tarjeta_id: t.id },
-    success_url: `${base}regalo.html?id=${t.id}&t=${token}`,
+    success_url: `${base}regalo.html?id=${t.id}&t=${tokenPago}`,
     cancel_url: `${base}#regalo`,
     locale: "es",
   });
