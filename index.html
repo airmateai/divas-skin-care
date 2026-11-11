@@ -87,6 +87,14 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:22px 0
 .hero h1{font-family:var(--font-serif);font-weight:400;font-size:clamp(40px,7vw,84px);line-height:1.02;color:#fff;margin-bottom:26px;max-width:16ch;text-wrap:balance;letter-spacing:-.01em;}
 .hero h1 em{font-style:italic;color:var(--accent-lt);font-weight:400;}
 .hero p{font-size:16.5px;color:rgba(255,255,255,.78);max-width:42ch;margin-bottom:36px;font-weight:300;}
+.hero .hero-rating{display:flex;width:fit-content;align-items:center;gap:18px;flex-wrap:wrap;margin-top:34px;color:#fff;font-size:13px;letter-spacing:.02em;transform:translateY(18px);}
+.hero-rating .hr-item{display:inline-flex;align-items:center;gap:8px;}
+.hero-rating .hr-st{color:#e7c08f;letter-spacing:2px;font-size:14px;}
+.hero-rating b{font-weight:600;font-size:15px;}
+.hero-rating small{color:rgba(255,255,255,.7);font-size:12.5px;}
+.hero-rating .hr-sep{width:1px;height:16px;background:rgba(255,255,255,.35);}
+.hero-rating:hover small{color:#fff;}
+@media(max-width:640px){.hero .hero-rating{margin-top:26px;gap:8px 14px;justify-content:center;width:100%;}.hero-rating .hr-sep{display:none;}}
 .hero-ctas{display:flex;align-items:center;gap:28px;flex-wrap:wrap;}
 .btn{display:inline-flex;align-items:center;gap:8px;padding:16px 32px;font-size:12.5px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;border:none;font-family:var(--font);}
 .btn-primary{background:#fff;color:var(--primary-dk);transition:box-shadow .4s ease,transform .3s ease;}
@@ -336,6 +344,11 @@ footer{background:var(--primary-dk);color:var(--cream);padding:0 0 34px;}
       <a href="#servicios" class="btn btn-primary">Reservar valoración</a>
       <a href="#nosotros" class="hero-link">Conoce a Louie</a>
     </div>
+    <a href="#opiniones" class="hero-rating hero-anim" style="--d:11" aria-label="Valoración 5,0 en Google con 63 reseñas y 4,9 en Treatwell con 105 opiniones">
+      <span class="hr-item"><span class="hr-st">★★★★★</span><b>5,0</b> en Google <small>· 63 reseñas</small></span>
+      <span class="hr-sep"></span>
+      <span class="hr-item"><span class="hr-st">★★★★★</span><b>4,9</b> en Treatwell <small>· 105 opiniones</small></span>
+    </a>
   </div>
 </section>
 
