@@ -661,6 +661,10 @@ tbody tr:hover{background:rgba(0,0,0,.02);}
         Informes
       </div>
       <div class="nav-section">Configuración</div>
+      <div class="nav-item" onclick="goPage('fichaje',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>
+        Fichaje y vacaciones
+      </div>
       <div class="nav-item" onclick="goPage('team',this)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
         Equipo
@@ -1151,6 +1155,10 @@ tbody tr:hover{background:rgba(0,0,0,.02);}
     </div>
 
     <!-- ─── TEAM ─── -->
+    <div id="page-fichaje" class="page">
+      <div class="page-hd"><div><h1 class="page-title">Fichaje y vacaciones</h1><div class="page-sub">Entrada y salida de cada turno · Pausas · Vacaciones y ausencias</div></div></div>
+      <div id="fich-host"><div class="card"><div class="card-body" style="color:var(--txt3)">Cargando…</div></div></div>
+    </div>
     <div id="page-team" class="page">
       <div class="page-hd">
         <div>
@@ -5019,13 +5027,14 @@ function goPage(id,el,isBottom){
   document.querySelectorAll('.bnav-btn').forEach(n=>n.classList.remove('active'));
   const bn=document.getElementById('bnav-'+id); if(bn) bn.classList.add('active');
   const sn=[...document.querySelectorAll('.nav-item')].find(x=>(x.getAttribute('onclick')||'').includes("'"+id+"'")); if(sn) sn.classList.add('active');
-  const titles={dashboard:'Panel',schedule:'Citas',pipeline:'En cabina',salas:'Cabina',clients:'Clientas',catalog:'Servicios',invoices:'Facturas',reports:'Informes',waitlist:'Lista de espera',caja:'Cierre de caja',notificaciones:'Notificaciones',stock:'Productos',pos:'Punto de venta',team:'Equipo',gastos:'Gastos',pedidos:'Pedidos',regalos:'Tarjetas regalo',accounting:'Contabilidad',followups:'Seguimientos',actualizaciones:'Actualizaciones'};
+  const titles={dashboard:'Panel',schedule:'Citas',pipeline:'En cabina',salas:'Cabina',clients:'Clientas',catalog:'Servicios',invoices:'Facturas',reports:'Informes',waitlist:'Lista de espera',caja:'Cierre de caja',notificaciones:'Notificaciones',stock:'Productos',pos:'Punto de venta',team:'Equipo',gastos:'Gastos',pedidos:'Pedidos',regalos:'Tarjetas regalo',accounting:'Contabilidad',followups:'Seguimientos',actualizaciones:'Actualizaciones',fichaje:'Fichaje y vacaciones'};
   document.getElementById('topbar-title').textContent=titles[id]||id;
   document.getElementById('sidebar').classList.remove('open');
   document.getElementById('mob-overlay').classList.remove('open');
   if(id==='salas') renderSalas();
   if(id==='dashboard') renderDashboard();
   if(id==='actualizaciones') montarActualizaciones();
+  if(id==='fichaje') montarFichaje();
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
@@ -5594,6 +5603,20 @@ async function enviarFacturaPDF(idx, soloDescargar){
 
 <!-- Airmate · apartado Actualizaciones (catálogo central en airmate.es, sin precios) -->
 <script src="https://airmate.es/actualizaciones/core.js" defer></script>
+<script src="modulos/fichaje.js?v=20261112" defer></script>
+<script>
+// Fichaje (pedido de Natalia 12-nov-2026): cada usuaria ficha sus turnos; la propietaria ve a todas y aprueba vacaciones.
+async function montarFichaje(){
+  if(!window.AirmateFichaje||!window.AirmateMod){ setTimeout(montarFichaje,300); return; }
+  const host=document.getElementById('fich-host');
+  const esAdmin=['propietaria','soporte'].includes(CURRENT_USER.rol);
+  let equipo=[];
+  try{ const { data }=await sb.from('panel_usuarios').select('nombre,rol'); equipo=(data||[]).filter(u=>u.rol!=='soporte'&&u.nombre).map(u=>u.nombre); }catch(e){}
+  const yo=CURRENT_USER.rol==='soporte'?(equipo[0]||''):CURRENT_USER.nombre;
+  const empleados=esAdmin?[...new Set([yo,...equipo].filter(Boolean))]:[yo];
+  AirmateFichaje.mount(host,{ sb, slug:'divas-skin-care', empleados, usuario:yo, esAdmin, negocio:'Divas Skin Care by Louie', cif:'' });
+}
+</script>
 <script src="https://airmate.es/actualizaciones/actualizaciones.js" defer></script>
 <script>
 const UPD_CFG={ cliente:'Divas Skin Care', instalados:[] };
