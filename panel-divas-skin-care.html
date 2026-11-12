@@ -2927,6 +2927,7 @@ function abrirDetalleBloqueo(id){
       <div><b>${new Date(b.inicio).toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long'})}</b></div>
       <div>${minToHHMM(ini)} – ${minToHHMM(ini+b.duracion_min)} · ${b.duracion_min} min</div>
       <div>${b.profesional?'👤 '+esc(b.profesional):'Todo el centro'}</div>
+      ${variasAgendas()?`<div>🗂 ${b.agenda?'Solo '+esc(agendaNombre(b.agenda)):'Todas las agendas (cierra el centro)'}</div>`:''}
       ${serie>1?`<div style="color:var(--txt3);font-size:12px;">Forma parte de una serie de ${serie} bloqueos repetidos</div>`:''}
     </div>
     <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border2);display:flex;flex-direction:column;gap:12px;">
@@ -2941,9 +2942,31 @@ function abrirDetalleBloqueo(id){
     <p id="bqd-error" style="color:#b3441e;font-size:12px;margin-top:8px;"></p>
     <div style="display:flex;gap:8px;margin-top:18px;flex-wrap:wrap;">
       <button class="btn btn-ghost" style="flex:1" onclick="closeModal()">Cerrar</button>
-      <button class="btn btn-ghost" style="flex:1;color:#b3441e" onclick="quitarBloqueo('${b.id}',false)">Quitar este bloqueo</button>
+      ${variasAgendas()&&!b.agenda?`<div style="width:100%;font-size:12px;color:var(--txt3);">Este bloqueo vale para todas las agendas. Si lo quieres quitar solo de una:</div>
+        ${AGENDAS.map(a=>`<button class="btn btn-ghost" style="flex:1;color:#b3441e" onclick="quitarDeAgenda('${b.id}','${esc(a.id)}',false)">Quitar solo de ${esc(a.nombre)}</button>${serie>1?`<button class="btn btn-ghost" style="flex:1;color:#b3441e" onclick="quitarDeAgenda('${b.id}','${esc(a.id)}',true)">Quitar de ${esc(a.nombre)} en toda la serie (${serie})</button>`:''}`).join('')}
+        <div style="width:100%;font-size:12px;color:var(--txt3);margin-top:4px;">O quitarlo de todas:</div>`:''}
+      <button class="btn btn-ghost" style="flex:1;color:#b3441e" onclick="quitarBloqueo('${b.id}',false)">Quitar este bloqueo${variasAgendas()&&!b.agenda?' (de todas)':''}</button>
       ${serie>1?`<button class="btn btn-ghost" style="flex:1;color:#b3441e" onclick="quitarBloqueo('${b.id}',true)">Quitar toda la serie (${serie})</button>`:''}
     </div>`);
+}
+// Bloqueo de «todas las agendas» → se queda solo en las demás (pedido Louie: borraba en una y desaparecía en las dos)
+async function quitarDeAgenda(id, agendaId, serie){
+  const b=(CONFIG.bloqueos||[]).find(x=>String(x.id)===String(id)); if(!b) return;
+  const err=document.getElementById('bqd-error'); err.textContent='Guardando…';
+  const resto=AGENDAS.filter(a=>a.id!==agendaId); if(!resto.length) return quitarBloqueo(id, serie);
+  const filas=serie&&b.serie_id?(CONFIG.bloqueos||[]).filter(x=>x.serie_id===b.serie_id&&!x.agenda):[b];
+  try{
+    const ids=filas.map(f=>f.id);
+    for(let i=0;i<ids.length;i+=50){ const r=await sb.from('bloqueos').update({ agenda:resto[0].id }).in('id',ids.slice(i,i+50)).select('id'); if(r.error) throw r.error; if(!r.data?.length) throw new Error('sin permiso'); }
+    // Si hay más de dos agendas, una copia para cada una de las demás
+    for(const a of resto.slice(1)){
+      const sid=filas.length>1?crypto.randomUUID():null;
+      const copias=filas.map(f=>({ inicio:f.inicio, duracion_min:f.duracion_min, tipo:f.tipo, motivo:f.motivo||null, profesional:f.profesional||null, serie_id:sid, agenda:a.id }));
+      const r=await sb.from('bloqueos').insert(copias).select('id'); if(r.error) throw r.error;
+    }
+    await recargarTodo(); closeModal();
+    toast(`Quitado de ${agendaNombre(agendaId)}${filas.length>1?` (${filas.length} bloqueos)`:''}: sigue en ${resto.map(a=>a.nombre).join(', ')}`);
+  }catch(e){ err.textContent='No se pudo cambiar: '+(e.message||e); }
 }
 // Cambiar la hora (y la fecha, si es uno solo) de un bloqueo ya creado
 let _bqdForzar=null;
