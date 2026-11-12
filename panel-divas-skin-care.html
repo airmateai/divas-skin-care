@@ -2868,7 +2868,12 @@ function abrirBloqueoForm(opts={}){
       ${campo('Repetir este bloqueo',`<select id="bq-rep" style="${INP}" onchange="document.getElementById('bq-hasta-w').style.display=this.value?'':'none'"><option value="">No se repite</option><option value="dia">Todos los días que abrimos</option><option value="lv">De lunes a viernes</option><option value="semana">Cada semana, el mismo día</option></select>`)}
       <div id="bq-hasta-w" style="display:none">${campo('Repetir hasta',`<input type="date" id="bq-hasta" value="${dayKey(new Date(Date.now()+28*864e5))}" style="${INP}">`)}</div>
       ${campo('Miembro del equipo',`<select id="bq-prof" style="${INP}"><option value="">Todo el centro</option>${PROFESIONALES.map(p=>`<option>${p}</option>`).join('')}</select>`)}
-      ${variasAgendas()?campo('Agenda',`<select id="bq-agenda" style="${INP}"><option value="">Todas las agendas (cierra el centro)</option>${AGENDAS.map(a=>`<option value="${esc(a.id)}" ${CAL.agenda===a.id?'selected':''}>${esc(a.nombre)}</option>`).join('')}</select>`):''}
+      ${variasAgendas()?`<div><div style="${LBL}margin-bottom:8px;">¿Qué agenda bloqueas?</div>
+        <input type="hidden" id="bq-agenda" value="${esc(CAL.agenda||'')}">
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          <button type="button" class="bq-chip bq-ag ${!CAL.agenda?'on':''}" onclick="bqAgenda('',this)">Todas (cierra el centro)</button>
+          ${AGENDAS.map(a=>`<button type="button" class="bq-chip bq-ag ${CAL.agenda===a.id?'on':''}" onclick="bqAgenda('${esc(a.id)}',this)">Solo ${esc(a.nombre)}</button>`).join('')}
+        </div></div>`:''}
     </div>
     <p id="bq-error" style="color:#b3441e;font-size:12px;margin-top:8px;"></p>
     <div style="display:flex;gap:8px;margin-top:18px;">
@@ -2876,7 +2881,8 @@ function abrirBloqueoForm(opts={}){
       <button class="btn btn-accent" style="flex:1" id="bq-btn" onclick="guardarBloqueo()">Guardar bloqueo</button>
     </div>`);
 }
-function bqTipo(t, el){ BQ.tipo=t; BQ.forzar=false; document.querySelectorAll('.bq-chip').forEach(b=>b.classList.toggle('on',b===el)); document.getElementById('bq-otro').style.display=t==='Personalizar'?'':'none'; }
+function bqAgenda(id, el){ document.getElementById('bq-agenda').value=id; BQ.forzar=false; document.querySelectorAll('.bq-ag').forEach(b=>b.classList.toggle('on',b===el)); }
+function bqTipo(t, el){ BQ.tipo=t; BQ.forzar=false; document.querySelectorAll('.bq-chip:not(.bq-ag)').forEach(b=>b.classList.toggle('on',b===el)); document.getElementById('bq-otro').style.display=t==='Personalizar'?'':'none'; }
 function fechasBloqueo(fecha, rep, hasta){
   const out=[], d0=new Date(fecha+'T00:00:00');
   if(!rep) return [d0];
