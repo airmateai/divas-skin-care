@@ -1670,7 +1670,10 @@ function proximosDias(n){
 async function cargarOcupadosRango(dias){
   const desde = fmtDia(dias[0]);
   const hasta = fmtDia(dias[dias.length-1]);
-  const { data, error } = await sb.rpc('get_busy_slots', { desde, hasta });
+  // Cada servicio va a una agenda (gabinete): solo cuentan las citas de esa agenda
+  const agenda = (SERVICIOS_DB[currentServicioId] && SERVICIOS_DB[currentServicioId].agenda) || 'principal';
+  let { data, error } = await sb.rpc('get_busy_slots', { desde, hasta, p_agenda: agenda });
+  if (error) ({ data, error } = await sb.rpc('get_busy_slots', { desde, hasta }));
   // busySlotsCache[dia] = array de intervalos ocupados {ini,fin} en minutos desde medianoche.
   busySlotsCache = {};
   if (error || !data) return;
@@ -1768,7 +1771,8 @@ function precioWeb(p){ p=Number(p)||0; return (Number.isInteger(p)?p:p.toFixed(2
 function escWeb(t){ return String(t??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 const RE_DURACION = /^\s*(\d+\s*h)?\s*(\d+\s*min)?\s*$/i;
 (async function sincronizarServiciosWeb(){
-  let { data, error } = await sb.from('servicios').select('id,nombre,categoria,duracion,duracion_min,precio,reservable,descripcion,color,img_url,video_url,orden,precio_oferta,bonos,visible_web,oferta_solo_web,oferta_hasta').order('orden');
+  let { data, error } = await sb.from('servicios').select('id,nombre,categoria,duracion,duracion_min,precio,reservable,descripcion,color,img_url,video_url,orden,precio_oferta,bonos,visible_web,oferta_solo_web,oferta_hasta,agenda').order('orden');
+  if (error) ({ data, error } = await sb.from('servicios').select('id,nombre,categoria,duracion,duracion_min,precio,reservable,descripcion,color,img_url,video_url,orden,precio_oferta,bonos,visible_web,oferta_solo_web,oferta_hasta').order('orden'));
   if (error) ({ data, error } = await sb.from('servicios').select('id,nombre,categoria,duracion,duracion_min,precio,reservable,descripcion,color,img_url,video_url,orden,precio_oferta,bonos,visible_web').order('orden'));
   if (error) ({ data, error } = await sb.from('servicios').select('id,nombre,categoria,duracion,duracion_min,precio,reservable,descripcion,color,img_url,video_url,orden').order('orden'));
   if (error || !data) return;

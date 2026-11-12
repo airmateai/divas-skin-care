@@ -773,6 +773,7 @@ tbody tr:hover{background:rgba(0,0,0,.02);}
             <option>Louie</option><option>Natalia</option>
             <option value="__sin">Sin asignar</option>
           </select>
+          <select id="cal-agenda" onchange="calSetAgenda(this.value)" class="cal-prof" style="display:none"></select>
         </div>
         <div id="cal-host"></div>
         <div id="cal-legend" class="cal-legend"></div>
@@ -843,7 +844,7 @@ tbody tr:hover{background:rgba(0,0,0,.02);}
           <h1 class="page-title">Servicios</h1>
           <div class="page-sub">Productos y servicios</div>
         </div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;"><button class="btn btn-ghost" onclick="abrirVideoPortada()">🎬 Vídeo de portada</button><button class="btn btn-ghost" onclick="abrirOrdenMarcas()">↕ Orden de marcas (tienda)</button><button class="btn btn-accent" onclick="openServicioForm()">+ Nuevo servicio</button></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;"><button class="btn btn-ghost" onclick="abrirVideoPortada()">🎬 Vídeo de portada</button><button class="btn btn-ghost" onclick="abrirAgendas()">🗂 Agendas</button><button class="btn btn-ghost" onclick="abrirOrdenMarcas()">↕ Orden de marcas (tienda)</button><button class="btn btn-accent" onclick="openServicioForm()">+ Nuevo servicio</button></div>
       </div>
       <div class="card">
         <div class="card-body">
@@ -1411,6 +1412,7 @@ async function loadRealData(){
   try{ const r=await sb.from('movimientos_caja').select('*').order('created_at',{ascending:false}).limit(200); CONFIG.movCaja=r.error?[]:(r.data||[]); }catch(e){ CONFIG.movCaja=[]; }
   try{ const r=await sb.from('cobros_tpv').select('*').eq('estado','pendiente').order('created_at',{ascending:false}).limit(50); CONFIG.cobrosTPV=r.error?[]:(r.data||[]); }catch(e){ CONFIG.cobrosTPV=[]; }
   try{ const r=await sb.from('bloqueos').select('*').gte('inicio', new Date(Date.now()-90*864e5).toISOString()).order('inicio'); CONFIG.bloqueos=r.error?[]:(r.data||[]); }catch(e){ CONFIG.bloqueos=[]; }
+  try{ const r=await sb.from('agendas').select('*').order('orden'); if(!r.error&&r.data?.length){ AGENDAS=r.data; AGENDAS_OK=true; } }catch(e){}
   try{ const r=await sb.from('orden_categorias').select('*'); CONFIG.ordenCat=r.error?[]:(r.data||[]); }catch(e){ CONFIG.ordenCat=[]; }
   try{ const r=await sb.from('tarjetas_regalo').select('*').neq('estado','pendiente_pago').order('creado_en',{ascending:false}).limit(500); CONFIG.regalos=r.error?[]:(r.data||[]); }catch(e){ CONFIG.regalos=[]; }
   try{ const r=await sb.from('bonos_clienta').select('*').order('creado_en',{ascending:false}); CONFIG.bonosClienta=r.error?[]:(r.data||[]); }catch(e){ CONFIG.bonosClienta=[]; }
@@ -1437,6 +1439,7 @@ async function loadRealData(){
       precioOferta: s.precio_oferta != null && s.oferta_solo_web !== true && ofertaVigente(s.oferta_hasta) ? s.precio_oferta : null,
       bonos: Array.isArray(s.bonos) ? s.bonos.filter(b=>b&&b.sesiones>1&&b.precio>=0).sort((a,b)=>a.sesiones-b.sesiones) : [],
       visibleWeb: s.visible_web !== false,
+      agenda: s.agenda || 'principal',
       archivado: s.archivado === true
     }));
   }
@@ -1471,6 +1474,7 @@ async function loadRealData(){
       notas: c.notas,
       servicioId: c.servicio_id,
       profesional: c.profesional,
+      agenda: c.agenda || null,
       bonoId: c.bono_id || null,
       precioWeb: c.precio_web ?? null,
       duracionMin: c.duracion_min,
@@ -2219,6 +2223,12 @@ async function submitInvoiceForm(){
 // ═════════════════════════════════════════════════════════════════════
 
 const PROFESIONALES = ['Louie','Natalia'];
+// Agendas (gabinetes): cada una tiene sus citas; dos agendas pueden tener cita a la misma hora (pedido Louie 12-nov)
+let AGENDAS=[{id:'principal',nombre:'Divas'}], AGENDAS_OK=false;
+function agendaNombre(id){ return (AGENDAS.find(a=>a.id===(id||'principal'))||{}).nombre||'Divas'; }
+function agendaServ(servId){ return servicioDe(servId)?.agenda||'principal'; }
+function agendaCita(c){ return c.agenda||agendaServ(c.servicioId)||'principal'; }
+function variasAgendas(){ return AGENDAS.length>1; }
 const ESTADOS_INACTIVOS = ['cancelada','rechazada','no_show'];
 const ESTADOS_CITA = {
   pendiente_deposito:  { t:'Pendiente de depósito', c:'pending' },
@@ -2261,8 +2271,9 @@ function colorCita(c){ return servicioDe(c.servicioId)?.color || '#A9B6A2'; }
 function estadoTag(e){ const x=ESTADOS_CITA[e]||{t:e||'-',c:'info'}; return `<span class="tag tag-${x.c}">${esc(x.t)}</span>`; }
 function citaActiva(c){ return c.fecha && !ESTADOS_INACTIVOS.includes(c.estado); }
 function esErrorSolape(msg){ return /SOLAPE|BLOQUEO/.test(msg||''); }
-function bloqueoQueSolapa(ini, fin){
-  return (CONFIG.bloqueos||[]).find(b=>{ const bi=new Date(b.inicio).getTime(), bf=bi+b.duracion_min*60000; return ini<bf && fin>bi; });
+function bloqueoQueSolapa(ini, fin, agenda){
+  const ag=agenda||'principal';
+  return (CONFIG.bloqueos||[]).filter(b=>!b.agenda||b.agenda===ag).find(b=>{ const bi=new Date(b.inicio).getTime(), bf=bi+b.duracion_min*60000; return ini<bf && fin>bi; });
 }
 function bloqueosDia(d){ const k=dayKey(d); return (CONFIG.bloqueos||[]).filter(b=>dayKey(b.inicio)===k).sort((a,b)=>new Date(a.inicio)-new Date(b.inicio)); }
 function textoError(msg){
@@ -2302,12 +2313,12 @@ function clientaDeCita(ct){
 function nombreNorm(t){ return String(t||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/\s+/g,' ').trim(); }
 
 // ¿Choca [inicio, inicio+dur) con alguna cita activa? (misma regla que la BD)
-function citaQueSolapa(inicio, dur, ignorarId){
-  const ini=new Date(inicio).getTime(), fin=ini+dur*60000;
-  const b=bloqueoQueSolapa(ini, fin);
+function citaQueSolapa(inicio, dur, ignorarId, agenda){
+  const ini=new Date(inicio).getTime(), fin=ini+dur*60000, ag=agenda||'principal';
+  const b=bloqueoQueSolapa(ini, fin, ag);
   if(b) return { cliente:'el bloqueo «'+b.tipo+'»', fecha:b.inicio, bloqueo:true };
   return (CONFIG.citasWeb||[]).find(c=>{
-    if(!citaActiva(c) || String(c.id)===String(ignorarId)) return false;
+    if(!citaActiva(c) || String(c.id)===String(ignorarId) || agendaCita(c)!==ag) return false;
     const cIni=new Date(c.fecha).getTime(), cFin=cIni+duracionCita(c)*60000;
     return ini<cFin && fin>cIni;
   });
@@ -2324,7 +2335,7 @@ function huecosLibres(dia, dur, opts={}){
       if(opts.hasta!=null && m>=opts.hasta) continue;
       const inicio=new Date(d); inicio.setMinutes(m);
       if(inicio<=ahora) continue;
-      if(!citaQueSolapa(inicio, dur, opts.ignorarId)) out.push(m);
+      if(!citaQueSolapa(inicio, dur, opts.ignorarId, opts.agenda)) out.push(m);
     }
   });
   return out;
@@ -2391,6 +2402,7 @@ let CAL={ vista:'semana', ref:new Date(), prof:'' };
 const CAL_INI=9*60, CAL_FIN=20*60, CAL_PX=1.25; // px por minuto
 function calSetVista(v){ CAL.vista=v; renderCalendario(); }
 function calSetProf(p){ CAL.prof=p; renderCalendario(); }
+function calSetAgenda(a){ CAL.agenda=a; renderCalendario(); }
 function calHoy(){ CAL.ref=new Date(); renderCalendario(); }
 // Selector de fecha (al pulsar el mes/semana): meses seguidos con scroll + atajos Hoy / 2·4·6 semanas
 function calPickerCerrar(){ document.getElementById('calpk-bg')?.remove(); document.getElementById('calpk')?.remove(); }
@@ -2434,11 +2446,15 @@ function citasCalendarioDia(d){
   const k=dayKey(d);
   // Las «No vino» se quedan a la vista (pedido por Louie), aunque el hueco siga libre para reservar
   return (CONFIG.citasWeb||[]).filter(c=>c.fecha && (citaActiva(c)||c.estado==='no_show') && dayKey(c.fecha)===k &&
-    (!CAL.prof || (CAL.prof==='__sin' ? !c.profesional : c.profesional===CAL.prof)))
+    (!CAL.prof || (CAL.prof==='__sin' ? !c.profesional : c.profesional===CAL.prof)) &&
+    (!CAL.agenda || agendaCita(c)===CAL.agenda))
     .sort((a,b)=>new Date(a.fecha)-new Date(b.fecha));
 }
 function renderCalendario(){
   const host=document.getElementById('cal-host'); if(!host) return;
+  const selAg=document.getElementById('cal-agenda');
+  if(selAg){ selAg.style.display=variasAgendas()?'':'none'; if(!variasAgendas()) CAL.agenda='';
+    selAg.innerHTML='<option value="">Todas las agendas</option>'+AGENDAS.map(a=>`<option value="${esc(a.id)}" ${CAL.agenda===a.id?'selected':''}>${esc(a.nombre)}</option>`).join(''); }
   ['dia','semana','mes'].forEach(v=>{ const b=document.getElementById('cal-v-'+v); if(b) b.classList.toggle('cal-on',CAL.vista===v); });
   const lbl=document.getElementById('cal-label');
   const hoy=new Date();
@@ -2480,15 +2496,15 @@ function calRejillaHTML(dias, hoy){
       const col=colorCita(c);
       const pend=/^pendiente/.test(c.estado), noVino=c.estado==='no_show';
       return `<div class="cal-ev ${pend?'cal-ev-pend':''} ${noVino?'cal-ev-novino':''}" data-svc="${esc(c.servicioId||'')}" style="top:${top}px;height:${h}px;left:calc(${l*100/nL}% + 2px);width:calc(${100/nL}% - 4px);--c:${col}" onclick="event.stopPropagation();abrirDetalleCita('${c.id}')" title="${esc(c.cliente)} · ${esc(nombreServicioCita(c))}">
-        <div class="cal-ev-t">${minToHHMM(ini)}–${minToHHMM(fin)}${pend?' · <em>pendiente</em>':''}${noVino?' · <b>No vino</b>':''}</div>
+        <div class="cal-ev-t">${minToHHMM(ini)}–${minToHHMM(fin)}${pend?' · <em>pendiente</em>':''}${noVino?' · <b>No vino</b>':''}${variasAgendas()&&!CAL.agenda&&agendaCita(c)!=='principal'?' · <b>'+esc(agendaNombre(agendaCita(c)))+'</b>':''}</div>
         <div class="cal-ev-n">${esc(c.cliente||'-')}</div>
         ${h>44?`<div class="cal-ev-s">${esc(nombreServicioCita(c))}</div>`:''}
         ${h>60&&c.profesional?`<div class="cal-ev-p">👤 ${esc(c.profesional)}</div>`:''}
       </div>`;
     }).join('');
-    const bqs=bloqueosDia(d).map(b=>{ const ini=minDelDia(b.inicio), fin=ini+b.duracion_min;
+    const bqs=bloqueosDia(d).filter(b=>!CAL.agenda||!b.agenda||b.agenda===CAL.agenda).map(b=>{ const ini=minDelDia(b.inicio), fin=ini+b.duracion_min;
       const top=(Math.max(ini,CAL_INI)-CAL_INI)*CAL_PX, h=Math.max((Math.min(fin,CAL_FIN)-Math.max(ini,CAL_INI))*CAL_PX,22);
-      return `<div class="cal-bloq" style="top:${top}px;height:${h}px" onclick="event.stopPropagation();abrirDetalleBloqueo('${b.id}')" title="${esc(b.tipo)}"><b>🔒 ${esc(b.tipo)}</b> ${minToHHMM(ini)}–${minToHHMM(fin)}${b.profesional&&h>40?`<div>👤 ${esc(b.profesional)}</div>`:''}</div>`; }).join('');
+      return `<div class="cal-bloq" style="top:${top}px;height:${h}px" onclick="event.stopPropagation();abrirDetalleBloqueo('${b.id}')" title="${esc(b.tipo)}"><b>🔒 ${esc(b.tipo)}</b> ${minToHHMM(ini)}–${minToHHMM(fin)}${b.profesional&&h>40?`<div>👤 ${esc(b.profesional)}</div>`:''}${b.agenda&&variasAgendas()&&h>40?`<div>${esc(agendaNombre(b.agenda))}</div>`:''}</div>`; }).join('');
     const ahora=(esHoy && minDelDia(hoy)>=CAL_INI && minDelDia(hoy)<=CAL_FIN)?`<div class="cal-now" style="top:${(minDelDia(hoy)-CAL_INI)*CAL_PX}px"></div>`:'';
     cols+=`<div class="cal-col" style="height:${alto}px" onclick="calClickHueco(event,'${k}')">${cerr}${bqs}${evs}${ahora}</div>`;
   });
@@ -2719,7 +2735,7 @@ function compatiblesConHueco(inicio, durMin){
     if(w.fecha_deseada && w.fecha_deseada!==k) return null;
     const svc=servicioDe(w.servicio_id); const dur=svc?.duracionMin||60;
     const r=rangoEspera(w);
-    const huecos=huecosLibres(inicio, dur, {desde:Math.max(r.desde,ini), hasta:Math.min(r.hasta,fin)});
+    const huecos=huecosLibres(inicio, dur, {desde:Math.max(r.desde,ini), hasta:Math.min(r.hasta,fin), agenda:svc?.agenda});
     return huecos.length?{w,svc,hora:huecos.sort((a,b)=>Math.abs(a-r.pref)-Math.abs(b-r.pref))[0]}:null;
   }).filter(Boolean);
 }
@@ -2852,6 +2868,7 @@ function abrirBloqueoForm(opts={}){
       ${campo('Repetir este bloqueo',`<select id="bq-rep" style="${INP}" onchange="document.getElementById('bq-hasta-w').style.display=this.value?'':'none'"><option value="">No se repite</option><option value="dia">Todos los días que abrimos</option><option value="lv">De lunes a viernes</option><option value="semana">Cada semana, el mismo día</option></select>`)}
       <div id="bq-hasta-w" style="display:none">${campo('Repetir hasta',`<input type="date" id="bq-hasta" value="${dayKey(new Date(Date.now()+28*864e5))}" style="${INP}">`)}</div>
       ${campo('Miembro del equipo',`<select id="bq-prof" style="${INP}"><option value="">Todo el centro</option>${PROFESIONALES.map(p=>`<option>${p}</option>`).join('')}</select>`)}
+      ${variasAgendas()?campo('Agenda',`<select id="bq-agenda" style="${INP}"><option value="">Todas las agendas (cierra el centro)</option>${AGENDAS.map(a=>`<option value="${esc(a.id)}" ${CAL.agenda===a.id?'selected':''}>${esc(a.nombre)}</option>`).join('')}</select>`):''}
     </div>
     <p id="bq-error" style="color:#b3441e;font-size:12px;margin-top:8px;"></p>
     <div style="display:flex;gap:8px;margin-top:18px;">
@@ -2882,9 +2899,10 @@ async function guardarBloqueo(){
   if(!(fin>ini)){ err.textContent='La hora de finalización tiene que ser después de la de inicio.'; return; }
   if(rep && hasta<fecha){ err.textContent='La fecha «Repetir hasta» tiene que ser posterior.'; return; }
   const dias=fechasBloqueo(fecha, rep, hasta);
-  const filas=dias.map(d=>{ const i=new Date(d); i.setMinutes(ini); return { inicio:i.toISOString(), duracion_min:fin-ini, tipo, profesional:prof }; });
+  const agBq=document.getElementById('bq-agenda')?.value||null;
+  const filas=dias.map(d=>{ const i=new Date(d); i.setMinutes(ini); const f={ inicio:i.toISOString(), duracion_min:fin-ini, tipo, profesional:prof }; if(agBq) f.agenda=agBq; return f; });
   // ¿Hay citas ya reservadas en esa franja?
-  const conCita=filas.map(f=>{ const a=new Date(f.inicio).getTime(), b=a+f.duracion_min*60000; return (CONFIG.citasWeb||[]).find(c=>citaActiva(c) && new Date(c.fecha).getTime()<b && new Date(c.fecha).getTime()+duracionCita(c)*60000>a); }).filter(Boolean);
+  const conCita=filas.map(f=>{ const a=new Date(f.inicio).getTime(), b=a+f.duracion_min*60000; return (CONFIG.citasWeb||[]).find(c=>citaActiva(c) && (!agBq||agendaCita(c)===agBq) && new Date(c.fecha).getTime()<b && new Date(c.fecha).getTime()+duracionCita(c)*60000>a); }).filter(Boolean);
   if(conCita.length && !BQ.forzar){ BQ.forzar=true; err.innerHTML=`⚠ Ya hay ${conCita.length} cita${conCita.length>1?'s':''} en esa franja (${conCita.slice(0,3).map(c=>esc(c.cliente)+' '+new Date(c.fecha).toLocaleDateString('es-ES',{day:'numeric',month:'short'})).join(', ')}). Las citas no se borran. Pulsa otra vez «Guardar bloqueo» para bloquear igualmente.`; return; }
   if(filas.length>1){ const sid=crypto.randomUUID(); filas.forEach(f=>f.serie_id=sid); }
   btn.disabled=true; err.textContent='Guardando…';
@@ -2960,7 +2978,7 @@ function bfPintarHoras(){
   const sel=document.getElementById('bf-time');
   const info=document.getElementById('bf-horas-info');
   if(!fecha){ sel.innerHTML=''; return; }
-  const libres=huecosLibres(new Date(fecha+'T00:00:00'), dur, {ignorarId:BF.citaId});
+  const libres=huecosLibres(new Date(fecha+'T00:00:00'), dur, {ignorarId:BF.citaId, agenda:agendaServ(document.getElementById('bf-svc')?.value)});
   if(BF.hora && fecha===BF.fecha && !libres.includes(hhmmToMin(BF.hora))) {
     // La hora pedida (clic en calendario / cita existente) no está libre para esta duración
     info.innerHTML=`⚠ Las ${BF.hora} no están libres para ${dur} min. Elige otra hora${BF.citaId?'':' o <a href="#" onclick="bfAListaEspera();return false;" style="color:var(--accent)">apúntala en la lista de espera</a>'}.`;
@@ -2979,7 +2997,7 @@ function bfPintarHoras(){
   sel.innerHTML=todas.map(m=>{
     if(libres.includes(m)) return `<option value="${minToHHMM(m)}" ${m===elegido?'selected':''}>${minToHHMM(m)} – ${minToHHMM(m+dur)}</option>`;
     const i=new Date(d); i.setMinutes(m);
-    const c=citaQueSolapa(i, dur, BF.citaId);
+    const c=citaQueSolapa(i, dur, BF.citaId, agendaServ(document.getElementById('bf-svc')?.value));
     const t=c?new Date(c.fecha).toTimeString().slice(0,5):'';
     const motivo=!c?'ocupado':c.bloqueo?`bloqueo de las ${t}`:`choca con la cita de las ${t}`;
     return `<option disabled>${minToHHMM(m)} – ${minToHHMM(m+dur)} · ${motivo}</option>`;
@@ -3005,7 +3023,7 @@ async function submitBookingForm(){
   const inicio=new Date(fecha+'T'+hora+':00');
   const lista=bfServicios();
   const dur=bfDuracionTotal();
-  const choca=citaQueSolapa(inicio, dur, BF.citaId);
+  const choca=citaQueSolapa(inicio, dur, BF.citaId, agendaServ(servicioId));
   if(choca){ err.textContent=`Se solapa con la cita de ${choca.cliente} (${new Date(choca.fecha).toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'})}). Elige otra hora.`; return; }
   err.textContent='Guardando...';
 
@@ -3428,6 +3446,33 @@ async function reducirImagen(file){
   c.getContext('2d').drawImage(img,0,0,c.width,c.height);
   return await new Promise(ok=>c.toBlob(b=>ok(b||file),'image/jpeg',0.85));
 }
+/* ─── Agendas (gabinetes): nombre editable y añadir más ─── */
+function abrirAgendas(){
+  if(!AGENDAS_OK){ abrirModal('Agendas', '<p style="font-size:13px;">Falta activar las agendas en la base de datos. Avisa a Airmate.</p>'); return; }
+  const usos=id=>(CONFIG.catalog||[]).filter(s=>(s.agenda||'principal')===id).length;
+  abrirModal('Agendas (gabinetes)', `
+    <p style="font-size:13px;color:var(--txt2);margin:0 0 12px;">Cada agenda tiene sus propias citas: dos agendas pueden tener cita a la misma hora. Cada servicio va a una agenda (se elige al editar el servicio).</p>
+    ${AGENDAS.map(a=>`<div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">
+      <input id="ag-${esc(a.id)}" value="${esc(a.nombre)}" style="${INP}flex:1;">
+      <span style="font-size:12px;color:var(--txt3);white-space:nowrap;">${usos(a.id)} servicio${usos(a.id)===1?'':'s'}</span>
+      <button class="btn btn-ghost" style="padding:8px 12px;font-size:12px;" onclick="guardarAgenda('${esc(a.id)}')">Guardar</button></div>`).join('')}
+    <div style="display:flex;gap:8px;margin-top:14px;"><input id="ag-nueva" placeholder="Nombre de la agenda nueva (ej. Gabinete 3)" style="${INP}flex:1;"><button class="btn btn-accent" style="padding:8px 14px;" onclick="nuevaAgenda()">+ Añadir</button></div>
+    <p id="ag-msg" style="font-size:12.5px;margin:10px 0 0;color:var(--txt2);"></p>`);
+}
+async function guardarAgenda(id){
+  const v=document.getElementById('ag-'+id).value.trim(), msg=document.getElementById('ag-msg');
+  if(!v){ msg.textContent='Pon un nombre.'; return; }
+  const r=await sb.from('agendas').update({ nombre:v }).eq('id',id).select('id');
+  if(r.error||!r.data?.length){ msg.textContent='No se pudo guardar: '+(r.error?.message||'sin permiso'); return; }
+  await recargarTodo(); toast('✓ Agenda guardada'); abrirAgendas();
+}
+async function nuevaAgenda(){
+  const v=document.getElementById('ag-nueva').value.trim(), msg=document.getElementById('ag-msg');
+  if(!v){ msg.textContent='Escribe el nombre de la agenda nueva.'; return; }
+  const r=await sb.from('agendas').insert({ nombre:v, orden:AGENDAS.length }).select('id');
+  if(r.error||!r.data?.length){ msg.textContent='No se pudo crear: '+(r.error?.message||'sin permiso'); return; }
+  await recargarTodo(); toast('✓ Agenda creada. Asígnale servicios desde cada servicio.'); abrirAgendas();
+}
 /* ─── Vídeo de portada de la web (tabla ajustes_web, clave «video_portada») ─── */
 const VIDEO_PORTADA_ORIGINAL='img/hero-video-limpieza-sinlogo.mp4';
 const VIDEO_MAX_MB=50;
@@ -3527,6 +3572,7 @@ function openServicioForm(id){
           <input type="color" id="sf-color" value="${color}" onchange="elegirColorServicio(this.value)" style="width:34px;height:28px;border:none;background:none;padding:0;cursor:pointer;" title="Otro color">
         </div>
       </div>
+      ${AGENDAS_OK?campo('Agenda (gabinete)',`<div style="display:flex;gap:8px;align-items:center;"><select id="sf-agenda" style="${INP}flex:1;">${AGENDAS.map(a=>`<option value="${esc(a.id)}" ${(s?.agenda||'principal')===a.id?'selected':''}>${esc(a.nombre)}</option>`).join('')}</select><button type="button" class="btn btn-ghost" style="padding:8px 12px;font-size:12px;white-space:nowrap;" onclick="abrirAgendas()">Gestionar</button></div>`):''}
       ${campoFoto('sf', s?.imgUrl)}
       ${campo('Descripción (se muestra en la web)',`<textarea id="sf-desc" rows="3" style="${INP}resize:vertical;">${esc(s?.descripcion||'')}</textarea>`)}
       <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--txt2);"><input type="checkbox" id="sf-reservable" ${s?.bookable===false?'':'checked'} style="width:16px;height:16px;"> Activo (se puede reservar en la web y en el panel)</label>
@@ -3582,6 +3628,7 @@ async function submitServicioForm(id){
   if(oferta!=null || s0?.ofertaPrecio!=null) fila.precio_oferta=oferta;
   if(bonos.length || s0?.bonos?.length) fila.bonos=bonos.map(b=>({sesiones:b.sesiones,precio:Math.round(b.precio*100)/100})).sort((a,b)=>a.sesiones-b.sesiones);
   const web=document.getElementById('sf-web').checked; if(!web || s0?.visibleWeb===false) fila.visible_web=web;
+  const agSf=document.getElementById('sf-agenda')?.value; if(agSf && (agSf!=='principal' || (s0&&s0.agenda!=='principal'))) fila.agenda=agSf;
   const fotoSf=document.getElementById('sf-foto')?.files?.[0];
   if(fotoSf){
     err.textContent='Subiendo foto...';
@@ -3611,7 +3658,7 @@ function huecosParaEspera(w){
   if(w.fecha_deseada) dias.push(new Date(w.fecha_deseada+'T00:00:00'));
   else for(let i=0;i<14;i++){ const d=new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate()+i); dias.push(d); }
   for(const d of dias){
-    const h=huecosLibres(d, dur, {desde:r.desde, hasta:r.hasta});
+    const h=huecosLibres(d, dur, {desde:r.desde, hasta:r.hasta, agenda:svc?.agenda});
     if(h.length) return { dia:dayKey(d), hora:h.sort((a,b)=>Math.abs(a-r.pref)-Math.abs(b-r.pref))[0] };
   }
   return null;
